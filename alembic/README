@@ -1,0 +1,18 @@
+## Generic single-database configuration.
+
+### Usage
+
+Creating a new revision:
+```
+alembic revision --autogenerate -m "Message"
+```
+
+Upgrading to the latest revision:
+```
+alembic upgrade head
+```
+
+Downgrade to a revision:
+```
+alembic downgrade <tag|name>
+```

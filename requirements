@@ -1,0 +1,17 @@
+configparser
+sqlalchemy
+sqlalchemy_mixins
+alembic
+tld
+dnspython
+netaddr
+pyperclip
+requests
+ipwhois
+whois
+fuzzywuzzy[speedup]
+xmltodict
+bs4
+thready
+argcomplete
+tldextract
