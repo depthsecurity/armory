@@ -11,6 +11,7 @@ import database
 import pdb
 import argcomplete
 
+VERSION = 'Armory Version 0.9 Alpha (still working out the kinks!)'
 def get_modules(module_path):
 
     modules = [name for _, name, _ in pkgutil.iter_modules([module_path])]
@@ -201,17 +202,8 @@ def get_connection_string(config):
 def initialize_database(config):
     return database.create_database(get_connection_string(config))
 
-if __name__ == "__main__":
-
-    cmd_args = sys.argv
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-m', "--module", help="Use module")
-    parser.add_argument('-lm', "--list_modules", help="List modules", action="store_true")
-    parser.add_argument('-M', "--list_module_options", help='List module options', action="store_true")
-    parser.add_argument('-r', "--report", help="Use report")
-    parser.add_argument('-lr', "--list_reports", help="List reports", action="store_true")
-    parser.add_argument('-R', '--list_report_options', help='List report options', action="store_true")
-    print("""
+def print_banner():
+    banner = """
        _                                                          
       dM.                                                         
      ,MMb                                                         
@@ -226,11 +218,28 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
                                                           d'      
                                                       (8),P       
                                                        YMM        
-""")
+"""
+    print(banner)
+
+if __name__ == "__main__":
+
+    cmd_args = sys.argv
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', "--module", help="Use module")
+    parser.add_argument('-lm', "--list_modules", help="List modules", action="store_true")
+    parser.add_argument('-M', "--list_module_options", help='List module options', action="store_true")
+    parser.add_argument('-r', "--report", help="Use report")
+    parser.add_argument('-lr', "--list_reports", help="List reports", action="store_true")
+    parser.add_argument('-R', '--list_report_options', help='List report options', action="store_true")
+    parser.add_argument('-v', '--version', help='Display the current version', action="store_true")
+
+    
     base_args, unknown = parser.parse_known_args(cmd_args)
 
-
-    if base_args.list_module_options:
+    if base_args.version:
+        print(VERSION)
+    elif base_args.list_module_options:
+        print_banner()
         if base_args.module:
             config = get_config_options()
             custom_path = config['PROJECT'].get('custom_modules', None)
@@ -251,10 +260,12 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
         list_modules()
 
     elif base_args.list_modules:
+        print_banner()
         list_modules()
 
 
     elif base_args.module:
+        print_banner()
         config = get_config_options()
         custom_path = config['PROJECT'].get('custom_modules', None)
         custom_modules = []
@@ -276,6 +287,7 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
             list_modules()
 
     elif base_args.list_report_options:
+        print_banner()
         if base_args.report:
             config = get_config_options()
             custom_path = config['PROJECT'].get('custom_reports', None)
@@ -296,10 +308,12 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
         list_reports()
 
     elif base_args.list_reports:
+        print_banner()
         list_reports()
 
 
     elif base_args.report:
+        print_banner()
         config = get_config_options()
         custom_path = config['PROJECT'].get('custom_reports', None)
         custom_reports = []
