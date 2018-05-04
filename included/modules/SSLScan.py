@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from database.repositories import DomainRepository, IPRepository, ServiceRepository
+from database.repositories import DomainRepository, IPRepository, PortRepository
 from included.ModuleTemplate import ModuleTemplate
 import subprocess
 from included.utilities import which
@@ -17,7 +17,7 @@ class Module(ModuleTemplate):
         self.db = db
         self.Domain = DomainRepository(db, self.name)
         self.IPAddress = IPRepository(db, self.name)
-        self.Service = ServiceRepository(db, self.name)
+        self.Port = PortRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -59,20 +59,20 @@ class Module(ModuleTemplate):
             svc = []
             
             for p in ['https', 'ftps', 'imaps', 'sip-tls', 'imqtunnels', 'smtps']:
-                svc += [(s, "") for s in self.Service.all(tool=self.name, name=p)]           
+                svc += [(s, "") for s in self.Port.all(tool=self.name, service_name=p)]           
             for p in ['ftp', 'imap', 'irc', 'ldap', 'pop3', 'smtp', 'mysql', 'xmpp', 'psql']:
-                svc += [(s, "--starttls-%s" % p) for s in self.Service.all(tool=self.name, name=p)]
+                svc += [(s, "--starttls-%s" % p) for s in self.Port.all(tool=self.name, service_name=p)]
 
             
             
             for s, option in svc:
                 
-                port_number = s.port.port_number
-                ip_address = s.port.ipaddress.ip_address
+                port_number = s.port_number
+                ip_address = s.ipaddress.ip_address
 
                 hosts.append(("%s:%s" % (ip_address, port_number), option))
 
-                for d in s.port.ipaddress.domains:
+                for d in s.ipaddress.domains:
                     hosts.append(("%s:%s" % (d.domain, port_number), option))
 
             

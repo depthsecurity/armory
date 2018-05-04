@@ -1,5 +1,5 @@
 from included.ModuleTemplate import ModuleTemplate
-from database.repositories import BaseDomainRepository, DomainRepository, IPRepository, PortRepository, ServiceRepository, VulnRepository, CVERepository
+from database.repositories import BaseDomainRepository, DomainRepository, IPRepository, PortRepository, VulnRepository, CVERepository
 from included.utilities import which
 import os
 import re
@@ -20,7 +20,6 @@ class Module(ModuleTemplate):
 		self.Domain = DomainRepository(db, self.name)
 		self.IPAddress = IPRepository(db, self.name)
 		self.Port = PortRepository(db, self.name)
-		self.Service = ServiceRepository(db, self.name)
 		self.Vulnerability = VulnRepository(db, self.name)
 		self.CVE = CVERepository(db, self.name)
 
@@ -167,15 +166,15 @@ class Module(ModuleTemplate):
 			
 			if "general" not in portName:
 				created, db_port = self.Port.find_or_create(port_number=port, status='open', proto=proto, ip_address_id=ip.id)
-				created, db_service = self.Service.find_or_create(port=db_port, ip_address=ip)
-				if db_service.name == "http":
+				
+				if db_port.service_name == "http":
 					if portName == "https":
-						db_service.name = portName
-				elif db_service.name == "https":
+						db_port.service_name = portName
+				elif db_port.service_name == "https":
 					pass
 				else:
-					db_service.name = portName
-				db_service.save()
+					db_port.service_name = portName
+				db_port.save()
 
 				
 				if tag.get("pluginID") == "56984":
@@ -196,12 +195,12 @@ class Module(ModuleTemplate):
 				nessCheck = self.nessCheckPlugin(tag)
 				
 				if nessCheck:
-					if not db_service.info:
-						db_service.info = {findingName:nessCheck}
+					if not db_port.info:
+						db_port.info = {findingName:nessCheck}
 					else:
-						db_service.info[findingName] = nessCheck
+						db_port.info[findingName] = nessCheck
 
-					db_service.save()
+					db_port.save()
 
 				if tag.find("exploit_available") is not None:
 					#print "\nexploit avalable for", findingName
@@ -226,7 +225,7 @@ class Module(ModuleTemplate):
 				
 				if not self.Vulnerability.find(name=findingName):
 					created, db_vuln = self.Vulnerability.find_or_create(name=findingName, severity=severity, description=description, remediation=solution)
-					db_vuln.services.append(db_service)
+					db_vuln.ports.append(db_port)
 					db_vuln.exploitable = exploitable
 					if exploitable == True:
 						print "\nexploit avalable for", findingName
@@ -236,7 +235,7 @@ class Module(ModuleTemplate):
 
 				else:
 					db_vuln = self.Vulnerability.find(name=findingName)
-					db_vuln.services.append(db_service)
+					db_vuln.ports.append(db_port)
 					db_vuln.exploitable = exploitable
 					if vuln_refs:
 						if db_vuln.exploit_reference is not None:

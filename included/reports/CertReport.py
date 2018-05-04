@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from included.ReportTemplate import ReportTemplate
-from database.repositories import ServiceRepository
+from database.repositories import PortRepository
 import pdb
 import json
 
@@ -17,7 +17,7 @@ class Report(ReportTemplate):
 
     name = "CertReport"
     def __init__(self, db):
-        self.Service = ServiceRepository(db)
+        self.Port = PortRepository(db)
         
     def set_options(self):
         super(Report, self).set_options()
@@ -26,7 +26,7 @@ class Report(ReportTemplate):
     def run(self, args):
         
         results = []
-        services = self.Service.all(name='https')
+        services = self.Port.all(name='https')
         certs = {}
         for s in services:
             if s.meta.get('sslcert', False):
@@ -36,7 +36,7 @@ class Report(ReportTemplate):
                     if not certs.get(cert, False):
                         certs[cert] = []
 
-                    certs[cert].append(k + ':' + str(s.port.port_number))
+                    certs[cert].append(k + ':' + str(s.port_number))
 
         for k in certs.keys():
             results.append(', '.join(sorted(list(set(certs[k])))))

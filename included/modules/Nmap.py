@@ -1,5 +1,5 @@
 from included.ModuleTemplate import ModuleTemplate
-from database.repositories import BaseDomainRepository, DomainRepository, IPRepository, PortRepository, ServiceRepository, ScopeCIDRRepository, VulnRepository, CVERepository
+from database.repositories import BaseDomainRepository, DomainRepository, IPRepository, PortRepository, ScopeCIDRRepository, VulnRepository, CVERepository
 from included.utilities import which, get_whois
 import os
 import subprocess
@@ -21,7 +21,7 @@ class Module(ModuleTemplate):
         self.Domain = DomainRepository(db, self.name)
         self.IPAddress = IPRepository(db, self.name)
         self.Port = PortRepository(db, self.name)
-        self.Service = ServiceRepository(db, self.name)
+        
         self.Vulnerability = VulnRepository(db, self.name)
         self.CVE = CVERepository(db, self.name)
         self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
@@ -246,16 +246,16 @@ class Module(ModuleTemplate):
                     else:                                           
                         portName = "Unknown"                        
 
-                    created, db_service = self.Service.find_or_create(port=db_port, ip_address=ip)
+                    
                     if created:
-                        db_service.name = portName
-                    info = db_service.info
+                        db_port.service_name = portName
+                    info = db_port.info
                     if not info:
                         info = {}
 
                     for script in port.findall("script"):   #just getting commonName from cert 
                         if script.get("id") == "ssl-cert":
-                            db_service.cert = script.get('output')
+                            db_port.cert = script.get('output')
                             cert_domains = self.get_domains_from_cert(script.get('output'))
 
                             for hostname in cert_domains:
@@ -266,7 +266,7 @@ class Module(ModuleTemplate):
                             
                         elif script.get("id") == "vulners":
                             print "Gathering vuln info for {} : {}/{}\n".format(hostIP,portProto,hostPort)
-                            self.parseVulners(script.get("output"), db_service)
+                            self.parseVulners(script.get("output"), db_port)
 
                         elif script.get("id") == "banner":
                             info["banner"] = script.get("output")
@@ -284,13 +284,13 @@ class Module(ModuleTemplate):
                         elif script.get("id") == "http-title":
                             info['http-title'] = script.get("output")
 
-                    db_service.info = info
-                    db_service.save()
+                    db_port.info = info
+                    db_port.save()
 
 
             self.IPAddress.commit()
 
-    def parseVulners(self, scriptOutput, db_service):
+    def parseVulners(self, scriptOutput, db_port):
         urls = re.findall('(https://vulners.com/cve/CVE-\d*-\d*)', scriptOutput)
         for url in urls:
             vuln_refs = []
@@ -323,7 +323,7 @@ class Module(ModuleTemplate):
                     if not self.Vulnerability.find(name=findingName):
                         #print "Creating", findingName
                         created, db_vuln = self.Vulnerability.find_or_create(name=findingName, severity=severity, description=cveDescription)
-                        db_vuln.services.append(db_service)
+                        db_vuln.ports.append(db_port)
                         db_vuln.exploitable = exploitable
                         if vuln_refs:
                             db_vuln.exploit_reference = {'edb-id':vuln_refs}
@@ -332,7 +332,7 @@ class Module(ModuleTemplate):
                     else:
                         #print "modifying",findingName
                         db_vuln = self.Vulnerability.find(name=findingName)
-                        db_vuln.services.append(db_service)
+                        db_vuln.ports.append(db_port)
                         db_vuln.exploitable = exploitable
 
                         if vuln_refs:
@@ -376,8 +376,8 @@ class Module(ModuleTemplate):
             else:
                 db_cve = self.CVE.find(name=cve)
                 for db_vulns in db_cve.vulnerabilities:
-                    if db_service not in db_vulns.services:
-                        db_vulns.services.append(db_service)
+                    if db_port not in db_vulns.ports:
+                        db_vulns.ports.append(db_port)
         return
 
 

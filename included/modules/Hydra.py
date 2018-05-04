@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from database.repositories import DomainRepository, IPRepository, ServiceRepository
+from database.repositories import DomainRepository, IPRepository, PortRepository
 from included.ModuleTemplate import ModuleTemplate
 import subprocess
 from included.utilities import which
@@ -17,7 +17,7 @@ class Module(ModuleTemplate):
         self.db = db
         self.Domain = DomainRepository(db, self.name)
         self.IPAddress = IPRepository(db, self.name)
-        self.Service = ServiceRepository(db, self.name)
+        self.Port = PortRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -65,31 +65,31 @@ class Module(ModuleTemplate):
             # pdb.set_trace()
             if args.ftp_wordlist:
                 for p in ['ftps', 'ftp']:
-                    lists[args.ftp_wordlist] = [s for s in self.Service.all(tool=self.name, name=p)]           
+                    lists[args.ftp_wordlist] = [s for s in self.Port.all(tool=self.name, service_name=p)]           
             
             if args.telnet_wordlist:
                 for p in ['telnet']:
-                    lists[args.telnet_wordlist] = [s for s in self.Service.all(tool=self.name, name=p)]           
+                    lists[args.telnet_wordlist] = [s for s in self.Port.all(tool=self.name, service_name=p)]           
             
             if args.email_wordlist:
                 for p in ['smtps', 'smtp', 'pop3', 'pop3s', 'imap', 'imaps']:
-                    lists[args.email_wordlist] = [s for s in self.Service.all(tool=self.name, name=p)]           
+                    lists[args.email_wordlist] = [s for s in self.Port.all(tool=self.name, service_name=p)]           
             
             if args.ssh_wordlist:
                 for p in ['ssh']:
-                    lists[args.ssh_wordlist] = [s for s in self.Service.all(tool=self.name, name=p)]           
+                    lists[args.ssh_wordlist] = [s for s in self.Port.all(tool=self.name, service_name=p)]           
 
             if args.vnc_wordlist:
                 for p in ['vnc']:
-                    lists[args.vnc_wordlist] = [s for s in self.Service.all(tool=self.name, name=p)]           
+                    lists[args.vnc_wordlist] = [s for s in self.Port.all(tool=self.name, service_name=p)]           
             
             hosts = []
             for k in lists.keys():
                 for s in lists[k]:
                     
-                    port_number = s.port.port_number
-                    ip_address = s.port.ipaddress.ip_address
-                    name = s.name
+                    port_number = s.port_number
+                    ip_address = s.ipaddress.ip_address
+                    name = s.service_name
                     
                     hosts.append("%s://%s:%s|%s" % (name, ip_address, port_number, k))
 

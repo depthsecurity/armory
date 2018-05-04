@@ -3,7 +3,7 @@
 from included.ModuleTemplate import ModuleTemplate
 import re
 from utilities.get_urls import run as geturls
-from database.repositories import ServiceRepository
+from database.repositories import PortRepository
 import requests
 import time
 import os
@@ -17,7 +17,7 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.Service = ServiceRepository(db, self.name)
+        self.Port = PortRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -32,17 +32,17 @@ class Module(ModuleTemplate):
         if args.import_db:
             
 
-            svc = self.Service.all(name='http')
-            svc += self.Service.all(name='https')
+            svc = self.Port.all(service_name='http')
+            svc += self.Port.all(service_name='https')
 
             data = []
 
             for s in svc:
 
-                urls = ["%s://%s:%s" % (s.name, s.port.ipaddress.ip_address, s.port.port_number)]
+                urls = ["%s://%s:%s" % (s.service_name, s.ipaddress.ip_address, s.port_number)]
 
-                for d in s.port.ipaddress.domains:
-                    urls.append("%s://%s:%s" % (s.name, d.domain, s.port.port_number))
+                for d in s.ipaddress.domains:
+                    urls.append("%s://%s:%s" % (s.service_name, d.domain, s.port_number))
 
                 data.append([s.id, urls, args.timeout])                
             
@@ -51,12 +51,12 @@ class Module(ModuleTemplate):
             results = pool.map(process_urls, data)
             print("Adding data to the database")
             for i, headers in results:
-                created, svc = self.Service.find_or_create(id=i)
+                created, svc = self.Port.find_or_create(id=i)
                 svc.meta['headers'] = headers
                 svc.update()
 
             
-            self.Service.commit()
+            self.Port.commit()
 
 
             

@@ -60,21 +60,21 @@ Usage is split into **modules** and **reports**.
 
 Modules run tools, ingest output, and write it to the database. To see a list of available modules, type:
 
-`./mastertool.py -lm`
+`./armory.py -lm`
 
 To see a list of module options, type:
 
-`./mastertool.py -m <module> -M`
+`./armory.py -m <module> -M`
 
 
 ## Reports
 
 Reports are similar to modules, except they are meant to pull data from the database, and display it in a usable format. To view all of the available reports:
 
-`./mastertool.py -lr`
+`./armory.py -lr`
 
 To view available report options:
 
-`./mastertool.py -r <report> -R`
+`./armory.py -r <report> -R`
 
     

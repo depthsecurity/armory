@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from database.repositories import ServiceRepository
+from database.repositories import PortRepository
 from included.ModuleTemplate import ModuleTemplate
 import subprocess
 from included.utilities import which
@@ -19,7 +19,7 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.Service = ServiceRepository(db, self.name)
+        self.Port = PortRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -41,9 +41,9 @@ class Module(ModuleTemplate):
 
 
         if args.rescan:
-            services = self.Service.all(name='https')
+            services = self.Port.all(name='https')
         else:
-            services = self.Service.all(tool=self.name, name='https')
+            services = self.Port.all(tool=self.name, name='https')
         
         self.process_services(services, args)
         
@@ -117,7 +117,7 @@ class Module(ModuleTemplate):
             s.meta['sslcert'] = data
             s.update()
 
-        self.Service.commit()
+        self.Port.commit()
 
 
 
