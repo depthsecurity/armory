@@ -1,29 +1,26 @@
 #!/usr/bin/python
 
-from database.repositories import IPRepository
+from database.repositories import PortRepository
 import pdb
 
     
 def run(db):
     
     results = []
-    IPAddress = IPRepository(db)
+    Port = PortRepository(db)
     
-    ips = IPAddress.all()
-    for ip in ips:
+    ports = Port.all(service_name = 'http')
+    ports += Port.all(service_name = 'https')
 
-        domain_list = [d.domain for d in ip.domains]
-        for s in ip.services:
+    for p in ports:
+
+        domain_list = [d.domain for d in p.ip_address.domains]
+        
+
             
-            # print(s.name)
-            if s.name == "http":
-                results.append("http://%s:%s" % (ip.ip_address, s.port.port_number))
-                for d in domain_list:
-                    results.append("http://%s:%s" % (d, s.port.port_number))
-            elif s.name == "https":
-                results.append("https://%s:%s" % (ip.ip_address, s.port.port_number))
-                for d in domain_list:
-                    results.append("https://%s:%s" % (d, s.port.port_number))
+        results.append("%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number))
+        for d in domain_list:
+            results.append("%s://%s:%s" % (p.service_name, d, p.port_number))
             
 
 
