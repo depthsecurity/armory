@@ -8,8 +8,8 @@ base_path = /home/user/path
 # necessarily synced up with git. This is for stuff that doesn't
 # really make sense for anyone else to use except you (or your 
 # company)
-custom_reports = /opt/custom/reports
-custom_modules = /opt/custom/modules
+# custom_reports = /opt/custom/reports
+# custom_modules = /opt/custom/modules
 
 [DATABASE]
 backend = sqlite3
