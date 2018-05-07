@@ -10,6 +10,10 @@ from tld import get_tld
 import tempfile
 import requests
 import json
+import sys
+
+if sys.version_info[0] >= 3:
+    raw_input = input
 
 class Module(ModuleTemplate):
 
@@ -44,6 +48,7 @@ class Module(ModuleTemplate):
         self.options.add_argument('-sU', help='UDP scan', action="store_true", default=False)
         self.options.add_argument('-OS', help='Enable OS detection', action="store_true", default=False)
         self.options.add_argument("--open", help="Only show open ports", action="store_true", default=False)
+        self.options.add_argument("--top_ports", help="Only check X top ports")
         self.options.add_argument("--force", help="Overwrite files without asking", action="store_true")
         self.options.add_argument('--interactive', help="Prompt to store domains not in Base Domains already", default=False, action="store_true")
         self.options.add_argument('--internal', help="Store domains not in Base Domains already", action="store_true")
@@ -128,7 +133,7 @@ class Module(ModuleTemplate):
                             answered = True
                             new = True
                         else:
-                            print "That file exists as well"
+                            print ("That file exists as well")
                 else:
                     "Please enter \'r\' to run nmap, \'p\' to parse the file"
 
@@ -152,6 +157,9 @@ class Module(ModuleTemplate):
         
         if args.open:
             command += "--open "
+        
+        if args.top_ports:
+            command += "--top-ports %s " % args.top_ports
 
         if args.OS:
             command += "-O "
@@ -196,7 +204,7 @@ class Module(ModuleTemplate):
             hosts = root.findall("host")
 
         except:
-            print nFile, "doesn't exist somehow...skipping"
+            print (nFile +  " doesn't exist somehow...skipping")
             return domains,ips,rejects #needs to be changed for db
         
         tmpNames = []
@@ -265,7 +273,7 @@ class Module(ModuleTemplate):
                                     print("New domain found: %s" % hostname)
                             
                         elif script.get("id") == "vulners":
-                            print "Gathering vuln info for {} : {}/{}\n".format(hostIP,portProto,hostPort)
+                            print ("Gathering vuln info for {} : {}/{}\n".format(hostIP,portProto,hostPort))
                             self.parseVulners(script.get("output"), db_port)
 
                         elif script.get("id") == "banner":
@@ -363,13 +371,13 @@ class Module(ModuleTemplate):
                     self.Vulnerability.commit()
                     self.CVE.commit()
                 except:
-                    print "something went wrong with the vuln/cve info gathering"
+                    print ("something went wrong with the vuln/cve info gathering")
                     if vulners:
-                        print "Vulners report was found but no exploit-db was discovered"
+                        print("Vulners report was found but no exploit-db was discovered")
                         #"Affected vulners items"
                         #print vulners
-                    print "Affected CVE"
-                    print cve
+                    print( "Affected CVE")
+                    print (cve)
                     pass
 
 

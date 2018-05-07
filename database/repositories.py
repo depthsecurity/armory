@@ -189,9 +189,6 @@ class CredRepository(BaseRepository):
 class VulnRepository(BaseRepository):
     model = Models.Vulnerability
 
-class ServiceRepository(BaseRepository):
-    model = Models.Service
-
 class PortRepository(BaseRepository):
     model = Models.Port
 

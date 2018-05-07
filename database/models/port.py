@@ -1,7 +1,7 @@
 from .. import BaseModel
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
-
+from database import JsonType
 
 class Port(BaseModel):
     __tablename__ = 'port'
