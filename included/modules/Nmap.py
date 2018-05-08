@@ -33,7 +33,7 @@ class Module(ModuleTemplate):
     def set_options(self):
         super(Module, self).set_options()
         self.options.add_argument('--hosts', help="Things to scan separated by a space. DO NOT USE QUOTES OR COMMAS", nargs='+')
-        self.options.add_argument('--hosts_file', help="File containing hosts", action="store_true")
+        self.options.add_argument('--hosts_file', help="File containing hosts")
         self.options.add_argument('--hosts_database', help="Use unscanned hosts from the database", action="store_true")
         self.options.add_argument('--import_file', help="Import nmap XML file")
         self.options.add_argument('-A', help="OS and service info", action="store_true")
