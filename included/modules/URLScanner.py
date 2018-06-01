@@ -2,7 +2,7 @@
 
 from included.ModuleTemplate import ModuleTemplate
 import re
-from utilities.get_urls import run as geturls
+from included.utilities.get_urls import run as geturls
 import requests
 import time
 import os

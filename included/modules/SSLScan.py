@@ -68,11 +68,11 @@ class Module(ModuleTemplate):
             for s, option in svc:
                 
                 port_number = s.port_number
-                ip_address = s.ipaddress.ip_address
+                ip_address = s.ip_address.ip_address
 
                 hosts.append(("%s:%s" % (ip_address, port_number), option))
 
-                for d in s.ipaddress.domains:
+                for d in s.ip_address.domains:
                     hosts.append(("%s:%s" % (d.domain, port_number), option))
 
             
@@ -120,9 +120,9 @@ class Module(ModuleTemplate):
 
             command_args = " --xml=%s " % xml_path
         
-            if option:
-                cmd += " %s " % option
-            cmd = shlex.split(self.binary + command_args + host)
+            
+            cmd = shlex.split(self.binary + command_args + " %s " % option + host)
+            
             commands.append(cmd)
         
         pool = ThreadPool(int(args.threads))

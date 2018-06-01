@@ -2,7 +2,7 @@
 
 from included.ModuleTemplate import ModuleTemplate
 import re
-from utilities.get_urls import run as geturls
+from included.utilities.get_urls import run as geturls
 from database.repositories import PortRepository
 import requests
 import time
@@ -39,9 +39,9 @@ class Module(ModuleTemplate):
 
             for s in svc:
 
-                urls = ["%s://%s:%s" % (s.service_name, s.ipaddress.ip_address, s.port_number)]
+                urls = ["%s://%s:%s" % (s.service_name, s.ip_address.ip_address, s.port_number)]
 
-                for d in s.ipaddress.domains:
+                for d in s.ip_address.domains:
                     urls.append("%s://%s:%s" % (s.service_name, d.domain, s.port_number))
 
                 data.append([s.id, urls, args.timeout])                

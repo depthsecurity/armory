@@ -41,9 +41,9 @@ class Module(ModuleTemplate):
 
 
         if args.rescan:
-            services = self.Port.all(name='https')
+            services = self.Port.all(service_name='https')
         else:
-            services = self.Port.all(tool=self.name, name='https')
+            services = self.Port.all(tool=self.name, service_name='https')
         
         self.process_services(services, args)
         
@@ -64,7 +64,7 @@ class Module(ModuleTemplate):
         for s in services:
             ip = s.ip_address.ip_address
             domains = [d.domain for d in s.ip_address.domains]
-            port = s.port.port_number
+            port = s.port_number
 
             hosts = [ip] + domains
 
@@ -78,19 +78,20 @@ class Module(ModuleTemplate):
 
                 cmds.append(shlex.split(self.binary + command_args + h))
 
+        
         pool = ThreadPool(int(args.threads))
 
         
         
         # res = subprocess.Popen(cmd).wait()
         
-        # pool.map(scan_hosts, cmds)
+        pool.map(scan_hosts, cmds)
 
         for s in services:
             
             p = s.ip_address.ip_address
             domains = [d.domain for d in s.ip_address.domains]
-            port = s.port.port_number
+            port = s.port_number
 
             hosts = [ip] + domains
 
