@@ -88,7 +88,7 @@ class Module(ModuleTemplate):
         cmd = shlex.split(self.binary + command_args + " -d " + domain)
         print("Executing: %s" % ' '.join(cmd))
         
-        # res = subprocess.Popen(cmd).wait()
+        res = subprocess.Popen(cmd).wait()
         
             
         try:
