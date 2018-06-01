@@ -81,17 +81,26 @@ class Module(ModuleTemplate):
                 self.Domain.commit()
                 
         if args.import_ips:
-            ips = open(args.import_ips)
-            for line in ips:
+            try:
+                ips = open(args.import_ips)
+                for line in ips:
 
-                if line.strip():
-                    if '/' in line or '-' in line:
-                        self.process_cidr(line)
-                    
-                    else:
-                        self.process_ip(line.strip(), force_scope=True)
-                    self.Domain.commit()
-        
+                    if line.strip():
+                        if '/' in line or '-' in line:
+                            self.process_cidr(line)
+                        
+                        else:
+                            self.process_ip(line.strip(), force_scope=True)
+                        self.Domain.commit()
+            except IOError:
+                
+                if '/' in args.import_ips or '-' in args.import_ips:
+                    self.process_cidr(args.import_ips)
+                
+                else:
+                    self.process_ip(args.import_ips.strip(), force_scope=True)
+                self.Domain.commit()
+
         if args.import_database_ips:
             for ip in self.IPAddress.all():
                 self.process_ip(ip.ip_address)

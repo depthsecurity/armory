@@ -12,4 +12,4 @@ class IPAddress(BaseModel):
     cidr_id = Column(Integer, ForeignKey('cidr.id'))
     OS = Column(String)
     whois = Column(String)
-    ports = relationship('Port', backref='ipaddress')
+    ports = relationship('Port', backref='ip_address')

@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from mastertool import initialize_database
-from mastertool import get_config_options
-from database.repositories import BaseDomainRepository, DomainRepository, IPRepository, CIDRRepository, UserRepository, CredRepository, VulnRepository, ServiceRepository, PortRepository, UrlRepository, ScopeCIDRRepository
+from armory import initialize_database
+from armory import get_config_options
+from database.repositories import BaseDomainRepository, DomainRepository, IPRepository, CIDRRepository, UserRepository, CredRepository, VulnRepository, PortRepository, UrlRepository, ScopeCIDRRepository
 
 
 config = get_config_options()
@@ -14,7 +14,6 @@ CIDRs = CIDRRepository(db, "Shell Client")
 Users = UserRepository(db, "Shell Client")
 Creds = CredRepository(db, "Shell Client")
 Vulns = VulnRepository(db, "Shell Client")
-Services = ServiceRepository(db, "Shell Client")
 Ports = PortRepository(db, "Shell Client")
 Urls = UrlRepository(db, "Shell Client")
 ScopeCIDRs = ScopeCIDRRepository(db, "Shell Client")

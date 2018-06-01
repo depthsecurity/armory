@@ -39,9 +39,12 @@ class Report(ReportTemplate):
 
         
         res = []
-
+        pdb.set_trace()
         for cidr in sorted(results.keys()):
-            res.append(cidr)
+            if not cidr:
+                res.append("")
+            else:
+                res.append(cidr)
             for ranges in sorted(results[cidr].keys()):
                 res.append("\t" + ranges)
                 for ips in sorted(results[cidr][ranges].keys()):
