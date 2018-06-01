@@ -245,7 +245,7 @@ class Module(ModuleTemplate):
                     hostPort = port.get("portid")                   
                     portProto = port.get("protocol")                
                     
-                    created, db_port = self.Port.find_or_create(port_number = hostPort, status=portState, proto=portProto, ipaddress=ip)
+                    created, db_port = self.Port.find_or_create(port_number = hostPort, status=portState, proto=portProto, ip_address=ip)
 
                     if port.find("service") != None:                
                         portName = port.find("service").get("name")
