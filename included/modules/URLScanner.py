@@ -8,7 +8,11 @@ import time
 import os
 
 class Module(ModuleTemplate):
-    
+    '''
+    This module is meant to scan for certain criteria over a large estate. Useful
+    for searching for specific scenarios, such as "returns 401 while http".
+    Not really working quite reliably right now.
+    '''
     name = "UrlScanner"
 
     def __init__(self, db):
