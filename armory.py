@@ -218,6 +218,11 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
                                                           d'      
                                                       (8),P       
                                                        YMM        
+
+        Originally By:
+        Daniel Lawson @fang0654
+        Brian Berg @xexzy
+        Cory Shay @ccsplit
 """
     print(banner)
 
