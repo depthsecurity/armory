@@ -39,7 +39,7 @@ class Report(ReportTemplate):
 
         
         res = []
-        pdb.set_trace()
+        
         for cidr in sorted(results.keys()):
             if not cidr:
                 res.append("")
