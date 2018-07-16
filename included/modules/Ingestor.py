@@ -35,9 +35,7 @@ class Module(ModuleTemplate):
         self.options.add_argument('-i', '--import_ips', help="Either IP/range to import or file containing IPs and ranges, one per line.")
         self.options.add_argument('-a', '--active', help='Set scoping on imported data as active', action="store_true")
         self.options.add_argument('-p', '--passive', help='Set scoping on imported data as passive', action="store_true")
-        self.options.add_argument('-si', '--scope_ips', help='Cycle through out of scope IPs and decide if you want to add them in scope', action="store_true")
         self.options.add_argument('-sc', '--scope_cidrs', help='Cycle through out of scope networks and decide if you want to add them in scope', action="store_true")
-        self.options.add_argument('-sd', '--scope_domains', help='Cycle through out of scope domains and decide if you want to add them in scope', action="store_true")
         self.options.add_argument('-sb', '--scope_base_domains', help='Cycle through out of scope base domains and decide if you want to add them in scope', action="store_true")
 
         self.options.add_argument('-Ii', '--import_database_ips', help='Import IPs from database', action="store_true")

@@ -33,9 +33,11 @@ class Report(ReportTemplate):
             else:
                 results[c.org_name] = {c.cidr: {}}
             for ip in c.ip_addresses:
-                results[c.org_name][c.cidr][ip.ip_address] = []
-                for d in ip.domains:
-                    results[c.org_name][c.cidr][ip.ip_address].append(d.domain)
+                if ip.passive_scope:
+                    results[c.org_name][c.cidr][ip.ip_address] = []
+                    for d in ip.domains:
+                        if d.passive_scope:
+                            results[c.org_name][c.cidr][ip.ip_address].append(d.domain)
 
         
         res = []
