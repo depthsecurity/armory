@@ -31,13 +31,22 @@ class Module(ModuleTemplate):
     def set_options(self):
         super(Module, self).set_options()
 
-        self.options.add_argument('-f', '--import_file', help="File containing domains to import. One per line")
-        self.options.add_argument('-d', '--domain', help="Single domain to import")
-        self.options.add_argument('-i', '--import_ips', help="File containing IPs and ranges, one per line.")
-        self.options.add_argument('-Id', '--import_database_domains', help='Import domains from database', action="store_true")
+        self.options.add_argument('-d', '--import_domains', help="Either domain to import or file containing domains to import. One per line")
+        self.options.add_argument('-i', '--import_ips', help="Either IP/range to import or file containing IPs and ranges, one per line.")
+        self.options.add_argument('-a', '--active', help='Set scoping on imported data as active', action="store_true")
+        self.options.add_argument('-p', '--passive', help='Set scoping on imported data as passive', action="store_true")
+        self.options.add_argument('-si', '--scope_ips', help='Cycle through out of scope IPs and decide if you want to add them in scope', action="store_true")
+        self.options.add_argument('-sc', '--scope_cidrs', help='Cycle through out of scope networks and decide if you want to add them in scope', action="store_true")
+        self.options.add_argument('-sd', '--scope_domains', help='Cycle through out of scope domains and decide if you want to add them in scope', action="store_true")
+        self.options.add_argument('-sb', '--scope_base_domains', help='Cycle through out of scope base domains and decide if you want to add them in scope', action="store_true")
+
         self.options.add_argument('-Ii', '--import_database_ips', help='Import IPs from database', action="store_true")
         self.options.add_argument('--force', help="Force processing again, even if already processed", action="store_true")
     def run(self, args):
+        
+        self.in_scope = args.active
+        self.passive_scope = args.passive
+
         if args.import_ips:
             try:
                 ips = open(args.import_ips)
@@ -58,32 +67,19 @@ class Module(ModuleTemplate):
                 else:
                     self.process_ip(args.import_ips.strip(), force_scope=True)
                 self.Domain.commit()
-
-        if args.import_database_ips:
-            for ip in self.IPAddress.all():
-                self.process_ip(ip.ip_address)
-                self.Domain.commit()
-
-        if args.import_file:
-            domains = open(args.import_file)
-            for line in domains:
-                if line.strip():
-                    self.process_domain(line.strip())
-                    self.Domain.commit()
-            
-        if args.domain:
-            self.process_domain(args.domain, force_scope=True)
-            self.Domain.commit()
         
-        if args.import_database_domains:
-            if args.force:
-                domains = self.Domain.all()
-            else:
-                domains = self.Domain.all(tool=self.name)
-            for d in domains:
-                # pdb.set_trace()
-                self.process_domain(d.domain)
+        if args.import_domains:
+            try:
+                domains = open(args.import_domains)
+                for line in domains:
+                    if line.strip():
+                        self.process_domain(line.strip())
+                        self.Domain.commit()
+            except IOError:
+                self.process_domain(args.import_domains.strip())
                 self.Domain.commit()
+
+
                 
 
 
@@ -97,15 +93,30 @@ class Module(ModuleTemplate):
         except:
             return []
 
-    def process_domain(self, domain_str, force_scope=False):
+    def process_domain(self, domain_str):
         
-        created, domain = self.Domain.find_or_create(only_tool=True, domain=domain_str, in_scope=force_scope, passive_scope=True)
+        created, domain = self.Domain.find_or_create(only_tool=True, domain=domain_str, in_scope=self.in_scope, passive_scope=self.passive_scope)
+        if not created:
+            if domain.in_scope != self.in_scope or domain.passive_scope != self.passive_scope:
+                display("Domain %s already exists with different scoping. Updating to Active Scope: %s Passive Scope: %s" % (domain_str, self.in_scope, self.passive_scope))
+
+                domain.in_scope = self.in_scope
+                domain.passive_scope = self.passive_scope
+                domain.update()
+
+
 
 
     def process_ip(self, ip_str, force_scope=True):
         
-        created, ip = self.IPAddress.find_or_create(only_tool=True, ip_address=ip_str, in_scope=force_scope, passive_scope=True)
+        created, ip = self.IPAddress.find_or_create(only_tool=True, ip_address=ip_str, in_scope=in_scope, passive_scope=self.passive_scope)
+        if not created:
+            if ip.in_scope != self.in_scope or ip.passive_scope != self.passive_scope:
+                display("IP %s already exists with different scoping. Updating to Active Scope: %s Passive Scope: %s" % (ip_str, self.in_scope, self.passive_scope))
 
+                ip.in_scope = self.in_scope
+                ip.passive_scope = self.passive_scope
+                ip.update()
         return ip   
 
     def process_cidr(self, line):
@@ -132,3 +143,6 @@ class Module(ModuleTemplate):
                     display_new("Adding %s to scoped CIDRs in database" % line.strip())
                     cidr.in_scope = True
                     cidr.update()
+
+    def scope_ips(self):
+        IPAddresses = self.IPAddress.all()

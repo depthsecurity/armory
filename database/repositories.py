@@ -153,26 +153,28 @@ class DomainRepository(BaseRepository):
 
         created, d = super(DomainRepository, self).find_or_create(only_tool, **kwargs)
         display("Processing %s" % d.domain)
-        #pdb.set_trace()
+
         if created:
+            # If this is a new subdomain, set scoping info based on what is passed to the function initially.
             d.in_scope = in_scope
-
             d.passive_scope = passive_scope
-
-
-            
 
             base_domain = '.'.join([t for t in tldextract.extract(d.domain)[1:] if t])
             BaseDomains = BaseDomainRepository(self.db, "")
-            created, bd = BaseDomains.find_or_create(only_tool, passive_scope=d.passive_scope, domain=base_domain)
+            # If the base domain is new, it'll inherit the same scoping permissions.
+
+            created, bd = BaseDomains.find_or_create(only_tool, passive_scope=d.passive_scope, in_scope=in_scope, domain=base_domain)
             if created:
                 display_new("The base domain %s is being added to the database. Active Scope: %s Passive Scope: %s" % (base_domain,bd.in_scope, bd.passive_scope))
             else:
+                # If the base domain already exists, then the subdomain inherits the scope info from the base domain.
                 d.passive_scope = bd.passive_scope
-
+                d.in_scope = bd.in_scope
 
             d.base_domain = bd
 
+            # Get all IPs that this domain resolves to.
+            
             ips = []
             try:
                 answers = dns.resolver.query(d.domain, 'A')
@@ -180,7 +182,9 @@ class DomainRepository(BaseRepository):
                     ips.append(a.address)
                         
             except:
+                # If something goes wrong with DNS, we end up here
                 pass
+            
             if not ips:
                 display_warning("No IPs discovered for %s" % d.domain)
 
@@ -193,13 +197,21 @@ class DomainRepository(BaseRepository):
                 # If the IP is in scope, then the domain should be
                 if ip.in_scope:
                     d.in_scope = ip.in_scope
+                    ip.passive_scope = True
+                    d.passive_scope = True
+
                     # display("%s marked active scope due to IP being marked active." % d.domain)
-                d.passive_scope = ip.passive_scope
+                
+                elif ip.passive_scope:
+                    d.passive_scope = ip.passive_scope
 
                 d.ip_addresses.append(ip)
                 
                 display_new("%s is being added to the database. Active Scope: %s Passive Scope: %s" % (d.domain,d.in_scope, d.passive_scope))
 
+            # Final sanity check - if a domain is active scoped, it should also be passively scoped.
+            if d.in_scope:
+                d.passive_scope = True
 
         return created, d
 
@@ -211,27 +223,34 @@ class IPRepository(BaseRepository):
 
         created, ip = super(IPRepository, self).find_or_create(only_tool, **kwargs)
         if created:
-            
+            # If newly created then will determine scoping based on parent options and if in a scoped cidr.
+
             ip_str = ip.ip_address
-            ip.passive_scope = passive_scope            
+            ip.passive_scope = passive_scope
+
+            # If the parent domain is active scope, then this also is.
             if in_scope:
                 ip.in_scope = in_scope
 
             else:
+                # Go through ScopeCIDR table and see if this IP is in a CIDR in scope
                 ScopeCidrs = ScopeCIDRRepository(self.db, "")
                 addr = IPAddress(ip.ip_address)
 
                 cidrs = ScopeCidrs.all()
                 # pdb.set_trace()
                 for c in cidrs:
-
                     if addr in IPNetwork(c.cidr):
-
                         ip.in_scope = True
+            # Final sanity check - if an IP is active scoped, it should also be passive scoped.
+
+            if ip.in_scope:
+                ip.passive_scope = True
             ip.update()
 
-            display_new("IP address %s added to database. Active Scope: %s Passive Scope: %s" % (ip.ip_address, ip.in_scope, ip.passive_scope))
+            
 
+            # Build CIDR info - mainly for reporting
             res = False
             for cidr in private_subnets:
 
@@ -270,8 +289,12 @@ class IPRepository(BaseRepository):
                 display_new("CIDR %s added to database" % cidr.cidr)
 
             ip.cidr = cidr
+            
+
+
             ip.update()
 
+            display_new("IP address %s added to database. Active Scope: %s Passive Scope: %s" % (ip.ip_address, ip.in_scope, ip.passive_scope))
 
         return created, ip
 
@@ -288,8 +311,11 @@ class BaseDomainRepository(BaseRepository):
         if created:
             bd.in_scope = in_scope
             bd.passive_scope = passive_scope
+            
+            if bd.in_scope:
+                bd.passive_scope = True
             bd.update()
-
+            
         return created, bd
 
 class UserRepository(BaseRepository):
