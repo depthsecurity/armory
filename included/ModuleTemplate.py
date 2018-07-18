@@ -30,6 +30,13 @@ class ModuleTemplate(object):
         pass
 
 
+class ToolTemplate(ModuleTemplate):
+    """
+    Generic template for running a tool, and ingesting the output.
+    """
 
+    name="tool"
+    db = None
+    
 
 
