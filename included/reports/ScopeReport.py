@@ -6,7 +6,6 @@ import pdb
 import json
 
 
-
 class Report(ReportTemplate):
     '''
     This report displays all of the various Base Domains, Domains, and IP Addresses with scoping information
