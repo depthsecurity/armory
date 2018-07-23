@@ -61,7 +61,7 @@ class Module(ModuleTemplate):
 					self.BaseDomain.commit()
 
 		elif args.import_database:
-			domains = self.BaseDomain.all(tool=self.name)
+			domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
 			for domain in domains:
 				self.process_domain(domain, args)				
 				domain.set_tool(self.name)

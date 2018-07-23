@@ -11,6 +11,7 @@ import tempfile
 import requests
 import json
 import sys
+import datetime
 
 if sys.version_info[0] >= 3:
     raw_input = input
@@ -85,7 +86,7 @@ class Module(ModuleTemplate):
             open(file_name, 'w').write('\n'.join(hosts))
             
         elif args.hosts_database:
-            hosts = [h.ip_address for h in self.IPAddress.all(tool=self.name)]
+            hosts = [h.ip_address for h in self.IPAddress.all(tool=self.name, scope_type="active")]
             hosts += [h.cidr for h in self.ScopeCIDR.all(tool=self.name)]
             _, file_name = tempfile.mkstemp()
             open(file_name, 'w').write('\n'.join(hosts))
@@ -104,12 +105,8 @@ class Module(ModuleTemplate):
             nFile = os.path.join(self.path,args.nFile)
 
         else:
-            nFile = os.path.join(self.path, "nmap-scan.xml")
-            # if type(hosts) == list:
-            #     nFile = os.path.join(self.path,"nmaped_"+",".join(hosts).replace("/","_"))
+            nFile = os.path.join(self.path, "nmap-scan-%s.xml" % datetime.datetime.now().strftime('%Y.%m.%d-%H.%M.%S'))
 
-            # else:
-            #     nFile = os.path.join(self.path,"nmaped_"+hosts.replace("/","_").replace(" ",","))
         
         if os.path.isfile(nFile) and not args.force:
             print (nFile,"exists.")

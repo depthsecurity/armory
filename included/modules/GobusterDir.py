@@ -79,7 +79,7 @@ class Module(ModuleTemplate):
                     self.Domain.commit()
 
         elif args.import_database:
-            urls = get_urls.run(self.db)
+            urls = get_urls.run(self.db, scope_type="active")
             
         
         

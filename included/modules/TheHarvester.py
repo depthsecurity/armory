@@ -56,9 +56,9 @@ class Module(ModuleTemplate):
 
         elif args.import_database:
             if args.rescan:
-                domains = self.BaseDomain.all()
+                domains = self.BaseDomain.all(scope_type="passive")
             else:
-                domains = self.BaseDomain.all(tool=self.name)
+                domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
             for d in domains:
                 
                 self.process_domain(d, args)

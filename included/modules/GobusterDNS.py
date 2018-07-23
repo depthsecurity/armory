@@ -59,9 +59,9 @@ class Module(ModuleTemplate):
 
         elif args.import_database:
             if args.rescan:
-                domains = self.BaseDomain.all()
+                domains = self.BaseDomain.all(scope_type="active")
             else:
-                domains = self.BaseDomain.all(tool=self.name)
+                domains = self.BaseDomain.all(tool=self.name, scope_type="active")
             for domain in domains:
                 self.brute_force_domain(domain, args) 
                 domain.set_tool(self.name)               
