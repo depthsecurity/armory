@@ -15,3 +15,4 @@ bs4
 thready
 argcomplete
 tldextract
+subprocess32; python_version < '3.3'
