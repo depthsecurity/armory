@@ -12,7 +12,10 @@ import xml.etree.ElementTree as ET
 class Module(ModuleTemplate):
 
     name = "DNSRecon"
-
+    """
+    This module runs DNSRecon on a domain or set of domains. This will extract found DNS entries.
+    It can also run over IP ranges, looking for additional domains in the PTR records.
+    """
     def __init__(self, db):
         self.db = db
         self.BaseDomain = BaseDomainRepository(db, self.name)
@@ -53,19 +56,19 @@ class Module(ModuleTemplate):
             os.makedirs(self.path)
 
         if args.domain:
-            created, domain = self.BaseDomain.find_or_create(domain=args.domain)
+            created, domain = self.BaseDomain.find_or_create(domain=args.domain, passive_scope=True)
             self.process_domain(domain, args)
             self.BaseDomain.commit()
         elif args.file:
             domains = open(args.file).read().split('\n')
             for d in domains:
                 if d:
-                    created, domain = self.BaseDomain.find_or_create(domain=d)
+                    created, domain = self.BaseDomain.find_or_create(domain=d, passive_scope=True)
                     self.process_domain(domain, args)
                     self.BaseDomain.commit()
 
         elif args.import_database:
-            domains = self.BaseDomain.all()
+            domains = self.BaseDomain.all(scope_type="passive")
             for domain in domains:
                 self.process_domain(domain, args)                
                 self.BaseDomain.commit()

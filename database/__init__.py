@@ -44,7 +44,9 @@ class BaseModel(Base, ActiveRecordMixin, ReprMixin):
     created_date = Column(DateTime, default=datetime.now)
     modified_date = Column(DateTime, onupdate=datetime.now)
     meta = Column(JsonType)
-    in_scope = Column(Boolean(create_constraint=False), default=True)
+    in_scope = Column(Boolean(create_constraint=False), default=False)
+    passive_scope = Column(Boolean(create_constraint=False), default=False)
+
 
     def set_tool(self, tool):
         meta = self.meta
