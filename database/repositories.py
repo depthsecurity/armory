@@ -139,13 +139,18 @@ class BaseRepository(object):
                     pass
                 else:
                     objects.append(o)
-
+            for o in objects:
+                if o.meta.get(tool, False):
+                    o.meta[tool] = {}
+                o.meta[tool]['created'] = str(datetime.datetime.now())
             return objects
 
                 
             
     def commit(self):
         return self.db.db_session.commit()
+
+
 
 class DomainRepository(BaseRepository):
     model = Models.Domain

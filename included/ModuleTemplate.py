@@ -52,7 +52,7 @@ class ToolTemplate(ModuleTemplate):
         super(ToolTemplate, self).set_options()
         
         self.options.add_argument('-b', '--binary', help="Path to the binary")
-        self.options.add_argument('-o', '--output_path', help="Relative path (to the base directory) to store Fierce output", default="fierceFiles")
+        self.options.add_argument('-o', '--output_path', help="Relative path (to the base directory) to store output", default=self.name)
         self.options.add_argument('--threads', help="Number of Armory threads to use", default="10")
         self.options.add_argument('--timeout', help="Thread timeout in seconds, default is 300.", default="300")
         self.options.add_argument('--extra_args', help="Additional arguments to be passed to the tool")
