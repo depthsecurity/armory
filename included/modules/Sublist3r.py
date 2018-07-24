@@ -81,7 +81,8 @@ class Module(ToolTemplate):
                 new_domain = d.split(':')[0].lower()
                 if new_domain:
                     created, subdomain = self.Domain.find_or_create(domain=new_domain)
-                    
+        
+        self.Domain.commit()
             # except IOError:
             #     display_error("No results found.")
 
