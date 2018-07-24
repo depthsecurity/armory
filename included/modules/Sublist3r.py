@@ -1,16 +1,15 @@
 #!/usr/bin/python
 
 from database.repositories import BaseDomainRepository, DomainRepository
-from included.ModuleTemplate import ModuleTemplate
-import subprocess
-from included.utilities import which
-import shlex
+from included.ModuleTemplate import ToolTemplate
+from included.utilities.color_display import display, display_error
 import os
 import pdb
 
-class Module(ModuleTemplate):
+class Module(ToolTemplate):
     
     name = "Sublist3r"
+    binary_name = 'sublist3r'
 
     def __init__(self, db):
         self.db = db
@@ -21,48 +20,33 @@ class Module(ModuleTemplate):
     def set_options(self):
         super(Module, self).set_options()
 
-        self.options.add_argument('-t', '--threads', help="Number of threads")
         self.options.add_argument('-d', '--domain', help="Domain to brute force")
         self.options.add_argument('-f', '--file', help="Import domains from file")
-        self.options.add_argument('-i', '--import_database', help="Import domains from database", action="store_true")
-        self.options.add_argument('-o', '--output_path', help="Path which will contain program output (relative to base_path in config", default="sublist3r")
+        self.options.add_argument('-i', '--import_database', help="Import domains from database", action="store_true")        
         self.options.add_argument('-s', '--rescan', help="Rescan domains that have already been scanned", action="store_true")
     
-    def run(self, args):
-                
-        if not args.binary:
-            self.binary = which.run('sublist3r')
+    def get_targets(self, args):
 
-        else:
-            self.binary = which.run(args.binary)
-
-        if not self.binary:
-            print("Sublist3r binary not found. Please explicitly provide path with --binary")
-
-
+        targets = []
         if args.domain:
             created, domain = self.BaseDomain.find_or_create(domain=args.domain)
-            self.process_domain(domain, args)
-            self.BaseDomain.commit()
+            
+            targets.append(domain.domain)
+
         elif args.file:
             domains = open(args.file).read().split('\n')
             for d in domains:
                 if d:
-                    created, domain = self.BaseDomain.find_or_create(domain=d)
-                    self.process_domain(domain, args)
-                    self.BaseDomain.commit()
+                    created, domain = self.BaseDomain.find_or_create(domain=args.domain)
+                    targets.append(domain.domain)
 
         elif args.import_database:
             domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
             for d in domains:
                 
-                self.process_domain(d, args)
-                d.set_tool(self.name)
-                self.BaseDomain.commit()
-                
-    def process_domain(self, domain_obj, args):
+                targets.append(d.domain) 
 
-        domain = domain_obj.domain
+        res = []
 
         if args.output_path[0] == "/":
             output_path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:] )
@@ -72,31 +56,34 @@ class Module(ModuleTemplate):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        output_path = os.path.join(output_path, "%s-sublist3r.txt" % domain)
-        
-        command_args = " -o %s" % output_path
-        
-        if args.threads:
-            command_args += " -t " + args.threads
+        for t in targets:
 
-        cmd = shlex.split(self.binary + command_args + " -d " + domain)
-        print("Executing: %s" % ' '.join(cmd))
+            output_path = os.path.join(output_path, "%s-sublist3r.txt" % t)
+            res.append((t, output_path))
+
+        return res
+
+    def build_cmd(self, args):
+
+        cmd = self.binary + " -o {output} -d {target} "
+        if args.extra_args:
+            cmd += args.extra_args
+        return cmd
+    def process_output(self, cmds):
+
+        for cmd in cmds:
+            output_path = cmd[1]
+
         
-        res = subprocess.Popen(cmd).wait()
-        try:
             data = open(output_path).read().split('\n')
             for d in data:
             
                 new_domain = d.split(':')[0].lower()
                 if new_domain:
                     created, subdomain = self.Domain.find_or_create(domain=new_domain)
-                    if created:
-                        print("New subdomain found: %s" % new_domain)
-                        
-
-
-        except IOError:
-            print("No results found.")
+                    
+            # except IOError:
+            #     display_error("No results found.")
 
         
             # else:
