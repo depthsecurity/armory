@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from database.repositories import IPRepository, DomainRepository, PortRepository, UrlRepository
-from included.ModuleTemplate import ModuleTemplate
+from included.ModuleTemplate import ToolTemplate
 from subprocess import Popen
 from included.utilities import which, get_urls
 import shlex
@@ -15,107 +15,80 @@ except ImportError:
     from urlparse import urlparse
 
 
-class Module(ModuleTemplate):
+class Module(ToolTemplate):
     
     name = "Gowitness"
+    binary_name = "gowitness"
 
     def __init__(self, db):
         self.db = db
         self.IPAddress = IPRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.Port = PortRepository(db, self.name)
-        self.Url = UrlRepository(db, self.name)
         
-
     def set_options(self):
         super(Module, self).set_options()
 
-        self.options.add_argument('--chrome-path', help="Full path to Chrome executable to use. By default, gowitness will search for Google chrome.")
-        self.options.add_argument('--chrome-timeout', help="Timeout for taking screenshot")
-        self.options.add_argument('-o', '--output_path', help='Prefix path for storage of screenshots and database (default base_path/gowitness)', default="gowitness")
-        self.options.add_argument('-R', '--resolution', help="Screenshot resolution. Default \"1440,900\"")
-        self.options.add_argument('-T', '--timeout', help="Timeout for HTTP connection (default 3)")
         self.options.add_argument('-i', '--import_database', help="Import URLs from the database", action="store_true")
         self.options.add_argument('-f', '--import_file', help="Import URLs from file")
-        self.options.add_argument('--group_size', help="How many hosts per group (default 250)", type=int, default=300)
+        self.options.add_argument('--group_size', help="How many hosts per group (default 250)", type=int, default=250)
+        self.options.add_argument('--rescan', help="Rerun gowitness on systems that have already been processed.")
+    def get_targets(self, args):
+    
+        targets = []
+        if args.import_file:
+            targets += [t for t in open(args.file).read().split('\n') if t]
+            
+        if args.import_database:
+            if args.rescan:
+                targets += get_urls.run(self.db, scope_type="active")
+            else:
+                targets += get_urls.run(self.db, scope_type="active", tool=self.name)
 
-    def run(self, args):
-        
-        if not args.binary:
-            self.binary = which.run('gowitness')
-
+        if args.output_path[0] == "/":
+            self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:], args.output_path[1:] +"_{}" )
         else:
-            self.binary = which.run(args.binary)
-
-        if not self.binary:
-            print("Gowitness binary not found. Please explicitly provide path with --binary")
-
-        # pdb.set_trace()
-        
-        elif args.import_file:
-            urls = open(args.file).read().split('\n')
-            self.process_urls(urls, args)
-
-        elif args.import_database:
-            urls = get_urls.run(self.db)
-
-            self.process_urls(urls, args)
-
-    def process_urls(self, urls, args):
+            self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path, args.output_path+"_{}" )
 
 
+        res = []
         i = 0
 
-        for url_chunk in self.chunks(urls, args.group_size):
+        for url_chunk in self.chunks(targets, args.group_size):
             i += 1
-            print("Processing group %s" % i)
-            
-            command_args = " file "
-
-            if args.chrome_path:
-                command_args += " --chrome-path %s " % args.chrome_path
-
-            if args.chrome_timeout:
-                command_args += " --chrome-timeout %s " % args.chrome_timeout
-
-            if args.resolution:
-                command_args += " -R %s " % args.resolution
-
-            if args.timeout:
-                command_args += " -T %s " % args.timeout
-
-            if args.output_path[0] == "/":
-                self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:] +"_%s" % i)
-            else:
-                self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path+"_%s" % i)
-
-            if not os.path.exists(self.path):
-                os.makedirs(self.path)
 
             _, file_name = tempfile.mkstemp()
-
             open(file_name, 'w').write('\n'.join(url_chunk))
-            
+            if not os.path.exists(self.path.format(i)):
+                os.makedirs(self.path.format(i))
+            res.append((file_name, self.path.format(i)))
 
-            command_args += " -D %s/gowitness.db -d %s -s %s " % (self.path, self.path, file_name)
+        return res
 
-            cmd = shlex.split(self.binary + command_args)
+    def build_cmd(self, args):
+
+        command = self.binary + " file -D {output}/gowitness.db -d {output} -s {target} "
+
+        if args.tool_args:
+            command += tool_args
+
+        return command
             
-            print("Executing: %s" % ' '.join(cmd))
+    def process_output(self, cmds):
+        '''
+        Not really any output to process with this module, but you need to cwd into directory to make database generation work, so
+        I'll do that here.
+        '''    
             
-            
+        cwd = os.getcwd()
+        for cmd in cmds:
+            target, output = cmd
+
+            cmd = [self.binary, "generate"]
+            os.chdir(output)
+
             Popen(cmd, shell=False).wait()
-            
-            print("Screenshotting done. Generating index.html.")
 
-            command_args = " generate -D %s/gowitness.db -d %s -n %s/report.html" % (self.path, self.path, self.path)
-
-            cmd = shlex.split(self.binary + command_args)
-            
-            print("Executing: %s" % ' '.join(cmd))
-            # pdb.set_trace()
-            Popen(cmd, shell=False).wait()
-
+        os.chdir(cwd)
+        self.IPAddress.commit()
 
     def chunks(self, chunkable, n):
         """ Yield successive n-sized chunks from l.

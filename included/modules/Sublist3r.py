@@ -41,7 +41,10 @@ class Module(ToolTemplate):
                     targets.append(domain.domain)
 
         elif args.import_database:
-            domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
+            if args.rescan:
+                domains = self.BaseDomain.all(scope_type="passive")
+            else:
+                domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
             for d in domains:
                 
                 targets.append(d.domain) 
@@ -66,8 +69,8 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = self.binary + " -o {output} -d {target} "
-        if args.extra_args:
-            cmd += args.extra_args
+        if args.tool_args:
+            cmd += args.tool_args
         return cmd
     def process_output(self, cmds):
 

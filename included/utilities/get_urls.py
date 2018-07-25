@@ -4,24 +4,27 @@ from database.repositories import PortRepository
 import pdb
 
     
-def run(db):
+def run(db, tool=None, scope_type=None):
     
+
     results = []
     Port = PortRepository(db)
     
-    ports = Port.all(service_name = 'http')
-    ports += Port.all(service_name = 'https')
+    ports = Port.all(service_name = 'http', tool=tool)
+    ports += Port.all(service_name = 'https', tool=tool)
 
     for p in ports:
+        
+        if p.ip_address and (scope_type == "active" and p.ip_address.in_scope) or (scope_type == "passive" and p.ip_address.passive_scope) or not scope_type:
 
-        domain_list = [d.domain for d in p.ip_address.domains]
+            domain_list = [d.domain for d in p.ip_address.domains]
         
 
             
-        results.append("%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number))
-        for d in domain_list:
-            results.append("%s://%s:%s" % (p.service_name, d, p.port_number))
-            
+            results.append("%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number))
+            for d in domain_list:
+                results.append("%s://%s:%s" % (p.service_name, d, p.port_number))
+                
 
 
     return sort_by_url(results)

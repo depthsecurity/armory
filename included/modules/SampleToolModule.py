@@ -5,7 +5,8 @@ from included.ModuleTemplate import ToolTemplate
 class Module(ToolTemplate):
     
     name = "SampleToolModule"
-
+    binary_name = "sample-tool"
+    
     def set_options(self):
         super(Module, self).set_options()
 

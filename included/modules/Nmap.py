@@ -1,4 +1,4 @@
-from included.ModuleTemplate import ModuleTemplate
+from included.ModuleTemplate import ToolTemplate
 from database.repositories import BaseDomainRepository, DomainRepository, IPRepository, PortRepository, ScopeCIDRRepository, VulnRepository, CVERepository
 from included.utilities import which, get_whois
 import os
@@ -12,14 +12,18 @@ import requests
 import json
 import sys
 import datetime
+from netaddr import IPNetwork, IPAddress
 
 if sys.version_info[0] >= 3:
     raw_input = input
 
-class Module(ModuleTemplate):
+class Module(ToolTemplate):
+    '''
+    Module for running nmap. Make sure to pass all nmap-specific arguments at the end, after --tool_args
 
+    '''
     name = "Nmap"
-
+    binary_name = "nmap"
     def __init__(self, db):
         self.db = db
         self.BaseDomain = BaseDomainRepository(db, self.name)
@@ -36,36 +40,40 @@ class Module(ModuleTemplate):
         self.options.add_argument('--hosts', help="Things to scan separated by a space. DO NOT USE QUOTES OR COMMAS", nargs='+')
         self.options.add_argument('--hosts_file', help="File containing hosts")
         self.options.add_argument('--hosts_database', help="Use unscanned hosts from the database", action="store_true")
-        self.options.add_argument('--import_file', help="Import nmap XML file")
-        self.options.add_argument('-A', help="OS and service info", action="store_true")
-        self.options.add_argument('-o', '--output_path', help="Relative directory to store Nmap XML output name", default="nmap")
-        self.options.add_argument('-nf', '--nFile', help="Nmap XML output name")
-        self.options.add_argument('-T', '--timing', help="Set timing template (higher is faster)", default="4", type=str)
-        self.options.add_argument('--scripts', help="Nmap scripts",default='ssl-cert,http-headers,http-methods,http-auth,http-title,http-robots.txt,banner')
-        self.options.add_argument('-p', help="Comma separate ports to scan", default="21,22,23,25,80,110,443,467,587,8000,8080,8081,8082,8443,8008,1099,5005,9080,8880,8887,7001,7002,16200")
-        self.options.add_argument('-Pn', help="Disable ping", action="store_true", default=False)
-        self.options.add_argument('-sS', help='Syn scan (default)', action="store_true", default=True)
-        self.options.add_argument('-sT', help='TCP scan', action="store_true", default=False)
-        self.options.add_argument('-sU', help='UDP scan', action="store_true", default=False)
-        self.options.add_argument('-OS', help='Enable OS detection', action="store_true", default=False)
-        self.options.add_argument("--open", help="Only show open ports", action="store_true", default=False)
-        self.options.add_argument("--top_ports", help="Only check X top ports")
-        self.options.add_argument("--force", help="Overwrite files without asking", action="store_true")
-        self.options.add_argument('--interactive', help="Prompt to store domains not in Base Domains already", default=False, action="store_true")
-        self.options.add_argument('--internal', help="Store domains not in Base Domains already", action="store_true")
+        self.options.add_argument("--rescan", help="Overwrite files without asking", action="store_true")
+        self.options.add_argument("--filename", help="Output filename. By default will use the current timestamp.")
+        self.options.set_defaults(timeout=None)
 
-    def run(self, args):
-        if args.binary:
-            if os.path.exists(args.binary):
-                command = args.binary+" "
-            else:
-                exit("Specified binary doesn't exist. Quitting now")
-        else:
-            if not which.run('nmap'):
-                exit("Nmap is not globally accessible. Quitting now")
-            else:
-                command = "nmap "
+    def get_targets(self, args):
+        
+        targets = []
 
+        if args.hosts:
+            if type(args.hosts) == list:
+                targets += args.hosts
+            else:
+                targets += [args.hosts]
+            
+        if args.hosts_database:
+            if args.rescan:
+                targets += [h.ip_address for h in self.IPAddress.all(scope_type="active")]
+                targets += [h.cidr for h in self.ScopeCIDR.all()]
+            else:
+                targets += [h.ip_address for h in self.IPAddress.all(tool=self.name, scope_type="active")]
+                targets += [h.cidr for h in self.ScopeCIDR.all(tool=self.name)]
+
+        if args.hosts_file:
+            targets += [l for l in open(args.hosts_file).read().split('\n') if l]
+
+        # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
+        data = []
+        for t in targets:
+            ips = [str(i) for i in list(IPNetwork(t))]
+            data += ips
+
+        _, file_name = tempfile.mkstemp()
+        open(file_name, 'w').write('\n'.join(list(set(data))))
+            
 
         if args.output_path[0] == "/":
             self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:] )
@@ -75,108 +83,30 @@ class Module(ModuleTemplate):
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
-        file_name = ""
-
-        if args.hosts:
-            if type(args.hosts) == list:
-                hosts = args.hosts
-            else:
-                hosts = [args.hosts]
-            _, file_name = tempfile.mkstemp()
-            open(file_name, 'w').write('\n'.join(hosts))
-            
-        elif args.hosts_database:
-            hosts = [h.ip_address for h in self.IPAddress.all(tool=self.name, scope_type="active")]
-            hosts += [h.cidr for h in self.ScopeCIDR.all(tool=self.name)]
-            _, file_name = tempfile.mkstemp()
-            open(file_name, 'w').write('\n'.join(hosts))
-        elif args.hosts_file:
-            file_name = args.hosts_file
-
-        if file_name:
-            self.execute_nmap(args, file_name, command)
-
-        elif args.import_file:
-            self.import_nmap(args.import_file, args)
-
-    def execute_nmap(self, args, host_file, command):
-
-        if args.nFile:
-            nFile = os.path.join(self.path,args.nFile)
-
+        if args.filename:
+            output_path = os.path.join(self.path, args.filename)
         else:
-            nFile = os.path.join(self.path, "nmap-scan-%s.xml" % datetime.datetime.now().strftime('%Y.%m.%d-%H.%M.%S'))
-
+            output_path = os.path.join(self.path, "nmap-scan-%s.xml" % datetime.datetime.now().strftime('%Y.%m.%d-%H.%M.%S'))
         
-        if os.path.isfile(nFile) and not args.force:
-            print (nFile,"exists.")
-            answered = False
-            
-            while answered == False:
-                rerun = raw_input("Would you like to [r]un nmap again and overwrite the file, [p]arse the file, or change the file [n]ame? ")
-                if rerun.lower() == 'r':
-                    answered = True
-                
-                elif rerun.lower() == 'p':
-                    answered = True
-                    return nFile
-
-                elif rerun.lower() == 'n':
-                    new = False
-                    while new == False:
-                        newFile = raw_input("enter a new file name: ")
-                        if not os.path.exists(path+newFile):
-                            nFile = path+newFile
-                            answered = True
-                            new = True
-                        else:
-                            print ("That file exists as well")
-                else:
-                    "Please enter \'r\' to run nmap, \'p\' to parse the file"
-
-        if args.sS and args.sT:
-            technique = "-sT "
-
-        else:
-            technique = "-sS "
-
-        if args.sU:
-            technique += "-sU "
-
-        if args.A:
-            technique += "-A "
-        command += technique
-
-        command += "-T"+str(args.timing)+" "
-
-        if args.Pn:
-            command += "-Pn "
+        return [(file_name, output_path)]
         
-        if args.open:
-            command += "--open "
+    def build_cmd(self, args):
+    
+        command = "sudo " + self.binary + " -oX {output} -iL {target} "
+
+        if args.tool_args:
+            command += args.tool_args
+
+        return command
         
-        if args.top_ports:
-            command += "--top-ports %s " % args.top_ports
-
-        if args.OS:
-            command += "-O "
-
-        command += "--script "+args.scripts+" "
-
-        command += "-p "+args.p+" "
-
-        command += " -iL %s " % host_file
-
-        command += "-oX "+nFile
-
-        if (args.sS and not args.sT) or args.OS:
-            if os.geteuid() != 0:
-                #exit("You need to have root privileges to run a Syn scan and OS detection.\nPlease try again, this time using 'sudo'. Exiting.")
-                command = "sudo " + command
-        scan = subprocess.Popen(command, shell=True).wait()
-        self.import_nmap(nFile, args)
-        return nFile
         
+    def process_output(self, cmds):
+
+        target_file, output_file = cmds[0]
+
+        self.import_nmap(output_file)
+        os.unlink(target_file)
+
     def parseHeaders(self, httpHeaders):
         bsHeaders = ['Pragma','Expires','Date','Transfer-Encoding','Connection','X-Content-Type-Options', 'Cache-Control', 'X-Frame-Options', 'Content-Type', 'Content-Length', '(Request type']
         keepHeaders = {}
@@ -192,7 +122,7 @@ class Module(ModuleTemplate):
         return keepHeaders
 
 
-    def import_nmap(self, filename, args): #domains={}, ips={}, rejects=[] == temp while no db
+    def import_nmap(self, filename): #domains={}, ips={}, rejects=[] == temp while no db
         nFile = filename
         
         try:
@@ -202,7 +132,8 @@ class Module(ModuleTemplate):
 
         except:
             print (nFile +  " doesn't exist somehow...skipping")
-            return domains,ips,rejects #needs to be changed for db
+            return
+
         
         tmpNames = []
         tmpIPs = {}     #tmpIps = {'127.0.0.1':['domain.com']} -- not really used; decided to just let nslookup take care of IP info
@@ -220,20 +151,14 @@ class Module(ModuleTemplate):
                 hostname = hostname.lower().replace("www.","")
 
                 reHostname = re.search(r"\d{1,3}\-\d{1,3}\-\d{1,3}\-\d{1,3}",hostname)  #attempt to not get PTR record
-                if not reHostname and not args.internal:
+                if not reHostname:
                     
                     created, domain = self.Domain.find_or_create(domain=hostname)
                     if ip not in domain.ip_addresses:
                         domain.ip_addresses.append(ip)
                         domain.save()
                         
-                elif not reHostname and args.internal:
-                    created, domain = self.Domain.find_or_create(domain=hostname)
-                    if ip not in domain.ip_addresses:
-                        domain.ip_addresses.append(ip)
-                        domain.save()
-                #else:
-                #    print("IP hostname found? %s" % hostname)
+                
 
             for port in  host.findall("ports/port"):
                 
