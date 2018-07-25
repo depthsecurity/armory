@@ -140,8 +140,9 @@ class BaseRepository(object):
                 else:
                     objects.append(o)
             for o in objects:
-                if o.meta.get(tool, False):
+                if not o.meta.get(tool, False):
                     o.meta[tool] = {}
+                
                 o.meta[tool]['created'] = str(datetime.datetime.now())
             return objects
 
