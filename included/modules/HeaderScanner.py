@@ -10,6 +10,7 @@ import os
 import sys
 import pdb
 from multiprocessing import Pool as ThreadPool
+from included.utilities.color_display import display, display_error, display_warning, display_new
 
 class Module(ModuleTemplate):
     
@@ -26,30 +27,34 @@ class Module(ModuleTemplate):
         self.options.add_argument('-u', '--url', help="URL to get headers")
         self.options.add_argument('-i', '--import_db', help="Import URLs from the database", action="store_true")
         self.options.add_argument('-th', '--threads', help="Number of threads to run", default="10")
+        self.options.add_argument('--rescan', help="Rescan URLs already processed", action="store_true")
+
 
     def run(self, args):
         
         if args.import_db:
             
-
-            svc = self.Port.all(service_name='http')
-            svc += self.Port.all(service_name='https')
-
+            if args.rescan:
+                svc = self.Port.all(service_name='http')
+                svc += self.Port.all(service_name='https')
+            else:
+                svc = self.Port.all(service_name='http', tool=self.name)
+                svc += self.Port.all(service_name='https', tool=self.name)
             data = []
 
             for s in svc:
+                if s.ip_address.in_scope:
+                    urls = ["%s://%s:%s" % (s.service_name, s.ip_address.ip_address, s.port_number)]
 
-                urls = ["%s://%s:%s" % (s.service_name, s.ip_address.ip_address, s.port_number)]
+                    for d in s.ip_address.domains:
+                        urls.append("%s://%s:%s" % (s.service_name, d.domain, s.port_number))
 
-                for d in s.ip_address.domains:
-                    urls.append("%s://%s:%s" % (s.service_name, d.domain, s.port_number))
-
-                data.append([s.id, urls, args.timeout])                
+                    data.append([s.id, urls, args.timeout])                
             
             pool = ThreadPool(int(args.threads))
 
             results = pool.map(process_urls, data)
-            print("Adding data to the database")
+            display_new("Adding headers to the database")
             for i, headers in results:
                 created, svc = self.Port.find_or_create(id=i)
                 svc.meta['headers'] = headers
@@ -69,7 +74,7 @@ def process_urls(data):
     new_headers = {}
 
     for u in urls:
-        print("Processing %s" % u)
+        display("Processing %s" % u)
         try:
             res = requests.get(u, timeout=int(timeout), verify=False)
 
@@ -82,8 +87,8 @@ def process_urls(data):
             
 
         except KeyboardInterrupt:
-            print("Got Ctrl+C, exiting")
+            display_warning("Got Ctrl+C, exiting")
             sys.exit(1)
         except Exception as e:
-            print("%s no good, skipping: %s" % (u, e))
+            display_error("%s no good, skipping: %s" % (u, e))
     return (i, new_headers)
