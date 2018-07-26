@@ -79,7 +79,7 @@ class ToolTemplate(ModuleTemplate):
             
             if not args.no_binary:
                 cmd = self.build_cmd(args)
-                cmds = [shlex.split(cmd.format(target=t[0], output=t[1])) + [timeout] for t in targets]
+                cmds = [shlex.split(cmd.format(**t)) + [timeout] for t in targets]
                 pool = ThreadPool(int(args.threads))
 
                 pool.map(run_cmd, cmds)
@@ -88,7 +88,7 @@ class ToolTemplate(ModuleTemplate):
     def get_targets(self, args):
         '''
         This module is used to build out a target list and output file list, depending on the arguments. Should return a
-        list in the format [(target, output), (target, output), etc, etc]
+        list in the format [{'target':'target', 'output':'output'}), {'target':'target', 'output':'output'}, etc, etc]
         '''
 
         return []

@@ -55,7 +55,7 @@ class Module(ToolTemplate):
         res = []
         
         for t in targets:
-            res.append((t, os.path.join(self.path, t + ".txt")))
+            res.append({'target':t, 'output':os.path.join(self.path, t + ".txt")})
     
         return res
 
@@ -73,7 +73,8 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
 
         for c in cmds:
-            target, output_path = c
+            target = c['target']
+            output_path = c['output']
 
             try:
                 fierceOutput = open(output_path).read()

@@ -88,7 +88,7 @@ class Module(ToolTemplate):
         else:
             output_path = os.path.join(self.path, "nmap-scan-%s.xml" % datetime.datetime.now().strftime('%Y.%m.%d-%H.%M.%S'))
         
-        return [(file_name, output_path)]
+        return [{'target':file_name, 'output':output_path}]
         
     def build_cmd(self, args):
     
@@ -102,10 +102,8 @@ class Module(ToolTemplate):
         
     def process_output(self, cmds):
 
-        target_file, output_file = cmds[0]
-
-        self.import_nmap(output_file)
-        os.unlink(target_file)
+        self.import_nmap(cmds[0]['output'])
+        os.unlink(cmds[0]['target'])
 
     def parseHeaders(self, httpHeaders):
         bsHeaders = ['Pragma','Expires','Date','Transfer-Encoding','Connection','X-Content-Type-Options', 'Cache-Control', 'X-Frame-Options', 'Content-Type', 'Content-Length', '(Request type']
