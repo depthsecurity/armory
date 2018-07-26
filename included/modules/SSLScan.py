@@ -12,6 +12,7 @@ from multiprocessing import Pool as ThreadPool
 class Module(ModuleTemplate):
     
     name = "SSLScan"
+    binary_name = "sslscan"
 
     def __init__(self, db):
         self.db = db
@@ -28,7 +29,7 @@ class Module(ModuleTemplate):
         self.options.add_argument('-t', '--threads', help='Number of threads to run', default="1")
         self.options.add_argument('-o', '--output_path', help="Path which will contain program output (relative to base_path in config", default="sslscan")
         self.options.add_argument('-s', '--rescan', help="Rescan domains that have already been scanned", action="store_true")
-    
+        self.options.add_argument('-b', '--binary', help="Binary name")
     def run(self, args):
                 
         self.args = args

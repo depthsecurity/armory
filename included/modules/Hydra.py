@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from database.repositories import DomainRepository, IPRepository, PortRepository
-from included.ModuleTemplate import ModuleTemplate
+from included.ModuleTemplate import ToolTemplate
 import subprocess
 from included.utilities import which
 import shlex
@@ -9,9 +9,10 @@ import os
 import pdb
 from multiprocessing import Pool as ThreadPool
 
-class Module(ModuleTemplate):
+class Module(ToolTemplate):
     
     name = "Hydra"
+    binary_name = "hydra"
 
     def __init__(self, db):
         self.db = db
