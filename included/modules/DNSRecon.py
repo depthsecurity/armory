@@ -75,7 +75,7 @@ class Module(ToolTemplate):
 
         res = []
         for t in targets:
-            res.append((t, os.path.join(self.path, t.replace("/", "_") + ".json")))
+            res.append({'target':t, 'output':os.path.join(self.path, t.replace("/", "_") + ".json")})
 
         return res
 
@@ -97,7 +97,8 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
 
         for c in cmds:
-            target, output_path = c
+            target = c['target']
+            output_path = c['output']
 
             try:
                 res = json.loads(open(output_path).read())

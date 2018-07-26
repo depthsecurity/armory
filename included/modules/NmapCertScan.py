@@ -10,12 +10,14 @@ import pdb
 import xmltodict
 from multiprocessing import Pool as ThreadPool
 import glob
+from included.utilities.color_display import display, display_error
 
 class Module(ToolTemplate):
     '''
     Runs nmap on all web hosts to pull certs and add them to the database
     '''
     name = "NmapCertScan"
+    binary_name = "nmap"
 
     def __init__(self, db):
         self.db = db
@@ -24,33 +26,23 @@ class Module(ToolTemplate):
     def set_options(self):
         super(Module, self).set_options()
 
-        self.options.add_argument('-t', '--threads', help="Number of threads", default="1")
-        self.options.add_argument('-o', '--output_path', help="Path which will contain program output (relative to base_path in config", default=self.name)
         self.options.add_argument('-s', '--rescan', help="Rescan domains that have already been scanned", action="store_true")
     
-    def run(self, args):
-                
-        if not args.binary:
-            self.binary = which.run('nmap')
+    def get_targets(self, args):
 
-        else:
-            self.binary = which.run(args.binary)
-
-        if not self.binary:
-            print("nmap binary not found. Please explicitly provide path with --binary")
-
-
+        targets = []
         if args.rescan:
             services = self.Port.all(service_name='https')
         else:
             services = self.Port.all(tool=self.name, service_name='https')
         
-        self.process_services(services, args)
+        for s in services:
+                if s.ip_address.in_scope:
+                    port = s.port_number
+                    targets.append({'port':port, 'target':s.ip_address.ip_address, 'service_id':s.id})
+                    for d in s.ip_address.domains:
+                        targets.append({'port':port, 'target':d.domain, 'service_id':s.id})
         
-        
-                
-    def process_services(self, services, args):
-
         if args.output_path[0] == "/":
             output_path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:])
         else:
@@ -59,69 +51,42 @@ class Module(ToolTemplate):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        cmds = []
 
-        for s in services:
-            ip = s.ip_address.ip_address
-            domains = [d.domain for d in s.ip_address.domains]
-            port = s.port_number
 
-            hosts = [ip] + domains
+        for t in targets:
+            file_path = os.path.join(output_path, "%s_%s-ssl.xml" % (t['target'], port))
 
-            for h in hosts:
-        
-                file_path = os.path.join(output_path, "%s_%s-ssl.xml" % (h, port))
-        
-                command_args = " -p %s " % port
-        
-                command_args += " --script=ssl-cert -oX %s " % file_path
+            t['output'] = file_path
+        # pdb.set_trace()
+        return targets
 
-                cmds.append(shlex.split(self.binary + command_args + h))
+    def build_cmd(self, args):
 
+        cmd = self.binary + " -p {port} --script=ssl-cert -oX {output} {target} "
         
-        pool = ThreadPool(int(args.threads))
+        if args.tool_args:
+            cmd += args.tool_args
 
-        
-        
-        # res = subprocess.Popen(cmd).wait()
-        
-        pool.map(scan_hosts, cmds)
+        return cmd
 
-        for s in services:
+    def process_output(self, cmds):
+
+        for data in cmds:
+
+            try:
+                xmldata = xmltodict.parse(open(data['output']).read())
             
-            p = s.ip_address.ip_address
-            domains = [d.domain for d in s.ip_address.domains]
-            port = s.port_number
+                cert = xmldata['nmaprun']['host']['ports']['port']['script']['@output']
 
-            hosts = [ip] + domains
+                if cert:
+                    svc = self.Port.all(id=data['service_id'])[0]
+                    if not svc.meta.get(self.name, False):
+                        svc.meta[self.name] = {}
+                    svc.meta[self.name][data['target']] = cert
 
-            data = {}
+                    svc.update()
 
-            for h in hosts:
-                # pdb.set_trace()
-                print("Processing %s" % file_path)
-                file_path = os.path.join(output_path, "%s_%s-ssl.xml" % (h, port))
-
-                try:
-                    xmldata = xmltodict.parse(open(file_path).read())
-
-                    cert = xmldata['nmaprun']['host']['ports']['port']['script']['@output']
-
-                    if cert:
-                        data[h] = cert
-
-
-
-                except:
-                    print("File not valid: %s" % file_path)
-            # pdb.set_trace()
-            s.meta['sslcert'] = data
-            s.update()
+            except:
+                display_error("File not valid: {}".format(data['output']))
 
         self.Port.commit()
-
-
-
-def scan_hosts(cmd):
-    print("Executing: %s" % ' '.join(cmd))
-    res = subprocess.Popen(cmd, shell=False).wait()

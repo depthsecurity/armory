@@ -62,7 +62,7 @@ class Module(ToolTemplate):
         for t in targets:
 
             output_path = os.path.join(output_path, "%s-sublist3r.txt" % t)
-            res.append((t, output_path))
+            res.append({'target':t, 'output':output_path})
 
         return res
 
@@ -75,7 +75,7 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
 
         for cmd in cmds:
-            output_path = cmd[1]
+            output_path = cmd['output']
 
         
             data = open(output_path).read().split('\n')

@@ -59,7 +59,7 @@ class Module(ToolTemplate):
             open(file_name, 'w').write('\n'.join(url_chunk))
             if not os.path.exists(self.path.format(i)):
                 os.makedirs(self.path.format(i))
-            res.append((file_name, self.path.format(i)))
+            res.append({'target':file_name, 'output':self.path.format(i)})
 
         return res
 
@@ -80,7 +80,8 @@ class Module(ToolTemplate):
             
         cwd = os.getcwd()
         for cmd in cmds:
-            target, output = cmd
+            target = cmd['target']
+            output = cmd['output']
 
             cmd = [self.binary, "generate"]
             os.chdir(output)

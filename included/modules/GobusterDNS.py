@@ -57,7 +57,7 @@ class Module(ToolTemplate):
         
         res = []
         for t in targets:
-            res.append((t, os.path.join(output_path, t.replace('/', '_') + "-dns.txt")))
+            res.append({'target':t, 'output':os.path.join(output_path, t.replace('/', '_') + "-dns.txt")})
 
         return res
 
@@ -74,7 +74,8 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
 
         for c in cmds:
-            target, output_path = c
+            target = c['target']
+            output_path = c['output']
 
             data = open(output_path).read().split('\n')
 

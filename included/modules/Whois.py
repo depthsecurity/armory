@@ -1,18 +1,18 @@
 #!/usr/bin/python
 
 from database.repositories import BaseDomainRepository, ScopeCIDRRepository
-from included.ModuleTemplate import ModuleTemplate
-import subprocess
+from included.ModuleTemplate import ToolTemplate
 from included.utilities import which
 import shlex
 import os
 import pdb
-from multiprocessing import Pool as ThreadPool
+from included.utilities.color_display import display, display_error
 import json
 
-class Module(ModuleTemplate):
+class Module(ToolTemplate):
     
     name = "Whois"
+    binary_name = "whois"
 
     def __init__(self, db):
         self.db = db
@@ -25,48 +25,39 @@ class Module(ModuleTemplate):
         self.options.add_argument('-d', '--domain', help="Domain to query")
         self.options.add_argument('-c', '--cidr', help="CIDR to query")
         
-        self.options.add_argument('-t', '--threads', help='Number of threads to run', default="1")
-        self.options.add_argument('-o', '--output_path', help="Path which will contain program output (relative to base_path in config", default="whois")
         self.options.add_argument('-s', '--rescan', help="Rescan domains that have already been scanned", action="store_true")
     
         self.options.add_argument('--import_database', help="Run WHOIS on all domains and CIDRs in database", action="store_true")
         
-    def run(self, args):
-                
-        self.args = args
-        if not args.binary:
-            self.binary = which.run('whois')
+    def get_targets(self, args):
 
-        else:
-            self.binary = which.run(args.binary)
-
-        if not self.binary:
-            print("whois binary not found. Please explicitly provide path with --binary")
-
-
+        targets = []
         if args.domain:
             created, domain = self.BaseDomain.find_or_create(domain=args.domain)
             
-            self.process_domains(domains=[domain], ips=[])
+            targets.append({'domain':domain.domain, 'cidr':''})
+            
         
         elif args.cidr:
             created, cidr = self.ScopeCIDR.find_or_create(cidr=args.cidr)
             
-            self.process_domains(domains=[], ips=[domain])
+            targets.append({'domain':'', 'cidr':cidr.cidr.split('/')[0]})
+            
                     
         elif args.import_database:
             
-            domains = self.BaseDomain.all()
-            cidrs = self.ScopeCidr.all()
+            if args.rescan:
+                domains = self.BaseDomain.all(scope_type="passive")
+                cidrs = self.ScopeCidr.all(scope_type="passive")
+            else:
+                domains = self.BaseDomain.all(scope_type="passive", tool=self.name)
+                cidrs = self.ScopeCidr.all(scope_type="passive", tool=self.name)
 
+            for domain in domains:
+                targets.append({'domain':domain.domain, 'cidr':''})
+            for cidr in cidrs:
+                targets.append({'domain':'', 'cidr':cidr.cidr.split('/')[0]})
 
-            self.process_domains(domains=domains, cidrs=cidrs)
-
-            self.ScopeCidr.commit()
-
-    def process_domains(self, domains, cidrs):
-
-        args = self.args
         if args.output_path[0] == "/":
             output_path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:] )
         else:
@@ -75,66 +66,36 @@ class Module(ModuleTemplate):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
+        for t in targets:
+            t['output'] = os.path.join(output_path, t['domain']+t['cidr'])
         
-        
+        return targets
 
-        commands = []
+    def build_cmd(self, args):
 
-        for domain in domains: 
-            name = domain.domain
+        if not args.tool_args:
+            args.tool_args = ""
+        cmd = "bash -c \"" + self.binary + " {domain}{cidr} " + args.tool_args + "> {output}\" "
 
-            file_path = os.path.join(output_path, "%s.txt" % name)
-
-            command_args = " "
-        
-            cmd = shlex.split(self.binary + command_args + name)
-            commands.append([cmd, file_path, name])
-        
-        for cidr in cidrs: 
-            name = cidr.cidr.split('/')[0]
-
-            file_path = os.path.join(output_path, "%s.txt" % name)
-
-            command_args = " "
-        
-            cmd = shlex.split(self.binary + command_args + name)
-            commands.append([cmd, file_path, cidr.cidr])
-        
-        pool = ThreadPool(int(args.threads))
-        
-        
-        res = pool.map(run_cmd, commands)
-
-        print("Importing data to database")
-
-        res_d = {}
-
-        for r in res:
-            if r:
-                res_d[r[0]] = r[1]
-
-        domains = self.BaseDomain.all()
-
-        for d in domains:
-            if res_d.get(d.domain, False):
-                d.meta['whois'] = res_d[d.domain]
-                d.update()
-        pdb.set_trace()
-        for c in self.ScopeCidr.all():
-            if res_d.get(c.cidr, False):
-                c.meta['whois'] = res_d[c.cidr]
-                c.update()
+        return cmd
 
 
-def run_cmd(cmd):
-    
-    print("Executing: %s" % ' '.join(cmd[0]))
-        
-    try:
-        # res = subprocess.check_output(cmd[0])
-        #open(cmd[1], 'w').write(res)
-        res = open(cmd[1]).read()
-        return (cmd[2], res)
+    def process_output(self, cmds):
 
-    except:
-        return None
+        display("Importing data to database")
+
+        for cmd in cmds:
+            if cmd['cidr']:
+                _, cidr = self.ScopeCidr.find_or_create(cidr=cmd['cidr'])
+                cidr.meta['whois'] = open(cmd['output']).read()
+                display(cidr.meta['whois'])
+                cidr.update()
+
+            elif cmd['domain']:
+                _, domain = self.BaseDomain.find_or_create(domain=cmd['domain'])
+                domain.meta['whois'] = open(cmd['output']).read()
+                display(domain.meta['whois'])
+                domain.update()
+
+        self.BaseDomain.commit()
+

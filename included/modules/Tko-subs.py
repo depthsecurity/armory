@@ -66,7 +66,7 @@ class Module(ToolTemplate):
 
         # Create the final targets list, with output paths added.
         for d in domains:
-            res.append((d, os.path.join(output_path, d)))
+            res.append({'target':d, 'output':os.path.join(output_path, d)})
 
         return res
 
@@ -77,8 +77,8 @@ class Module(ToolTemplate):
         cmd = self.binary + " -domain {target}  -output {output} "
         
         # Add in any extra arguments passed in the extra_args parameter
-        if args.extra_args:
-            cmd += args.extra_args
+        if args.tool_args:
+            cmd += args.tool_args
         # Add that data parameter in there
 
         cmd += " -data " + args.data
@@ -93,7 +93,8 @@ class Module(ToolTemplate):
         # Cycle through all of the targets we ran earlier
         for c in cmds:
             
-            output_file = c[1]
+            output_file = c['output']
+            target = c['target']
 
             # Read file
             data = open(output_file).read().split('\n')
@@ -103,17 +104,17 @@ class Module(ToolTemplate):
             res = list(set([d for d in data if 'Domain,Cname,Provider' not in d and d]))
             if res:
                 # Load up the DB entry.
-                created, subdomain = self.Domain.find_or_create(domain=c[0])
+                created, subdomain = self.Domain.find_or_create(domain=target)
 
                 # Process results
                 for d in res:
                     results = d.split(',')
 
                     if results[3] == "false":
-                        display_warning("Hosting found at {} for {}, not vulnerable.".format(c[0], results[2]))
+                        display_warning("Hosting found at {} for {}, not vulnerable.".format(target, results[2]))
 
                     elif results[3] == "true":
-                        display_new("{} vulnerable to {}!".format(c[0], results[2]))
+                        display_new("{} vulnerable to {}!".format(target, results[2]))
                         if not subdomain.meta[self.name].get('vulnerable', False):
                             subdomain.meta[self.name]['vulnerable'] = []
                         subdomain.meta[self.name]['vulnerable'].append(d)

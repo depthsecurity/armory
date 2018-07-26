@@ -66,7 +66,7 @@ class Module(ToolTemplate):
         
         res = []
         for t in targets:
-            res.append((t, os.path.join(output_path, t.replace(':', '_').replace('/', '_').replace('?', '_').replace('&', '_') + "-dir.txt")))
+            res.append({'target':t, 'output':os.path.join(output_path, t.replace(':', '_').replace('/', '_').replace('?', '_').replace('&', '_') + "-dir.txt")})
 
         return res
 
