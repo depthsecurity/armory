@@ -290,9 +290,11 @@ class IPRepository(BaseRepository):
             display("Processing CIDR from whois: %s - %s" % (matching_cidr[1], matching_cidr[0]))
             CIDR = CIDRRepository(self.db, "")
 
-            created, cidr = CIDR.find_or_create(only_tool=True, cidr=matching_cidr[0], org_name=matching_cidr[1])
+            created, cidr = CIDR.find_or_create(only_tool=True, cidr=matching_cidr[0])
             if created:
                 display_new("CIDR %s added to database" % cidr.cidr)
+                cidr.org_name = matching_cidr[1]
+                cidr.update()
 
             ip.cidr = cidr
             
