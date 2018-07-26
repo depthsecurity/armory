@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from database.repositories import PortRepository
-from included.ModuleTemplate import ModuleTemplate
+from included.ModuleTemplate import ToolTemplate
 import subprocess
 from included.utilities import which
 import shlex
@@ -11,7 +11,7 @@ import xmltodict
 from multiprocessing import Pool as ThreadPool
 import glob
 
-class Module(ModuleTemplate):
+class Module(ToolTemplate):
     '''
     Runs nmap on all web hosts to pull certs and add them to the database
     '''
