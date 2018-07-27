@@ -57,11 +57,32 @@ class ToolTemplate(ModuleTemplate):
         self.options.add_argument('--timeout', help="Thread timeout in seconds, default is 300.", default="300")
         self.options.add_argument('--tool_args', help="Additional arguments to be passed to the tool", nargs=argparse.REMAINDER)
         self.options.add_argument('--no_binary', help="Runs through without actually running the binary. Useful for if you already ran the tool and just want to process the output.", action="store_true")
+        self.options.add_argument('--profile1', help="Append profile1_data to command", action="store_true")
+        self.options.add_argument('--profile1_data', help="Additional arguments to be appended", default="")
+        self.options.add_argument('--profile2', help="Append profile1_data to command", action="store_true")
+        self.options.add_argument('--profile2_data', help="Additional arguments to be appended", default="")
+        self.options.add_argument('--profile3', help="Append profile1_data to command", action="store_true")
+        self.options.add_argument('--profile3_data', help="Additional arguments to be appended", default="")
+        self.options.add_argument('--profile4', help="Append profile1_data to command", action="store_true")
+        self.options.add_argument('--profile4_data', help="Additional arguments to be appended", default="")
         # self.options.add_argument('--profile1', help="Use first profile options")
 
     def run(self, args):
         if args.tool_args:
             args.tool_args = ' '.join(args.tool_args)
+        else:
+            args.tool_args = ""
+
+        if args.profile1:
+            args.tool_args += " " + args.profile1_data
+        
+        elif args.profile2:
+            args.tool_args += " " + args.profile2_data
+        elif args.profile3:
+            args.tool_args += " " + args.profile3_data
+        elif args.profile4:
+            args.tool_args += " " + args.profile4_data
+
         if not args.binary:
             self.binary = which.run(self.binary_name)
         else:

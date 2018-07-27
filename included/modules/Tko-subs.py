@@ -29,7 +29,7 @@ class Module(ToolTemplate):
     def get_targets(self, args):
         '''
         This module is used to build out a target list and output file list, depending on the arguments. Should return a
-        list in the format [(target, output), (target, output), etc, etc]
+        list in the format [{'target':target, 'output':output}, {'target':target, 'output':output}, etc, etc]
         '''
 
         # Create an empty list to add targets to
