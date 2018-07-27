@@ -133,9 +133,15 @@ def run_module(Module, argv, module):
                         if n in argv:
                             exists = True
                     if not exists:
-            
-                        argv.append("--" + k)
-                        argv.append(module_config_data['ModuleSettings'][k])
+                        # Make sure if using tool_args, that our config goes before it in argv
+                        if "--tool_args" in argv:
+                            i = argv.index('--tool_args')
+                            argv.insert(i, module_config_data['ModuleSettings'][k])
+                            argv.insert(i, "--" + k)
+                            
+                        else:
+                            argv.append("--" + k)
+                            argv.append(module_config_data['ModuleSettings'][k])
 
     argcomplete.autocomplete(m.options)
     args, unknown = m.options.parse_known_args(argv)

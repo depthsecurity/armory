@@ -11,7 +11,8 @@ class Module(ToolTemplate):
         super(Module, self).set_options()
 
         self.options.add_argument('-p', '--print_message', help="Message to print")
-
+        # Change the default timeout
+        self.options.set_defaults(timeout="15")
     
     def get_targets(self, args):
         '''
