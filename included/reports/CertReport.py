@@ -29,14 +29,15 @@ class Report(ReportTemplate):
         services = self.Port.all(name='https')
         certs = {}
         for s in services:
-            if s.meta.get('sslcert', False):
-                for k in s.meta['sslcert'].keys():
-                    cert = s.meta['sslcert'][k]
-                    # pdb.set_trace()
-                    if not certs.get(cert, False):
-                        certs[cert] = []
+            if s.passive_scope:
+                if s.meta.get('sslcert', False):
+                    for k in s.meta['sslcert'].keys():
+                        cert = s.meta['sslcert'][k]
+                        # pdb.set_trace()
+                        if not certs.get(cert, False):
+                            certs[cert] = []
 
-                    certs[cert].append(k + ':' + str(s.port_number))
+                        certs[cert].append(k + ':' + str(s.port_number))
 
         for k in certs.keys():
             results.append(', '.join(sorted(list(set(certs[k])))))
