@@ -13,6 +13,7 @@ import csv
 import string
 from collections import Counter
 from included.utilities.color_display import display, display_error
+
 def remove_binary(txt):
     return ''.join([t for t in txt if t in string.printable])
 
