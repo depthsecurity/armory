@@ -16,15 +16,16 @@ class Module(ToolTemplate):
     
     def get_targets(self, args):
         '''
-        This module is used to build out a target list and output file list, depending on the arguments. Should return a
-        list in the format [(target, output), (target, output), etc, etc]
+        This module is used to build out a target list containing dictionaries that will get plugged into
+        the commands that are executed.
         '''
 
         return []
 
     def build_cmd(self, args):
         '''
-        Create the actual command that will be executed. Use {target} and {output} as placeholders.
+        Create the actual command that will be executed. Use {target}, {output}, etc as placeholders. These
+        should match up to the dictionaries returned by get_targets()
         '''
         
         return ''

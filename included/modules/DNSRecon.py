@@ -89,8 +89,8 @@ class Module(ToolTemplate):
         else:
             command += " -s -r {target} -j {output} "
 
-        if args.extra_args:
-            command += args.extra_args
+        if args.tool_args:
+            command += args.tool_args
 
         return command
 
