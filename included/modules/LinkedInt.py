@@ -56,7 +56,7 @@ class Module(ModuleTemplate):
         if args.domain:
             created, domain = self.BaseDomain.find_or_create(domain=args.domain)
             if args.top:
-                titles = [user.job_title.split(' at ')[0] for user in domain.users]
+                titles = [user.job_title.split(' at ')[0] for user in domain.users if user.job_title]
                 words = []
                 for t in titles:
                     words += [w.lower() for w in t.split(' ')]
@@ -69,7 +69,7 @@ class Module(ModuleTemplate):
                     display("\t{}\t{}".format(w[0],w[1]))
                     res.append(w[0])
 
-                pdb.set_trace()
+                # pdb.set_trace()
                 args.smart_shuffle = ','.join(res)
 
             if args.smart_shuffle:

@@ -15,7 +15,7 @@ def run(db, tool=None, scope_type=None):
 
     for p in ports:
         
-        if p.ip_address and (scope_type == "active" and p.ip_address.in_scope) or (scope_type == "passive" and p.ip_address.passive_scope) or not scope_type:
+        if p.ip_address and (scope_type == "active" and p.ip_address.in_scope == True) or (scope_type == "passive" and p.ip_address.passive_scope == True) or not scope_type:
 
             domain_list = [d.domain for d in p.ip_address.domains]
         

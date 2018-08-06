@@ -27,6 +27,7 @@ class Report(ReportTemplate):
         self.options.add_argument('-u2', '--emails_passwords', help="Prints out email/password pairs", action="store_true")
         self.options.add_argument('-u3', '--emails', help="Prints out e-mail addresses", action="store_true")
         self.options.add_argument('-u4', '--accounts', help="Prints out user accounts", action="store_true")
+        self.options.add_argument('-u5', '--full', help="Prints out full user data", action="store_true")
         
         
     def run(self, args):
@@ -40,6 +41,8 @@ class Report(ReportTemplate):
                     results.append(user.email)
                 elif args.accounts:
                     results.append(user.email.split('@')[0])
+                elif args.full:
+                    results.append('{}|{}|{}|{}'.format(user.first_name, user.last_name, user.email, user.job_title))
                 else:
                     for cred in user.creds:
                         if cred.password and cred.password != "None":
