@@ -19,8 +19,6 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
 
 # Description
 
-PLEASE NOTE: Armory is still under active development, and many of the feature sets are still being ironed out. The stable version is set to be released in time for Black Hat.
-
 Armory is a tool meant to take in a lot of external and discovery data from a lot of tools, add it to a database and correlate all of related information. It isn't meant to replace any specific tool. It is meant to take the output from various tools, and use it to feed other tools.
 
 Additionally, it is meant to be easily extendable. Don't see a module for your favorite tool? Write one up! Want to export data in just the right format for your reporting? Create a new report!

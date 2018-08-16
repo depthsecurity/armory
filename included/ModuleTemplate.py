@@ -54,7 +54,7 @@ class ToolTemplate(ModuleTemplate):
         self.options.add_argument('-b', '--binary', help="Path to the binary")
         self.options.add_argument('-o', '--output_path', help="Relative path (to the base directory) to store output", default=self.name)
         self.options.add_argument('--threads', help="Number of Armory threads to use", default="10")
-        self.options.add_argument('--timeout', help="Thread timeout in seconds, default is 300.", default="300")
+        self.options.add_argument('--timeout', help="Thread timeout in seconds, default is never timeout", default=None)
         self.options.add_argument('--tool_args', help="Additional arguments to be passed to the tool", nargs=argparse.REMAINDER)
         self.options.add_argument('--no_binary', help="Runs through without actually running the binary. Useful for if you already ran the tool and just want to process the output.", action="store_true")
         self.options.add_argument('--profile1', help="Append profile1_data to command", action="store_true")

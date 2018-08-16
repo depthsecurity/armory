@@ -61,8 +61,8 @@ class Module(ToolTemplate):
 
         for t in targets:
 
-            output_path = os.path.join(output_path, "%s-sublist3r.txt" % t)
-            res.append({'target':t, 'output':output_path})
+            output = os.path.join(output_path, "%s-sublist3r.txt" % t)
+            res.append({'target':t, 'output':output})
 
         return res
 

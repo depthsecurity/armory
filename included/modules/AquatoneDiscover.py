@@ -4,6 +4,7 @@ from included.ModuleTemplate import ToolTemplate
 from database.repositories import BaseDomainRepository, DomainRepository
 import os
 import json
+import pdb
 
 class Module(ToolTemplate):
 
@@ -51,6 +52,7 @@ class Module(ToolTemplate):
                 all_domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
             for d in all_domains:
                 targets.append(d.domain)
+            
         else:
             print("You need to supply domain(s).")
 
@@ -65,7 +67,7 @@ class Module(ToolTemplate):
         for t in targets:
             res.append({'target':t, 'output': "{}/{}/hosts.json".format(output_path, t) })
 
-            return res
+        return res
 
     def build_cmd(self, args):
         '''

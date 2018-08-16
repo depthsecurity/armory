@@ -110,3 +110,4 @@ config/settings.ini
 # Config files
 *.ini
 stash.sqlite3
+.DS_Store

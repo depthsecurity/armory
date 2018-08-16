@@ -39,7 +39,7 @@ class Module(ToolTemplate):
         super(Module, self).set_options()
         self.options.add_argument('--hosts', help="Things to scan separated by a space. DO NOT USE QUOTES OR COMMAS", nargs='+')
         self.options.add_argument('--hosts_file', help="File containing hosts")
-        self.options.add_argument('--hosts_database', help="Use unscanned hosts from the database", action="store_true")
+        self.options.add_argument('-i', '--hosts_database', help="Use unscanned hosts from the database", action="store_true")
         self.options.add_argument("--rescan", help="Overwrite files without asking", action="store_true")
         self.options.add_argument("--filename", help="Output filename. By default will use the current timestamp.")
         self.options.set_defaults(timeout=None)

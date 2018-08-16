@@ -4,7 +4,7 @@ from included.ModuleTemplate import ToolTemplate
 from database.repositories import BaseDomainRepository, DomainRepository
 import os
 import json
-
+import pdb
 from included.utilities.color_display import display, display_error
 
 class Module(ToolTemplate):
@@ -45,6 +45,7 @@ class Module(ToolTemplate):
                     os.makedirs(output_path)
                 
                 
+                hosts_j = {}
                 hosts = []
                 open_ports = []
                 urls = []
@@ -55,10 +56,13 @@ class Module(ToolTemplate):
                     name = s.domain
 
                     for ip in s.ip_addresses:
+                        hosts_j[name] = ip.ip_address
                         port_list = []
                         for p in ip.ports:
+                            
                             if 'http' in p.service_name:
                                 hosts.append("{}.{}".format(name, ip.ip_address))
+                                
                                 port_list.append(p.port_number)
                                 urls.append('{}://{}:{}/'.format(p.service_name, name, p.port_number))
                                 urls.append('{}://{}:{}/'.format(p.service_name, ip.ip_address, p.port_number))
@@ -68,7 +72,7 @@ class Module(ToolTemplate):
                 open(os.path.join(output_path, 'hosts.txt'), 'w').write('\n'.join(list(set(hosts))))
                 open(os.path.join(output_path, 'urls.txt'), 'w').write('\n'.join(list(set(urls))))
                 open(os.path.join(output_path, 'open_ports.txt'), 'w').write('\n'.join(list(set(open_ports))))
-
+                open(os.path.join(output_path, 'hosts.json'), 'w').write(json.dumps(hosts_j))
         else:
             display_error("You need to supply domain(s).")
 
@@ -76,7 +80,7 @@ class Module(ToolTemplate):
         for t in targets:
             res.append({'target':t })
 
-            return res
+        return res
 
     def build_cmd(self, args):
         '''

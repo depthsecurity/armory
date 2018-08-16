@@ -67,7 +67,7 @@ class Module(ToolTemplate):
 
         if args.tool_args:
             command += args.tool_args
-        
+        pdb.set_trace()
         return command
 
     def process_output(self, cmds):

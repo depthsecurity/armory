@@ -50,7 +50,10 @@ class Module(ToolTemplate):
         
 
         elif args.import_database:
-            domains = self.BaseDomain.all(scope_type="passive", tool=self.name)
+            if args.rescan:
+                domains = self.BaseDomain.all(scope_type="passive")
+            else:
+                domains = self.BaseDomain.all(scope_type="passive", tool=self.name)
             for domain in domains:
                 targets.append(domain.domain)
 
