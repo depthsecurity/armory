@@ -8,7 +8,7 @@ from netaddr import IPNetwork, IPAddress, iprange_to_cidrs
 from ipwhois import IPWhois
 import pdb
 import warnings
-from included.utilities.color_display import display, display_new
+from included.utilities.color_display import display, display_new, display_error
 
 
 class Module(ModuleTemplate):
@@ -77,6 +77,13 @@ class Module(ModuleTemplate):
                 self.process_domain(args.import_domains.strip())
                 self.Domain.commit()
 
+        if args.scope_base_domains:
+            base_domains = self.BaseDomain.all(in_scope=False, passive_scope=False)
+
+            for bd in base_domains:
+                self.reclassify_domain(bd)
+
+            self.BaseDomain.commit()
 
                 
 
@@ -144,3 +151,22 @@ class Module(ModuleTemplate):
 
     def scope_ips(self):
         IPAddresses = self.IPAddress.all()
+
+    def reclassify_domain(self, bd):
+        if bd.meta.get('whois', False):
+            display_new("Whois data found for {}".format(bd.domain))
+            print(bd.meta['whois'])
+            res = raw_input("Should this domain be scoped (A)ctive, (P)assive, or (N)ot? [a/p/N] ")
+            if res.lower() == 'a':
+                bd.in_scope = True
+                bd.passive_scope = True
+                
+            elif res.lower() == 'p':
+                bd.in_scope = False
+                bd.passive_scope = True
+            else:
+                bd.in_scope = False
+                bd.passive_scope = False
+            bd.save()
+        else:
+            display_error("Unfortunately, there is no whois information for {}. Please populate it using the Whois module".format(bd.domain))

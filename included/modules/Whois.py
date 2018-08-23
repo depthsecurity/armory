@@ -26,7 +26,7 @@ class Module(ToolTemplate):
         self.options.add_argument('-c', '--cidr', help="CIDR to query")
         
         self.options.add_argument('-s', '--rescan', help="Rescan domains that have already been scanned", action="store_true")
-    
+        self.options.add_argument('-a', '--all_data', help="Scan all data in database, regardless of scope", action="store_true")
         self.options.add_argument('--import_database', help="Run WHOIS on all domains and CIDRs in database", action="store_true")
         
     def get_targets(self, args):
@@ -45,13 +45,16 @@ class Module(ToolTemplate):
             
                     
         elif args.import_database:
-            
-            if args.rescan:
-                domains = self.BaseDomain.all(scope_type="passive")
-                cidrs = self.ScopeCidr.all(scope_type="passive")
+            if args.all_data:
+                scope_type = ""
             else:
-                domains = self.BaseDomain.all(scope_type="passive", tool=self.name)
-                cidrs = self.ScopeCidr.all(scope_type="passive", tool=self.name)
+                scope_type = "passive"    
+            if args.rescan:
+                domains = self.BaseDomain.all(scope_type=scope_type)
+                cidrs = self.ScopeCidr.all(scope_type=scope_type)
+            else:
+                domains = self.BaseDomain.all(scope_type=scope_type, tool=self.name)
+                cidrs = self.ScopeCidr.all(scope_type=scope_type, tool=self.name)
 
             for domain in domains:
                 targets.append({'domain':domain.domain, 'cidr':''})

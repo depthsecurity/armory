@@ -8,6 +8,8 @@ import shlex
 import os
 import pdb
 import tempfile
+from time import time
+import glob
 
 try:
     from urllib.parse import urlparse
@@ -31,8 +33,12 @@ class Module(ToolTemplate):
         self.options.add_argument('-f', '--import_file', help="Import URLs from file")
         self.options.add_argument('--group_size', help="How many hosts per group (default 250)", type=int, default=250)
         self.options.add_argument('--rescan', help="Rerun gowitness on systems that have already been processed.")
+        self.options.add_argument('--scan_folder', help="Generate list of URLs based off of a folder containing GobusterDir output files")
+        self.options.add_argument('--counter_max', help="Max number of screenshots per host", default="20")
+
     def get_targets(self, args):
     
+        timestamp = str(int(time()))
         targets = []
         if args.import_file:
             targets += [t for t in open(args.file).read().split('\n') if t]
@@ -43,10 +49,26 @@ class Module(ToolTemplate):
             else:
                 targets += get_urls.run(self.db, scope_type="active", tool=self.name)
 
+        if args.scan_folder:
+
+            files = os.listdir(args.scan_folder)
+            counter_max = str(args.counter_max)
+            for f in files:
+                    
+                if f.count('_') == 4:
+                    counter = 0    
+                    http, _, _, domain, port = f.split('-dir.txt')[0].split('_')
+                    for data in open(os.path.join(args.scan_folder, f)).read().split('\n'):
+                        if '(Status: 200)' in data:
+                            targets.append("{}://{}:{}{}".format(http, domain, port, data.split(' ')[0]))
+                            counter += 1
+                        if counter >= counter_max:
+                            break
+
         if args.output_path[0] == "/":
-            self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:], args.output_path[1:] +"_{}" )
+            self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path[1:], timestamp, args.output_path[1:] +"_{}" )
         else:
-            self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path, args.output_path+"_{}" )
+            self.path = os.path.join(self.base_config['PROJECT']['base_path'], args.output_path, timestamp, args.output_path+"_{}" )
 
 
         res = []

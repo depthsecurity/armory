@@ -82,7 +82,7 @@ class Module(ToolTemplate):
                 data = open(output_path).read().split('\n')
             else:
                 display_error("{} not found.".format(output_path))
-                return
+                next
             for d in data:
             
                 new_domain = d.split(':')[0].lower()
