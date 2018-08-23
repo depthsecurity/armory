@@ -18,8 +18,8 @@ except ImportError:
 
 class Module(ToolTemplate):
     
-    name = "GobusterDir"
-    binary_name = "gobuster"
+    name = "Nikto"
+    binary_name = "nikto"
 
     def __init__(self, db):
         self.db = db
@@ -32,10 +32,10 @@ class Module(ToolTemplate):
     def set_options(self):
         super(Module, self).set_options()
 
-        self.options.add_argument('-u', '--url', help="URL to brute force")
+        self.options.add_argument('-u', '--url', help="URL to scan")
         self.options.add_argument('--file', help="Import URLs from file")
         self.options.add_argument('-i', '--import_database', help="Import URLs from database", action="store_true")
-        self.options.add_argument('--rescan', help="Rescan domains that have already been brute forced", action="store_true")
+        self.options.add_argument('--rescan', help="Rescan URLs that have already been brute forced", action="store_true")
         self.options.set_defaults(timeout=600) # Kick the default timeout to 10 minutes
     def get_targets(self, args):
         targets = []
@@ -73,8 +73,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " -k -m dir "
-        cmd += " -o {output} -u {target} "
+        cmd = self.binary + " -output {output} -host {target} "
 
         if args.tool_args:
             cmd += args.tool_args

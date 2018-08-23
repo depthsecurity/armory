@@ -6,6 +6,7 @@ from subprocess import check_output
 from included.utilities import which
 import shlex
 import os
+from included.utilities.color_display import display, display_error
 
 class Module(ToolTemplate):
     
@@ -76,8 +77,11 @@ class Module(ToolTemplate):
         for c in cmds:
             target = c['target']
             output_path = c['output']
-
-            data = open(output_path).read().split('\n')
+            if os.path.isfile(output_path):
+                data = open(output_path).read().split('\n')
+            else:
+                display_error("{} not found.".format(output_path))
+                return
 
             for d in data:
                 if 'Found: ' in d:

@@ -78,7 +78,11 @@ class Module(ToolTemplate):
             output_path = cmd['output']
 
         
-            data = open(output_path).read().split('\n')
+            if os.path.isfile(output_path):
+                data = open(output_path).read().split('\n')
+            else:
+                display_error("{} not found.".format(output_path))
+                return
             for d in data:
             
                 new_domain = d.split(':')[0].lower()
