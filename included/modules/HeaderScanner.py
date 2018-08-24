@@ -55,9 +55,10 @@ class Module(ModuleTemplate):
 
             results = pool.map(process_urls, data)
             display_new("Adding headers to the database")
-            for i, headers in results:
+            for i, headers, cookies in results:
                 created, svc = self.Port.find_or_create(id=i)
                 svc.meta['headers'] = headers
+                svc.meta['cookies'] = cookies
                 svc.update()
 
             
@@ -72,7 +73,7 @@ def process_urls(data):
     i, urls, timeout = data
     blacklist = ['Date', 'Connection', 'Content-Type', 'Content-Length', 'Keep-Alive', 'Content-Encoding', 'Vary']
     new_headers = {}
-
+    new_cookies = {}
     for u in urls:
         display("Processing %s" % u)
         try:
@@ -84,11 +85,11 @@ def process_urls(data):
                         new_headers[u] = []
 
                     new_headers[u].append("%s: %s" % (k, res.headers[k]))
-            
+            new_cookies[u] = dict(res.cookies)
 
         except KeyboardInterrupt:
             display_warning("Got Ctrl+C, exiting")
             sys.exit(1)
         except Exception as e:
             display_error("%s no good, skipping: %s" % (u, e))
-    return (i, new_headers)
+    return (i, new_headers, new_cookies)
