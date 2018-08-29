@@ -57,7 +57,9 @@ class Module(ModuleTemplate):
             display_new("Adding headers to the database")
             for i, headers, cookies in results:
                 created, svc = self.Port.find_or_create(id=i)
+                
                 svc.meta['headers'] = headers
+                
                 svc.meta['cookies'] = cookies
                 svc.update()
 

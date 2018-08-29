@@ -337,7 +337,13 @@ class VulnRepository(BaseRepository):
 
 class PortRepository(BaseRepository):
     model = Models.Port
+    def find_or_create(self, only_tool=False, passive_scope=True, in_scope=False, **kwargs):
 
+        created, port = super(PortRepository, self).find_or_create(only_tool, **kwargs)
+        if created:
+            display_new("Port {} added to database for IP {}".format(port.port_number, port.ip_address.ip_address))
+            
+        return created, port
 class UrlRepository(BaseRepository):
     model = Models.Url
 
