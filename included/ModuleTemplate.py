@@ -99,8 +99,10 @@ class ToolTemplate(ModuleTemplate):
             targets = self.get_targets(args)
             
             if not args.no_binary and targets:
-                cmd = self.build_cmd(args)
-                cmds = [shlex.split(cmd.format(**t)) + [timeout] for t in targets]
+                cmd = self.build_cmd(args).strip()
+                
+                cmds = [cmd.format(**t).split(' ') + [timeout] for t in targets]
+                
                 self.pre_run(args)
                 pool = ThreadPool(int(args.threads))
 

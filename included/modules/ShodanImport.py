@@ -69,6 +69,19 @@ class Module(ModuleTemplate):
                 display("Processing IP: {} Port: {}/{}".format(ip_address_str, port_str, transport))
                 created, IP = self.IPAddress.find_or_create(ip_address = ip_address_str)
                 created, port = self.Port.find_or_create(ip_address = IP, port_number = port_str, proto = transport)
+                if created:
+                    svc = ""
+
+                    if res.get('ssl', False):
+                        svc = 'https'
+                    elif res.get('http', False):
+                        svc = 'http'
+
+                    else:
+                        svc = ''
+
+                    port.service_name = svc
+
                 port.meta['shodan_data'] = res
                 port.save()
 
