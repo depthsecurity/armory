@@ -79,13 +79,14 @@ class Module(ToolTemplate):
             output_path = c['output']
             if os.path.isfile(output_path):
                 data = open(output_path).read().split('\n')
+                for d in data:
+                    if 'Found: ' in d:
+                        new_domain = d.split(' ')[1].lower()
+                        created, subdomain = self.Domain.find_or_create(domain=new_domain)
             else:
                 display_error("{} not found.".format(output_path))
-                return
+                
 
-            for d in data:
-                if 'Found: ' in d:
-                    new_domain = d.split(' ')[1].lower()
-                    created, subdomain = self.Domain.find_or_create(domain=new_domain)
+            
 
         self.Domain.commit()

@@ -2,7 +2,7 @@
 from .models import Models
 import datetime
 import pdb
-from netaddr import IPNetwork, IPAddress
+import time
 import tldextract
 from netaddr import IPNetwork, IPAddress, iprange_to_cidrs
 from ipwhois import IPWhois
@@ -258,6 +258,7 @@ class IPRepository(BaseRepository):
 
             # Build CIDR info - mainly for reporting
             res = False
+            
             for cidr in private_subnets:
 
                 if IPAddress(ip_str) in cidr:
@@ -266,10 +267,16 @@ class IPRepository(BaseRepository):
             if res:
                 cidr_data = res
             else:
-                try:
-                    res = IPWhois(ip_str).lookup_whois(get_referral=True)
-                except: 
-                    res = IPWhois(ip_str).lookup_whois()
+                while True:
+                    try:
+                        res = IPWhois(ip_str).lookup_whois(get_referral=True)
+                    except: 
+                        res = IPWhois(ip_str).lookup_whois()
+                    if res['nets']:
+                        break
+                    else:
+                        display_warning("The networks didn't populate from whois. Usually retrying after a couple of seconds resolves this. Sleeping for 5 seconds and trying again.")
+                        time.sleep(5)
                 cidr_data = []
 
                 for n in res['nets']:
@@ -280,8 +287,11 @@ class IPRepository(BaseRepository):
                         cidr_data.append([n['cidr'], n['description']])
         
                 cidr_data = [cidr_d for cidr_d in cidr_data if IPAddress(ip_str) in IPNetwork(cidr_d[0])]
-                
-            cidr_len = len(IPNetwork(cidr_data[0][0]))
+             
+            try:
+                cidr_len = len(IPNetwork(cidr_data[0][0]))
+            except:
+                pdb.set_trace()
             matching_cidr = cidr_data[0]
             for c in cidr_data:
                 if len(IPNetwork(c[0])) < cidr_len:
