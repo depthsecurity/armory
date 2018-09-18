@@ -18,6 +18,18 @@ Ports = PortRepository(db, "Shell Client")
 Urls = UrlRepository(db, "Shell Client")
 ScopeCIDRs = ScopeCIDRRepository(db, "Shell Client")
 
+def get_domains(ip_addr):
+    ips = IPAddresses.all(ip_address=ip_addr)
+    if ips and len(ips) == 1:
+        domains = ips[0].domains
+        if domains:
+            for d in domains:
+                print("Domain: {}".format(d))
+        else:
+            print("No domains found for {}".format(ip_addr))
+
+    else:
+        print("No good results in database for {}".format(ip_addr))
 
 print("Make sure to use this script with ipython and -i")
 print("    ipython -i shell.py")
