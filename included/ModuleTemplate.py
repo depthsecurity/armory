@@ -110,7 +110,7 @@ class ToolTemplate(ModuleTemplate):
             if not args.no_binary and targets:
                 cmd = self.build_cmd(args).strip()
                 
-                cmds = [cmd.format(**t).split(' ') + [timeout] for t in targets]
+                cmds = [shlex.split(cmd.format(**t)) + [timeout] for t in targets]
                 
                 # if hard_timeout:
                 #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
