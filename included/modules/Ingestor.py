@@ -114,7 +114,7 @@ class Module(ModuleTemplate):
 
     def process_ip(self, ip_str, force_scope=True):
         
-        created, ip = self.IPAddress.find_or_create(only_tool=True, ip_address=ip_str, in_scope=in_scope, passive_scope=self.passive_scope)
+        created, ip = self.IPAddress.find_or_create(only_tool=True, ip_address=ip_str, in_scope=self.in_scope, passive_scope=self.passive_scope)
         if not created:
             if ip.in_scope != self.in_scope or ip.passive_scope != self.passive_scope:
                 display("IP %s already exists with different scoping. Updating to Active Scope: %s Passive Scope: %s" % (ip_str, self.in_scope, self.passive_scope))
