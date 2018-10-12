@@ -61,7 +61,7 @@ class Module(ToolTemplate):
                 for p in ["https", "ftps", "imaps", "sip-tls", "imqtunnels", "smtps"]:
                     svc += [
                         (s, "")
-                        for s in self.Port.all(service_name=p)
+                        for s in self.Port.all(service_name=p, status="open")
                         if s.ip_address.in_scope
                     ]
                 for p in [
@@ -77,14 +77,14 @@ class Module(ToolTemplate):
                 ]:
                     svc += [
                         (s, "--starttls-%s" % p)
-                        for s in self.Port.all(service_name=p)
+                        for s in self.Port.all(service_name=p, status="open")
                         if s.ip_address.in_scope
                     ]
             else:
                 for p in ["https", "ftps", "imaps", "sip-tls", "imqtunnels", "smtps"]:
                     svc += [
                         (s, "")
-                        for s in self.Port.all(tool=self.name, service_name=p)
+                        for s in self.Port.all(tool=self.name, service_name=p, status="open")
                         if s.ip_address.in_scope
                     ]
                 for p in [
@@ -100,7 +100,7 @@ class Module(ToolTemplate):
                 ]:
                     svc += [
                         (s, "--starttls-%s" % p)
-                        for s in self.Port.all(tool=self.name, service_name=p)
+                        for s in self.Port.all(tool=self.name, service_name=p, status="open")
                         if s.ip_address.in_scope
                     ]
 
