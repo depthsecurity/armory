@@ -9,7 +9,14 @@ from ipwhois import IPWhois
 import pdb
 import warnings
 from included.utilities.color_display import display, display_new, display_error
+import string
 
+def check_string(s):
+
+    for c in s:
+        if c in string.ascii_letters:
+            return True
+    return False
 
 class Module(ModuleTemplate):
     '''
@@ -37,13 +44,25 @@ class Module(ModuleTemplate):
         self.options.add_argument('-p', '--passive', help='Set scoping on imported data as passive', action="store_true")
         self.options.add_argument('-sc', '--scope_cidrs', help='Cycle through out of scope networks and decide if you want to add them in scope', action="store_true")
         self.options.add_argument('-sb', '--scope_base_domains', help='Cycle through out of scope base domains and decide if you want to add them in scope', action="store_true")
-
+        self.options.add_argument('--descope', help="Descope an IP, domain, or CIDR")
         self.options.add_argument('-Ii', '--import_database_ips', help='Import IPs from database', action="store_true")
         self.options.add_argument('--force', help="Force processing again, even if already processed", action="store_true")
+
     def run(self, args):
         
         self.in_scope = args.active
         self.passive_scope = args.passive
+
+        if args.descope:
+            if '/' in args.descope:
+                self.descope_cidr(args.descope)
+            elif check_string(args.descope):
+                pass
+
+            else:
+                self.descope_ip(args.descope)
+                
+                # Check if in ScopeCIDR and remove if found
 
         if args.import_ips:
             try:
@@ -170,3 +189,32 @@ class Module(ModuleTemplate):
             bd.save()
         else:
             display_error("Unfortunately, there is no whois information for {}. Please populate it using the Whois module".format(bd.domain))
+
+    def descope_ip(self, ip):
+        ip = self.IPAddress.all(ip_address=ip)
+        if ip:
+            for i in ip:
+                display("Removing IP {} from scope".format(i.ip_address))
+                i.in_scope = False
+                i.passive_scope = False
+                i.update()
+                for d in i.domains:
+                    in_scope_ips = [ipa for ipa in d.ip_addresses if ipa.in_scope or ipa.passive_scope]
+                    if not in_scope_ips:
+                        display("Domain {} has no more scoped IPs. Removing from scope.".format(d.domain))
+                        d.in_scope = False
+                        d.passive_scope = False
+            self.IPAddress.commit()
+
+    def descope_cidr(self, cidr):
+        CIDR = self.ScopeCIDR.all(cidr=cidr)
+        if CIDR:
+            for c in CIDR:
+                display("Removing {} from ScopeCIDRs".format(c.cidr))
+                c.delete()
+        cnet = IPNetwork(cidr)
+        for ip in self.IPAddress.all():
+            if IPAddress(ip.ip_address) in cnet:
+                
+                self.descope_ip(ip.ip_address)
+

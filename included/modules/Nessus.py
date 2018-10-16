@@ -8,7 +8,7 @@ from tld import get_tld
 import xml.etree.cElementTree as ET
 import requests
 import json
-
+import pdb
 
 class Module(ModuleTemplate):
 
@@ -136,8 +136,10 @@ class Module(ModuleTemplate):
 								tmpF5Output[i] = " "
 								return "".join(tmpF5Output).replace("["," [")
 				else:
+
 					return ""
 		else:
+			
 			return False
 
 	def getVulns(self, ip, ReportHost):

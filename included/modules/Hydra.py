@@ -37,9 +37,9 @@ class Module(ToolTemplate):
         self.options.add_argument('--vnc_wordlist', help="Wordlist for VNC")
 
 
-    def set_targets(self):
+    def get_targets(self, args):
         targets = []
-
+        
 
         if args.host:
             service, hp = args.host.split('://')
@@ -53,7 +53,7 @@ class Module(ToolTemplate):
                     targets.append(h)
                     
         elif args.scan_defaults:
-
+            lists = {}
             if args.ftp_wordlist:
                 for p in ['ftps', 'ftp']:
                     lists[args.ftp_wordlist] = [s for s in self.Port.all(tool=self.name, service_name=p)]           
@@ -78,7 +78,7 @@ class Module(ToolTemplate):
                 for s in lists[k]:
                     
                     port_number = s.port_number
-                    ip_address = s.ipaddress.ip_address
+                    ip_address = s.ip_address.ip_address
                     name = s.service_name
                     
                     targets.append({"service":name, "target":ip_address, "port":port_number, "wordlist":k})

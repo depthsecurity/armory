@@ -160,12 +160,12 @@ class Report(ReportTemplate):
             longest_passwords = length_count[sorted(length_count.keys())[-1]]['pws']
 
             if len(shortest_passwords) > 1:
-                results.append("%s%sShortest Passwords" % (nd.join(shortest_passwords),td))
+                results.append("%s%sShortest Passwords" % (nd.join(list(set(shortest_passwords[:3]))),td))
             else:
                 results.append("%s%sShortest Password" % (shortest_passwords[0],td))
 
             if len(longest_passwords) > 1:
-                results.append("%s%sLongest Passwords" % (nd.join(longest_passwords),td))
+                results.append("%s%sLongest Passwords" % (nd.join(list(set(longest_passwords[:3]))),td))
             else:
                 results.append("%s%sLongest Password" % (longest_passwords[0],td))
 
@@ -186,13 +186,15 @@ class Report(ReportTemplate):
             results.append("")
             results.append("\t\tPassword Length Statistics")
             results.append("Password Length%sCount" % td)
+            
             for l in sorted(length_count.keys()):
                 results.append("%s%s%s" % (l, td, length_count[l]['count']))
 
             count_totals = []
+
             for k in pw_count.keys():
                 count_totals.append([pw_count[k]['count'], k])
-
+            
             top20 = sorted(count_totals)[::-1][:20]
             
             results.append("")
@@ -200,7 +202,7 @@ class Report(ReportTemplate):
             results.append("Password%sCount" % td)
 
             for t in top20:
-                results.append("%s%s%s" % (t[1], td, t[0]))
+                results.append("%s%s%s" % (t[1].replace('\n', '').replace('\r', ''), td, t[0]))
 
         self.process_output(results, args)
 

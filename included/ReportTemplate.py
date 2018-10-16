@@ -40,6 +40,7 @@ class ReportTemplate(object):
         self.options.add_argument('-x', '--clipboard', help="Copy output to clipboard", action="store_true")
         self.options.add_argument('-o', '--output', help="Save output to file")
         self.options.add_argument('--custom_depth', help="Comma separated list of custom markdown")
+        self.options.add_argument('-s', '--scope', help="Scoping restrictions for report.", choices=['active', 'passive', 'all'], default='all')
     def run(self, args):
         '''
         Execute the module, receives argparse arguments.
