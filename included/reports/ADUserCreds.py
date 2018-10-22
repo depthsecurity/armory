@@ -106,8 +106,10 @@ class Report(ReportTemplate):
 
             for c in cracked_data.split('\n'):
                 h = c[:32]
+                
                 pw = c[33:]
-
+                if pw[:5] == '$HEX[' and pw[-1] == ']':
+                    pw = pw[5:-1].lower().decode('hex')
                 hash_map[h] = pw
 
             with open(args.hashes) as hash_file:
@@ -181,7 +183,7 @@ class Report(ReportTemplate):
             if args.keywords:
                 keywords = [k.strip() for k in args.keywords.split(',')]
                 for k in keywords:
-                    results.append("%s%s Passswords Containing \"%s\"" % (self.search_term(k, pw_count), td, k))
+                    results.append("%s%s Passwords Containing \"%s\"" % (self.search_term(k, pw_count), td, k))
         
             results.append("")
             results.append("\t\tPassword Length Statistics")

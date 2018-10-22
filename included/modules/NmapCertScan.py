@@ -75,18 +75,21 @@ class Module(ToolTemplate):
 
             try:
                 xmldata = xmltodict.parse(open(data['output']).read())
-            
+                
                 cert = xmldata['nmaprun']['host']['ports']['port']['script']['@output']
 
                 if cert:
+                    # print("Cert found: {}".format(cert))
                     svc = self.Port.all(id=data['service_id'])[0]
-                    if not svc.meta.get(self.name, False):
-                        svc.meta[self.name] = {}
-                    svc.meta[self.name][data['target']] = cert
+                    
+                    # pdb.set_trace()
+                    if not svc.meta.get('sslcert', False):
+                        svc.meta['sslcert'] = {}
+                    svc.meta['sslcert'][data['target']] = cert
+                    print("Cert added to {} for {}".format(data['service_id'], data['target']))
+                    svc.save()
 
-                    svc.update()
-
-            except:
-                display_error("File not valid: {}".format(data['output']))
+            except Exception as e:
+                display_error("File not valid: {}\nError: {}".format(data['output'], e))
 
         self.Port.commit()

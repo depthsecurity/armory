@@ -23,8 +23,10 @@ class Report(ReportTemplate):
     def run(self, args):
         # Cidrs = self.CIDR.
         results = []
-
-        domains = self.BaseDomain.all()
+        if args.scope != 'all':
+            domains = self.BaseDomain.all(scope_type=args.scope)
+        else:
+            domains = self.BaseDomain.all()
         
         domain_data = {}
         for d in domains:

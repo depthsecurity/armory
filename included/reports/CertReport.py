@@ -26,10 +26,13 @@ class Report(ReportTemplate):
     def run(self, args):
         
         results = []
-        services = self.Port.all(name='https')
+        services = self.Port.all(service_name='https')
         certs = {}
         for s in services:
-            if s.passive_scope:
+            
+            if (args.scope == 'passive' and s.ip_address.passive_scope) or \
+                (args.scope == 'active' and s.ip_address.in_scope) or \
+                (args.scope == 'all'):
                 if s.meta.get('sslcert', False):
                     for k in s.meta['sslcert'].keys():
                         cert = s.meta['sslcert'][k]
@@ -38,6 +41,16 @@ class Report(ReportTemplate):
                             certs[cert] = []
 
                         certs[cert].append(k + ':' + str(s.port_number))
+                elif s.meta.get('NmapCertScan', False):
+                    # pdb.set_trace()
+                    for k in s.meta['NmapCertScan'].keys():
+                        if k != 'created':
+                            cert = s.meta['NmapCertScan'][k]
+                            # pdb.set_trace()
+                            if not certs.get(cert, False):
+                                certs[cert] = []
+
+                            certs[cert].append(k + ':' + str(s.port_number))
 
         for k in certs.keys():
             results.append(', '.join(sorted(list(set(certs[k])))))
