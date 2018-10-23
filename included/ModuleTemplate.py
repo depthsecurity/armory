@@ -52,7 +52,7 @@ class ToolTemplate(ModuleTemplate):
 
     def set_options(self):
         super(ToolTemplate, self).set_options()
-        
+
         self.options.add_argument('-b', '--binary', help="Path to the binary")
         self.options.add_argument('-o', '--output_path', help="Relative path (to the base directory) to store output", default=self.name)
         self.options.add_argument('--threads', help="Number of Armory threads to use", default="10")
