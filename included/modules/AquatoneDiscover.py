@@ -96,7 +96,7 @@ class Module(ToolTemplate):
 
             data2= json.loads(open(cmd['output']).read())
 
-            for sub, ip in data2.iteritems():
+            for sub, ip in data2.items():
                 created = False
                 new_domain = sub.lower()
 

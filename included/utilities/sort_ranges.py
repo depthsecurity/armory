@@ -15,7 +15,8 @@ def sort_ranges(ranges):
         return ranges
 
     good_ranges = []
-
+    if not ranges:
+        return []
     current_range = ranges.pop(0)
 
     for r in ranges:

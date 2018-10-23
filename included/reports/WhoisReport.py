@@ -27,6 +27,7 @@ class Report(ReportTemplate):
             domains = self.BaseDomain.all(scope_type=args.scope)
         else:
             domains = self.BaseDomain.all()
+            
         
         domain_data = {}
         for d in domains:

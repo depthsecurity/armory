@@ -10,13 +10,15 @@ import pdb
 import tempfile
 from time import time
 import glob
+import sys
 
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 
-
+if sys.version[0] == '3':
+    xrange = range
 class Module(ToolTemplate):
     
     name = "Gowitness"

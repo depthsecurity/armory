@@ -12,7 +12,7 @@ class Report(ReportTemplate):
     This report displays all of the CIDR information, as well as the IP addresses and
     associated domains.
     '''
-    markdown = ['###', '####', '-', '--']
+    markdown = ['### ', '#### ', '- ', '-- ']
 
     name = ""
     def __init__(self, db):
@@ -27,6 +27,7 @@ class Report(ReportTemplate):
 
         CIDRs = self.CIDR.all()
         for c in CIDRs:
+
             if results.get(c.org_name, False):
                 if not results[c.org_name].get(c.cidr, False):
                     results[c.org_name][c.cidr] = {}
@@ -41,7 +42,7 @@ class Report(ReportTemplate):
 
         
         res = []
-        
+        results[''] = results.pop(None)
         for cidr in sorted(results.keys()):
             if not cidr:
                 res.append("")
