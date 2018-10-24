@@ -51,6 +51,7 @@ class ToolTemplate(ModuleTemplate):
     def set_options(self):
         super(ToolTemplate, self).set_options()
 
+
         self.options.add_argument("-b", "--binary", help="Path to the binary")
         self.options.add_argument(
             "-o",
@@ -105,6 +106,7 @@ class ToolTemplate(ModuleTemplate):
         self.options.add_argument(
             "--profile4_data", help="Additional arguments to be appended", default=""
         )
+
         # self.options.add_argument('--profile1', help="Use first profile options")
 
     def run(self, args):
@@ -219,3 +221,4 @@ def run_cmd(cmd):
 
     else:
         Popen(c).wait()
+
