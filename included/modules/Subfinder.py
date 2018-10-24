@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from database.repositories import (
-    DomainRepository, BaseDomainRepository, IPRepository)
+from database.repositories import DomainRepository, BaseDomainRepository, IPRepository
 from included.ModuleTemplate import ToolTemplate
 from included.utilities import get_domain_ip
 import io
@@ -19,18 +18,34 @@ class Module(ToolTemplate):
 
     def set_options(self):
         super(Module, self).set_options()
-        self.options.add_argument('-a', '--bruteforce-all', help='Brute-force subdomains.')
-        self.options.add_argument('-d', '--domain', help='Domain to run subfinder against.')
-        self.options.add_argument('-dL', '--domain-list',
-                                  help='Read in a list of domains within the given file.')
-        self.options.add_argument('-i', '--db_domains',
-                                  help='Import the domains from the database.', action="store_true")
-        self.options.add_argument('-r', '--resolvers',
-                                  help='A list of resolvers(comma-separated) or a file containing a list of resolvers.')
-        self.options.add_argument("--rescan",
-                                  help="Overwrite files without asking", action="store_true")
-        self.options.add_argument('-w', '--wordlist',
-                                  help='The wordlist for when bruteforcing is selected.')
+        self.options.add_argument(
+            "-a", "--bruteforce-all", help="Brute-force subdomains."
+        )
+        self.options.add_argument(
+            "-d", "--domain", help="Domain to run subfinder against."
+        )
+        self.options.add_argument(
+            "-dL",
+            "--domain-list",
+            help="Read in a list of domains within the given file.",
+        )
+        self.options.add_argument(
+            "-i",
+            "--db_domains",
+            help="Import the domains from the database.",
+            action="store_true",
+        )
+        self.options.add_argument(
+            "-r",
+            "--resolvers",
+            help="A list of resolvers(comma-separated) or a file containing a list of resolvers.",
+        )
+        self.options.add_argument(
+            "--rescan", help="Overwrite files without asking", action="store_true"
+        )
+        self.options.add_argument(
+            "-w", "--wordlist", help="The wordlist for when bruteforcing is selected."
+        )
 
     def get_targets(self, args):
         targets = []
@@ -49,12 +64,18 @@ class Module(ToolTemplate):
                 return targets
             targets.append({"target": self.db_domain_file, "output": out_file})
         elif args.domain_list:
-            domains = io.open(args.domain_list, encoding="utf-8").read().split('\n')
+            domains = io.open(args.domain_list, encoding="utf-8").read().split("\n")
             for d in domains:
                 if d:
                     created, domain = self.BaseDomains.find_or_create(domain=d)
-            targets.append({"target": args.domain_list,
-                            "output": os.path.join(outpath, "{}.subfinder".format(args.domain_list))})
+            targets.append(
+                {
+                    "target": args.domain_list,
+                    "output": os.path.join(
+                        outpath, "{}.subfinder".format(args.domain_list)
+                    ),
+                }
+            )
         return targets
 
     def build_cmd(self, args):
@@ -84,7 +105,7 @@ class Module(ToolTemplate):
 
     def post_run(self, args):
         # Remove the temporary db file if it was created.
-        if getattr(self, 'db_domain_file', None):
+        if getattr(self, "db_domain_file", None):
             try:
                 os.unlink(self.db_domain_file)
             except IOError as e:
@@ -93,6 +114,7 @@ class Module(ToolTemplate):
     def __get_tempfile(self, domain=None, args=None):
         # Create a temporary file and place all of the current database domains within the file.
         from tempfile import NamedTemporaryFile
+
         with NamedTemporaryFile(delete=False) as fd:
             if domain:
                 fd.write("{}\n".format(domain).encode("utf-8"))
