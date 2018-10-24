@@ -1,20 +1,26 @@
 #!/usr/bin/python
 
 from included.ReportTemplate import ReportTemplate
-from database.repositories import DomainRepository, IPRepository, CIDRRepository, BaseDomainRepository
+from database.repositories import (
+    DomainRepository,
+    IPRepository,
+    CIDRRepository,
+    BaseDomainRepository,
+)
 import pdb
 import json
 
 
-
 class Report(ReportTemplate):
-    '''
+    """
     This report displays all of the CIDR information, as well as the IP addresses and
     associated domains.
-    '''
-    markdown = ['### ', '#### ', '- ', '-- ']
+    """
+
+    markdown = ["### ", "#### ", "- ", "-- "]
 
     name = ""
+
     def __init__(self, db):
         self.BaseDomain = BaseDomainRepository(db)
         self.Domain = DomainRepository(db)
@@ -40,9 +46,8 @@ class Report(ReportTemplate):
                         if d.passive_scope:
                             results[c.org_name][c.cidr][ip.ip_address].append(d.domain)
 
-        
         res = []
-        results[''] = results.pop(None)
+        results[""] = results.pop(None)
         for cidr in sorted(results.keys()):
             if not cidr:
                 res.append("")
@@ -55,7 +60,3 @@ class Report(ReportTemplate):
                     for domain in sorted(results[cidr][ranges][ips]):
                         res.append("\t\t\t" + domain)
         self.process_output(res, args)
-
-
-
-    

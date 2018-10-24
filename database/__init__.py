@@ -22,19 +22,24 @@ class JSONEncodedDict(types.TypeDecorator):
             return json.dumps(value)
 
         return value
+
     def process_result_value(self, value, dialect):
         if value is not None:
             return json.loads(value)
         return value
 
+
 JsonType = MutableDict.as_mutable(JSONEncodedDict)
 
-Base.metadata = MetaData(naming_convention={
-    "ix": "ix_%(column_0_label)s",
-    "uq": "uq_%(table_name)s_%(column_0_name)s",
-    "ck": "ck_%(table_name)s_%(constraint_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s"})
+Base.metadata = MetaData(
+    naming_convention={
+        "ix": "ix_%(column_0_label)s",
+        "uq": "uq_%(table_name)s_%(column_0_name)s",
+        "ck": "ck_%(table_name)s_%(constraint_name)s",
+        "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+        "pk": "pk_%(table_name)s",
+    }
+)
 
 
 class BaseModel(Base, ActiveRecordMixin, ReprMixin):
@@ -47,34 +52,34 @@ class BaseModel(Base, ActiveRecordMixin, ReprMixin):
     in_scope = Column(Boolean(create_constraint=False), default=False)
     passive_scope = Column(Boolean(create_constraint=False), default=False)
 
-
     def set_tool(self, tool):
         meta = self.meta
         if meta:
             if meta.get(tool, False):
-                if meta[tool].get('created', False):
+                if meta[tool].get("created", False):
                     created = False
                 else:
-                    meta[tool]['created'] = str(datetime.now())
+                    meta[tool]["created"] = str(datetime.now())
                     created = False
             else:
-                meta[tool] = {'created':str(datetime.now())}
+                meta[tool] = {"created": str(datetime.now())}
                 created = False
         else:
-            meta = {tool:{'created':str(datetime.now())}}
+            meta = {tool: {"created": str(datetime.now())}}
             created = False
-        
-            obj.meta=meta
+
+            obj.meta = meta
             obj.save()
+
 
 class Database(object):
     def __init__(self, connect_str, init_db=True):
         from .models import Models
-        self.engine = create_engine(connect_str,
-                                    convert_unicode=True)
-        self.db_session = scoped_session(sessionmaker(autocommit=False,
-                                                      autoflush=False,
-                                                      bind=self.engine))
+
+        self.engine = create_engine(connect_str, convert_unicode=True)
+        self.db_session = scoped_session(
+            sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        )
         self.BaseModel = BaseModel()
         Base.query = self.db_session.query_property()
         self.models = Models

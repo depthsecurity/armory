@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-def run(txt, colsizes, delim='\t'):
+
+def run(txt, colsizes, delim="\t"):
 
     coldata = txt.split(delim)
     res = []
@@ -9,9 +10,8 @@ def run(txt, colsizes, delim='\t'):
 
     for i in range(len(coldata)):
         if len(coldata[i]) >= colsizes[i]:
-            res.append(coldata[i][:colsizes[i]])
+            res.append(coldata[i][: colsizes[i]])
         else:
-            res.append(coldata[i] + (' ' * (colsizes[i] - len(coldata[i]))) )
+            res.append(coldata[i] + (" " * (colsizes[i] - len(coldata[i]))))
 
-
-    return ' '.join(res)
+    return " ".join(res)

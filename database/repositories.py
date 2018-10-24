@@ -10,84 +10,88 @@ import warnings
 from tld import get_tld
 import dns.resolver
 from included.utilities.color_display import display, display_warning, display_new
+
 # Shut up whois warnings.
 
 warnings.filterwarnings("ignore")
 
 # List of invalid CIDRs for ipwhois
 
-private_subnets = [IPNetwork('0.0.0.0/8'),
-IPNetwork('10.0.0.0/8'),
-IPNetwork('100.64.0.0/10'),
-IPNetwork('127.0.0.0/8'),
-IPNetwork('169.254.0.0/16'),
-IPNetwork('172.16.0.0/12'),
-IPNetwork('192.0.0.0/24'),
-IPNetwork('192.0.2.0/24'),
-IPNetwork('192.88.99.0/24'),
-IPNetwork('192.168.0.0/16'),
-IPNetwork('198.18.0.0/15'),
-IPNetwork('198.51.100.0/24'),
-IPNetwork('203.0.113.0/24'),
-IPNetwork('224.0.0.0/4'),
-IPNetwork('240.0.0.0/4'),
-IPNetwork('255.255.255.255/32')]
+private_subnets = [
+    IPNetwork("0.0.0.0/8"),
+    IPNetwork("10.0.0.0/8"),
+    IPNetwork("100.64.0.0/10"),
+    IPNetwork("127.0.0.0/8"),
+    IPNetwork("169.254.0.0/16"),
+    IPNetwork("172.16.0.0/12"),
+    IPNetwork("192.0.0.0/24"),
+    IPNetwork("192.0.2.0/24"),
+    IPNetwork("192.88.99.0/24"),
+    IPNetwork("192.168.0.0/16"),
+    IPNetwork("198.18.0.0/15"),
+    IPNetwork("198.51.100.0/24"),
+    IPNetwork("203.0.113.0/24"),
+    IPNetwork("224.0.0.0/4"),
+    IPNetwork("240.0.0.0/4"),
+    IPNetwork("255.255.255.255/32"),
+]
 
 
 class BaseRepository(object):
     model = None
+
     def __init__(self, db, toolname=None):
         self.db = db
         self.toolname = toolname
 
     def find(self, **kwargs):
-        '''
+        """
         This function can be used to find an object, but won't create one.
-        '''
+        """
         obj = self.db.db_session.query(self.model).filter_by(**kwargs).one_or_none()
 
         return obj
 
     def find_or_create(self, only_tool=False, **kwargs):
-        '''
+        """
         This function can be used to look for one object. If it doesn't
         exist, it'll be created. The 'only_tool' parameter will only
         return newly created if the object has never been touched by
         that tool before.
-        '''
+        """
 
         created = False
-        
+
         obj = self.db.db_session.query(self.model).filter_by(**kwargs).one_or_none()
-        
 
         if only_tool:
             if obj is None:
                 created = True
                 obj = self.model.create(**kwargs)
-                meta = {self.toolname:{'created':str(datetime.datetime.now())}}
-                obj.meta=meta
+                meta = {self.toolname: {"created": str(datetime.datetime.now())}}
+                obj.meta = meta
                 obj.save()
             else:
                 # pdb.set_trace()
                 meta = obj.meta
                 if meta:
                     if meta.get(self.toolname, False):
-                        if meta[self.toolname].get('created', False):
+                        if meta[self.toolname].get("created", False):
                             created = False
                         else:
-                            meta[self.toolname]['created'] = str(datetime.datetime.now())
+                            meta[self.toolname]["created"] = str(
+                                datetime.datetime.now()
+                            )
                             created = True
                     else:
-                        meta[self.toolname] = {'created':str(datetime.datetime.now())}
+                        meta[self.toolname] = {"created": str(datetime.datetime.now())}
                         created = True
                 else:
-                    meta = {self.toolname:{'created':str(datetime.datetime.now())}}
+                    meta = {self.toolname: {"created": str(datetime.datetime.now())}}
                     created = True
-                        
-                               
+
                 # pdb.set_trace()
-                obj.meta=meta
+                obj.meta = meta
                 obj.save()
             return (created, obj)
         else:
@@ -97,65 +101,79 @@ class BaseRepository(object):
                     obj = self.model.create(**kwargs)
                 except:
                     pdb.set_trace()
-                meta = {self.toolname:{'created':str(datetime.datetime.now())}}
-                obj.meta=meta
+                meta = {self.toolname: {"created": str(datetime.datetime.now())}}
+                obj.meta = meta
                 obj.save()
             else:
                 meta = obj.meta
                 if meta:
                     if meta.get(self.toolname, False):
-                        if meta[self.toolname].get('created', False):
+                        if meta[self.toolname].get("created", False):
                             created = False
                         else:
-                            meta[self.toolname]['created'] = str(datetime.datetime.now())
+                            meta[self.toolname]["created"] = str(
+                                datetime.datetime.now()
+                            )
                             created = False
                     else:
-                        meta[self.toolname] = {'created':str(datetime.datetime.now())}
+                        meta[self.toolname] = {"created": str(datetime.datetime.now())}
                         created = False
                 else:
-                    meta = {self.toolname:{'created':str(datetime.datetime.now())}}
+                    meta = {self.toolname: {"created": str(datetime.datetime.now())}}
                     created = False
-                
-                    obj.meta=meta
+
+                    obj.meta = meta
                     obj.save()
             return (created, obj)
 
     def all(self, tool=False, scope_type="", **kwargs):
         # obj = self.db.db_session.query(self.model).all()
         if scope_type == "passive":
-            obj = self.db.db_session.query(self.model).filter_by(passive_scope=True, **kwargs).all()
+            obj = (
+                self.db.db_session.query(self.model)
+                .filter_by(passive_scope=True, **kwargs)
+                .all()
+            )
         elif scope_type == "active":
-            obj = self.db.db_session.query(self.model).filter_by(in_scope=True, **kwargs).all()
+            obj = (
+                self.db.db_session.query(self.model)
+                .filter_by(in_scope=True, **kwargs)
+                .all()
+            )
         else:
             obj = self.db.db_session.query(self.model).filter_by(**kwargs).all()
         if not tool:
-            
+
             return obj
-        
+
         else:
             objects = []
             for o in obj:
-                if o.meta and o.meta.get(tool, False) and o.meta[tool].get('created', False):
+                if (
+                    o.meta
+                    and o.meta.get(tool, False)
+                    and o.meta[tool].get("created", False)
+                ):
                     pass
                 else:
                     objects.append(o)
             for o in objects:
                 if not o.meta.get(tool, False):
                     o.meta[tool] = {}
-                
-                o.meta[tool]['created'] = str(datetime.datetime.now())
+
+                o.meta[tool]["created"] = str(datetime.datetime.now())
             return objects
 
-                
-            
     def commit(self):
         return self.db.db_session.commit()
 
 
-
 class DomainRepository(BaseRepository):
     model = Models.Domain
-    def find_or_create(self, only_tool=False, in_scope=False, passive_scope=False, **kwargs):
+
+    def find_or_create(
+        self, only_tool=False, in_scope=False, passive_scope=False, **kwargs
+    ):
 
         created, d = super(DomainRepository, self).find_or_create(only_tool, **kwargs)
         display("Processing %s" % d.domain)
@@ -165,13 +183,21 @@ class DomainRepository(BaseRepository):
             d.in_scope = in_scope
             d.passive_scope = passive_scope
 
-            base_domain = '.'.join([t for t in tldextract.extract(d.domain)[1:] if t])
+            base_domain = ".".join([t for t in tldextract.extract(d.domain)[1:] if t])
             BaseDomains = BaseDomainRepository(self.db, "")
             # If the base domain is new, it'll inherit the same scoping permissions.
 
-            created, bd = BaseDomains.find_or_create(only_tool, passive_scope=d.passive_scope, in_scope=in_scope, domain=base_domain)
+            created, bd = BaseDomains.find_or_create(
+                only_tool,
+                passive_scope=d.passive_scope,
+                in_scope=in_scope,
+                domain=base_domain,
+            )
             if created:
-                display_new("The base domain %s is being added to the database. Active Scope: %s Passive Scope: %s" % (base_domain,bd.in_scope, bd.passive_scope))
+                display_new(
+                    "The base domain %s is being added to the database. Active Scope: %s Passive Scope: %s"
+                    % (base_domain, bd.in_scope, bd.passive_scope)
+                )
             else:
                 # If the base domain already exists, then the subdomain inherits the scope info from the base domain.
                 d.passive_scope = bd.passive_scope
@@ -180,26 +206,31 @@ class DomainRepository(BaseRepository):
             d.base_domain = bd
 
             # Get all IPs that this domain resolves to.
-            
+
             ips = []
             try:
-                answers = dns.resolver.query(d.domain, 'A')
+                answers = dns.resolver.query(d.domain, "A")
                 for a in answers:
                     ips.append(a.address)
-                        
+
             except:
                 # If something goes wrong with DNS, we end up here
                 pass
-            
+
             if not ips:
                 display_warning("No IPs discovered for %s" % d.domain)
 
             for i in ips:
                 IPAddresses = IPRepository(self.db, "")
                 display("Processing IP address %s" % i)
-                
-                created, ip = IPAddresses.find_or_create(only_tool, in_scope=d.in_scope, passive_scope=d.passive_scope, ip_address=i)
-                
+
+                created, ip = IPAddresses.find_or_create(
+                    only_tool,
+                    in_scope=d.in_scope,
+                    passive_scope=d.passive_scope,
+                    ip_address=i,
+                )
+
                 # If the IP is in scope, then the domain should be
                 if ip.in_scope:
                     d.in_scope = ip.in_scope
@@ -207,13 +238,16 @@ class DomainRepository(BaseRepository):
                     d.passive_scope = True
 
                     # display("%s marked active scope due to IP being marked active." % d.domain)
-                
+
                 elif ip.passive_scope:
                     d.passive_scope = ip.passive_scope
 
                 d.ip_addresses.append(ip)
-                
-                display_new("%s is being added to the database. Active Scope: %s Passive Scope: %s" % (d.domain,d.in_scope, d.passive_scope))
+
+                display_new(
+                    "%s is being added to the database. Active Scope: %s Passive Scope: %s"
+                    % (d.domain, d.in_scope, d.passive_scope)
+                )
 
             # Final sanity check - if a domain is active scoped, it should also be passively scoped.
             if d.in_scope:
@@ -221,11 +255,13 @@ class DomainRepository(BaseRepository):
 
         return created, d
 
-            
 
 class IPRepository(BaseRepository):
     model = Models.IPAddress
-    def find_or_create(self, only_tool=False,in_scope=False, passive_scope=True, **kwargs):
+
+    def find_or_create(
+        self, only_tool=False, in_scope=False, passive_scope=True, **kwargs
+    ):
 
         created, ip = super(IPRepository, self).find_or_create(only_tool, **kwargs)
         if created:
@@ -254,15 +290,13 @@ class IPRepository(BaseRepository):
                 ip.passive_scope = True
             ip.update()
 
-            
-
             # Build CIDR info - mainly for reporting
             res = False
-            
+
             for cidr in private_subnets:
 
                 if IPAddress(ip_str) in cidr:
-                    res = ([str(cidr), 'Non-Public Subnet'],)
+                    res = ([str(cidr), "Non-Public Subnet"],)
 
             if res:
                 cidr_data = res
@@ -270,24 +304,30 @@ class IPRepository(BaseRepository):
                 while True:
                     try:
                         res = IPWhois(ip_str).lookup_whois(get_referral=True)
-                    except: 
+                    except:
                         res = IPWhois(ip_str).lookup_whois()
-                    if res['nets']:
+                    if res["nets"]:
                         break
                     else:
-                        display_warning("The networks didn't populate from whois. Usually retrying after a couple of seconds resolves this. Sleeping for 5 seconds and trying again.")
+                        display_warning(
+                            "The networks didn't populate from whois. Usually retrying after a couple of seconds resolves this. Sleeping for 5 seconds and trying again."
+                        )
                         time.sleep(5)
                 cidr_data = []
 
-                for n in res['nets']:
-                    if ',' in n['cidr']:
-                        for cidr_str in n['cidr'].split(', '):
-                            cidr_data.append([cidr_str, n['description']])
+                for n in res["nets"]:
+                    if "," in n["cidr"]:
+                        for cidr_str in n["cidr"].split(", "):
+                            cidr_data.append([cidr_str, n["description"]])
                     else:
-                        cidr_data.append([n['cidr'], n['description']])
-        
-                cidr_data = [cidr_d for cidr_d in cidr_data if IPAddress(ip_str) in IPNetwork(cidr_d[0])]
-             
+                        cidr_data.append([n["cidr"], n["description"]])
+
+                cidr_data = [
+                    cidr_d
+                    for cidr_d in cidr_data
+                    if IPAddress(ip_str) in IPNetwork(cidr_d[0])
+                ]
+
             try:
                 cidr_len = len(IPNetwork(cidr_data[0][0]))
             except:
@@ -297,7 +337,10 @@ class IPRepository(BaseRepository):
                 if len(IPNetwork(c[0])) < cidr_len:
                     matching_cidr = c
 
-            display("Processing CIDR from whois: %s - %s" % (matching_cidr[1], matching_cidr[0]))
+            display(
+                "Processing CIDR from whois: %s - %s"
+                % (matching_cidr[1], matching_cidr[0])
+            )
             CIDR = CIDRRepository(self.db, "")
 
             created, cidr = CIDR.find_or_create(only_tool=True, cidr=matching_cidr[0])
@@ -307,58 +350,79 @@ class IPRepository(BaseRepository):
                 cidr.update()
 
             ip.cidr = cidr
-            
-
 
             ip.update()
 
-            display_new("IP address %s added to database. Active Scope: %s Passive Scope: %s" % (ip.ip_address, ip.in_scope, ip.passive_scope))
+            display_new(
+                "IP address %s added to database. Active Scope: %s Passive Scope: %s"
+                % (ip.ip_address, ip.in_scope, ip.passive_scope)
+            )
 
         return created, ip
+
 
 class CIDRRepository(BaseRepository):
     model = Models.CIDR
 
+
 class BaseDomainRepository(BaseRepository):
     model = Models.BaseDomain
 
+    def find_or_create(
+        self, only_tool=False, passive_scope=True, in_scope=False, **kwargs
+    ):
 
-    def find_or_create(self, only_tool=False, passive_scope=True, in_scope=False, **kwargs):
-
-        created, bd = super(BaseDomainRepository, self).find_or_create(only_tool, **kwargs)
+        created, bd = super(BaseDomainRepository, self).find_or_create(
+            only_tool, **kwargs
+        )
         if created:
             bd.in_scope = in_scope
             bd.passive_scope = passive_scope
-            
+
             if bd.in_scope:
                 bd.passive_scope = True
             bd.update()
-            
+
         return created, bd
+
 
 class UserRepository(BaseRepository):
     model = Models.User
 
+
 class CredRepository(BaseRepository):
     model = Models.Cred
+
 
 class VulnRepository(BaseRepository):
     model = Models.Vulnerability
 
+
 class PortRepository(BaseRepository):
     model = Models.Port
-    def find_or_create(self, only_tool=False, passive_scope=True, in_scope=False, **kwargs):
+
+    def find_or_create(
+        self, only_tool=False, passive_scope=True, in_scope=False, **kwargs
+    ):
 
         created, port = super(PortRepository, self).find_or_create(only_tool, **kwargs)
         if created:
-            display_new("Port {} added to database for IP {}".format(port.port_number, port.ip_address.ip_address))
-            
+            display_new(
+                "Port {} added to database for IP {}".format(
+                    port.port_number, port.ip_address.ip_address
+                )
+            )
+
         return created, port
+
+
 class UrlRepository(BaseRepository):
     model = Models.Url
 
+
 class ScopeCIDRRepository(BaseRepository):
     model = Models.ScopeCIDR
+
 
 class CVERepository(BaseRepository):
     model = Models.CVE
