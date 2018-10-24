@@ -6,21 +6,20 @@ import pdb
 import json
 
 
-
 class Report(ReportTemplate):
-    '''
+    """
     This report displays all of the found email addresses.
-    '''
+    """
 
     name = "EmailReport"
-    markdown = ['####', '-']
+    markdown = ["####", "-"]
 
     def __init__(self, db):
         self.User = UserRepository(db)
-        
+
     def set_options(self):
         super(Report, self).set_options()
-        self.options.add_argument('-t', '--tool', help="Source tool")
+        self.options.add_argument("-t", "--tool", help="Source tool")
 
     def run(self, args):
         # Cidrs = self.CIDR.
@@ -28,7 +27,7 @@ class Report(ReportTemplate):
         res = []
 
         users = self.User.all()
-        
+
         for u in users:
             if u.email != None and u.email != "None":
                 if args.tool:
@@ -38,7 +37,7 @@ class Report(ReportTemplate):
                 if u.domain:
                     domain = u.domain.domain
                 else:
-                    domain = u.email.split('@')[1]
+                    domain = u.email.split("@")[1]
                 if not results.get(domain, False):
                     results[domain] = []
 
@@ -47,6 +46,6 @@ class Report(ReportTemplate):
         for d in results.keys():
             res.append(d)
             for e in sorted(results[d]):
-                res.append('\t' + e)
-            
+                res.append("\t" + e)
+
         self.process_output(res, args)

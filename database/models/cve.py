@@ -2,19 +2,22 @@ from .. import BaseModel, Base
 from sqlalchemy import Column, Integer, String, ForeignKey, Table, Float
 from sqlalchemy.orm import relationship
 
-cve_vulnerability_table = Table('cve_vulnerability_table', Base.metadata,
-                        Column('vulnerability_id', Integer, ForeignKey('vulnerability.id')),
-                        Column('cve_id', Integer, ForeignKey('cve.id')))
+cve_vulnerability_table = Table(
+    "cve_vulnerability_table",
+    Base.metadata,
+    Column("vulnerability_id", Integer, ForeignKey("vulnerability.id")),
+    Column("cve_id", Integer, ForeignKey("cve.id")),
+)
+
 
 class CVE(BaseModel):
-    __tablename__ = 'cve'
-    __repr_attrs__ = ['name']
+    __tablename__ = "cve"
+    __repr_attrs__ = ["name"]
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    vulnerabilities = relationship('Vulnerability', secondary=cve_vulnerability_table,
-                                backref='cves')
+    vulnerabilities = relationship(
+        "Vulnerability", secondary=cve_vulnerability_table, backref="cves"
+    )
 
     temporal_score = Column(Float)
     description = Column(String)
-    
-

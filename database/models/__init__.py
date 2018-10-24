@@ -10,9 +10,22 @@ from .url import Url
 from .scopecidr import ScopeCIDR
 from .cve import CVE
 
+
 class Models(object):
     def __init__(self):
-        for m in [Domain, IPAddress, CIDR, BaseDomain, User, Cred, Vulnerability, Port, Url, ScopeCIDR, CVE]:
+        for m in [
+            Domain,
+            IPAddress,
+            CIDR,
+            BaseDomain,
+            User,
+            Cred,
+            Vulnerability,
+            Port,
+            Url,
+            ScopeCIDR,
+            CVE,
+        ]:
             setattr(self, m.__name__, m)
 
 
