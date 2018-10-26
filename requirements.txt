@@ -1,7 +1,6 @@
 configparser
 sqlalchemy
 sqlalchemy_mixins
-alembic
 tld
 dnspython
 netaddr
