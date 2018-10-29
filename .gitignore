@@ -111,3 +111,5 @@ config/settings.ini
 *.ini
 stash.sqlite3
 .DS_Store
+
+output/

@@ -57,7 +57,7 @@ class ToolTemplate(ModuleTemplate):
             "-o",
             "--output_path",
             help="Relative path (to the base directory) to store output",
-            default=self.name,
+            default=os.path.join("output", self.name),
         )
         self.options.add_argument(
             "--threads", help="Number of Armory threads to use", default="10"
