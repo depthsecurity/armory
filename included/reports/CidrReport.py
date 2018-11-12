@@ -47,7 +47,8 @@ class Report(ReportTemplate):
                             results[c.org_name][c.cidr][ip.ip_address].append(d.domain)
 
         res = []
-        results[""] = results.pop(None)
+        if not results.get(None, True):
+            results[""] = results.pop(None)
         for cidr in sorted(results.keys()):
             if not cidr:
                 res.append("")

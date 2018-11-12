@@ -126,7 +126,7 @@ class Module(ToolTemplate):
                     domains = self.BaseDomains.all(tool=self.name, passive_scope=True)
                 if domains:
                     for domain in domains:
-                        fd.write("{}\n".format(domain).encode("utf-8"))
+                        fd.write("{}\n".format(domain.domain).encode("utf-8"))
                 else:
                     return None
         return fd.name

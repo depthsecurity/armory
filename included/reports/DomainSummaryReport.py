@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from included.ReportTemplate import ReportTemplate
-from database.repositories import BaseDomainRepository
+from database.repositories import DomainRepository
 import pdb
 import json
 
@@ -17,32 +17,31 @@ class Report(ReportTemplate):
 
     def __init__(self, db):
 
-        self.BaseDomain = BaseDomainRepository(db, self.name)
+        self.Domain = DomainRepository(db, self.name)
 
     def run(self, args):
         # Cidrs = self.CIDR.
         results = []
-        basedomains = self.BaseDomain.all()
-        for b in basedomains:
-            if (
-                (args.scope == "active" and b.in_scope)
-                or (args.scope == "passive" and b.passive_scope)
-                or (args.scope == "all")
-            ):
+        if args.scope == 'all':
+            args.scope == None
+        domains = self.Domain.all(scope_type=args.scope)
+        domain_data = {}
 
-                domain_data = []
-                for d in b.subdomains:
-                    if d.ip_addresses:
-                        domain_data.append(
-                            "%s (%s)"
-                            % (
-                                d.domain,
-                                ", ".join([i.ip_address for i in d.ip_addresses]),
-                            )
-                        )
+        for d in domains:
+            
+            if not domain_data.get(d.base_domain.domain, False):
+                
+                domain_data[d.base_domain.domain] = {}
 
-                results.append(b.domain)
-                for d in sorted(domain_data):
-                    results.append("\t" + d)
+            domain_data[d.base_domain.domain][d.domain] = [i.ip_address for i in d.ip_addresses if (i.in_scope == True and args.scope == 'active') or (i.passive_scope and args.scope == 'passive') or not args.scope]
+
+
+        for b in sorted(domain_data.keys()):
+            
+                results.append(b)
+
+                for d in sorted(domain_data[b].keys()):
+                    results.append('\t{} ({})'.format(d, ', '.join(domain_data[b][d])))
+                
 
         self.process_output(results, args)

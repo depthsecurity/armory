@@ -39,6 +39,7 @@ class Module(ToolTemplate):
             action="store_true",
         )
         self.options.add_argument(
+            "-i", 
             "--import_database",
             help="Run WHOIS on all domains and CIDRs in database",
             action="store_true",
@@ -58,16 +59,17 @@ class Module(ToolTemplate):
             targets.append({"domain": "", "cidr": cidr.cidr.split("/")[0]})
 
         elif args.import_database:
+            
             if args.all_data:
                 scope_type = ""
             else:
                 scope_type = "passive"
             if args.rescan:
                 domains = self.BaseDomain.all(scope_type=scope_type)
-                cidrs = self.ScopeCidr.all(scope_type=scope_type)
+                cidrs = self.ScopeCidr.all()
             else:
                 domains = self.BaseDomain.all(scope_type=scope_type, tool=self.name)
-                cidrs = self.ScopeCidr.all(scope_type=scope_type, tool=self.name)
+                cidrs = self.ScopeCidr.all(tool=self.name)
 
             for domain in domains:
                 targets.append({"domain": domain.domain, "cidr": ""})
