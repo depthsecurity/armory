@@ -22,8 +22,8 @@ class Report(ReportTemplate):
     def run(self, args):
         # Cidrs = self.CIDR.
         results = []
-        if args.scope == 'all':
-            args.scope == None
+        if args.scope != ('active' or 'passive'):
+            args.scope = 'all'
         domains = self.Domain.all(scope_type=args.scope)
         domain_data = {}
 
@@ -33,7 +33,7 @@ class Report(ReportTemplate):
                 
                 domain_data[d.base_domain.domain] = {}
 
-            domain_data[d.base_domain.domain][d.domain] = [i.ip_address for i in d.ip_addresses if (i.in_scope == True and args.scope == 'active') or (i.passive_scope and args.scope == 'passive') or not args.scope]
+            domain_data[d.base_domain.domain][d.domain] = [i.ip_address for i in d.ip_addresses if (i.in_scope == True and args.scope == 'active') or (i.passive_scope and args.scope == 'passive') or (args.scope == 'all')]
 
 
         for b in sorted(domain_data.keys()):
