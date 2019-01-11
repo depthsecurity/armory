@@ -14,10 +14,10 @@ class CVE(BaseModel):
     __tablename__ = "cve"
     __repr_attrs__ = ["name"]
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String(128))
     vulnerabilities = relationship(
         "Vulnerability", secondary=cve_vulnerability_table, backref="cves"
     )
 
     temporal_score = Column(Float)
-    description = Column(String)
+    description = Column(String(256))

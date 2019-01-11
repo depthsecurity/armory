@@ -52,7 +52,7 @@ class Module(ToolTemplate):
                     targets.append(h)
 
         elif args.import_database:
-
+            
             hosts = []
             svc = []
 

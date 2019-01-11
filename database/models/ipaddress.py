@@ -8,8 +8,8 @@ class IPAddress(BaseModel):
     __tablename__ = "ipaddress"
     __repr_attrs__ = ["ip_address"]
     id = Column(Integer, primary_key=True)
-    ip_address = Column(String, unique=True)
+    ip_address = Column(String(15), unique=True)
     cidr_id = Column(Integer, ForeignKey("cidr.id"))
-    OS = Column(String)
-    whois = Column(String)
+    OS = Column(String(64))
+    whois = Column(String(512))
     ports = relationship("Port", backref="ip_address")

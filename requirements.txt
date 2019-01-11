@@ -16,3 +16,4 @@ argcomplete
 tldextract
 subprocess32; python_version < '3.3'
 ipaddr
+mysqlclient

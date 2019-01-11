@@ -15,7 +15,7 @@ Base = declarative_base()
 
 
 class JSONEncodedDict(types.TypeDecorator):
-    impl = types.VARCHAR
+    impl = types.TEXT
 
     def process_bind_param(self, value, dialect):
         if value is not None:
@@ -45,7 +45,7 @@ Base.metadata = MetaData(
 class BaseModel(Base, ActiveRecordMixin, ReprMixin):
     __abstract__ = True
     __repr__ = ReprMixin.__repr__
-    source_tool = Column(String, unique=False)
+    source_tool = Column(String(64), unique=False)
     created_date = Column(DateTime, default=datetime.now)
     modified_date = Column(DateTime, onupdate=datetime.now)
     meta = Column(JsonType)

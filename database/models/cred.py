@@ -8,6 +8,6 @@ class Cred(BaseModel):
     __repr_attrs__ = ["password"]
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("user.id"))
-    password = Column(String, unique=False)
-    passhash = Column(String, unique=False)
-    source = Column(String, unique=False)
+    password = Column(String(64), unique=False)
+    passhash = Column(String(128), unique=False)
+    source = Column(String(128), unique=False)

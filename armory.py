@@ -209,6 +209,14 @@ def get_connection_string(config):
         base = config["PROJECT"]["base_path"]
         dbname = config["DATABASE"]["filename"]
         connect = "sqlite:///%s" % os.path.join(base, dbname)
+    
+    elif config['DATABASE']['backend'] in ['mysql', 'mariadb']:
+        username = config["DATABASE"]['username']
+        password = config["DATABASE"]['password']
+        server = config["DATABASE"].get('server', '127.0.0.1')
+        port = config["DATABASE"].get('port', '3306')
+        database = config['DATABASE']['database']
+        connect = "mysql://{}:{}@{}:{}/{}".format(username, password, server, port, database)
     return connect
 
 

@@ -15,11 +15,11 @@ class Domain(BaseModel):
     __tablename__ = "domain"
     __repr_attrs__ = ["domain"]
     id = Column(Integer, primary_key=True)
-    domain = Column(String, unique=True)
+    domain = Column(String(64), unique=True)
     ip_addresses = relationship(
         "IPAddress", secondary=domain_ip_table, backref="domains"
     )
     base_domain_id = Column(Integer, ForeignKey("basedomain.id"))
-    whois = Column(String, unique=False)
+    whois = Column(String(512), unique=False)
 
     # base_domain = relationship("BaseDomain", back_populates="subdomains")
