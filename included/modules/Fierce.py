@@ -44,7 +44,7 @@ class Module(ToolTemplate):
             domains = open(args.file).read().split("\n")
             for d in domains:
                 if d:
-                    targets.append(args.domain)
+                    targets.append(d)
 
         if args.import_database:
             if args.rescan:
@@ -133,7 +133,7 @@ class Module(ToolTemplate):
 
             else:
                 display_error(
-                    "Unable to process {}.  If fierce timed out, but is still running, you can run this tool again with the --no_binary flag to just grab the file.".format(
+                    "No results found in {}.  If fierce timed out, but is still running, you can run this tool again with the --no_binary flag to just grab the file.".format(
                         output_path
                     )
                 )
