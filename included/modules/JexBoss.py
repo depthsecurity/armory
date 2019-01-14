@@ -16,6 +16,8 @@ import tempfile
 from time import time
 import glob
 import sys
+from included.utilities.color_display import display, display_new, display_error
+
 if sys.version[0] == '3':
     xrange = range
 try:
@@ -55,20 +57,15 @@ class Module(ToolTemplate):
             help="Rerun gowitness on systems that have already been processed.",
             action="store_true",
         )
-        self.options.add_argument(
-            "--scan_folder",
-            help="Generate list of URLs based off of a folder containing GobusterDir output files",
-        )
-        self.options.add_argument(
-            "--counter_max", help="Max number of screenshots per host", default="20"
-        )
+
 
     def get_targets(self, args):
 
         timestamp = str(int(time()))
         targets = []
         if args.import_file:
-            targets += [t for t in open(args.file).read().split("\n") if t]
+            targets += [t for t in open(args.import_file).read().split("\n") if t]
+
 
         if args.import_database:
             if args.rescan:
@@ -76,57 +73,40 @@ class Module(ToolTemplate):
             else:
                 targets += get_urls.run(self.db, scope_type="active", tool=self.name)
 
-        if args.scan_folder:
+       
+        if targets:
+            if args.output_path[0] == "/":
+                self.path = os.path.join(
+                    self.base_config["PROJECT"]["base_path"],
+                    args.output_path[1:],
+                    timestamp,
+                )
+            else:
+                self.path = os.path.join(
+                    self.base_config["PROJECT"]["base_path"], args.output_path, timestamp
+                )
+            if not os.path.exists(self.path):
+                os.makedirs(self.path)
 
-            files = os.listdir(args.scan_folder)
-            counter_max = str(args.counter_max)
-            for f in files:
+            res = []
+            i = 0
+            if args.group_size == 0:
+                args.group_size = len(targets)
 
-                if f.count("_") == 4:
-                    counter = 0
-                    http, _, _, domain, port = f.split("-dir.txt")[0].split("_")
-                    for data in (
-                        open(os.path.join(args.scan_folder, f)).read().split("\n")
-                    ):
-                        if "(Status: 200)" in data:
-                            targets.append(
-                                "{}://{}:{}{}".format(
-                                    http, domain, port, data.split(" ")[0]
-                                )
-                            )
-                            counter += 1
-                        if counter >= counter_max:
-                            break
+            for url_chunk in self.chunks(targets, args.group_size):
+                i += 1
 
-        if args.output_path[0] == "/":
-            self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"],
-                args.output_path[1:],
-                timestamp,
-            )
+                _, file_name = tempfile.mkstemp()
+                open(file_name, "w").write("\n".join(url_chunk))
+
+                res.append(
+                    {"target": file_name, "output": self.path + "-results-{}.txt".format(i)}
+                )
+
+            return res
         else:
-            self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path, timestamp
-            )
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-
-        res = []
-        i = 0
-        if args.group_size == 0:
-            args.group_size = len(targets)
-
-        for url_chunk in self.chunks(targets, args.group_size):
-            i += 1
-
-            _, file_name = tempfile.mkstemp()
-            open(file_name, "w").write("\n".join(url_chunk))
-
-            res.append(
-                {"target": file_name, "output": self.path + "-results-{}.txt".format(i)}
-            )
-
-        return res
+            display_error("No hosts provided to scan.")
+            sys.exit(1)
 
     def build_cmd(self, args):
 

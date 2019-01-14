@@ -229,15 +229,15 @@ class Module(ToolTemplate):
                 hostname = hostname.get("name")
                 hostname = hostname.lower().replace("www.", "")
 
-                reHostname = re.search(
-                    r"\d{1,3}\-\d{1,3}\-\d{1,3}\-\d{1,3}", hostname
-                )  # attempt to not get PTR record
-                if not reHostname:
+                # reHostname = re.search(
+                #     r"\d{1,3}\-\d{1,3}\-\d{1,3}\-\d{1,3}", hostname
+                # )  # attempt to not get PTR record
+                # if not reHostname:
 
-                    created, domain = self.Domain.find_or_create(domain=hostname)
-                    if ip not in domain.ip_addresses:
-                        domain.ip_addresses.append(ip)
-                        domain.save()
+                created, domain = self.Domain.find_or_create(domain=hostname)
+                if ip not in domain.ip_addresses:
+                    domain.ip_addresses.append(ip)
+                    domain.save()
 
             for port in host.findall("ports/port"):
 

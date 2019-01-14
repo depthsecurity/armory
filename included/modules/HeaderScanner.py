@@ -3,7 +3,7 @@
 from included.ModuleTemplate import ModuleTemplate
 import re
 from included.utilities.get_urls import run as geturls
-from database.repositories import PortRepository
+from database.repositories import PortRepository, DomainRepository, IPRepository
 import requests
 import time
 import os
@@ -17,6 +17,12 @@ from included.utilities.color_display import (
     display_new,
 )
 
+def check_if_ip(txt):
+    try:
+        res = int(txt.replace('.', ''))
+        return True
+    except:
+        return False
 
 class Module(ModuleTemplate):
 
@@ -25,6 +31,8 @@ class Module(ModuleTemplate):
     def __init__(self, db):
         self.db = db
         self.Port = PortRepository(db, self.name)
+        self.Domain = DomainRepository(db, self.name)
+        self.IPAddress = IPRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -33,6 +41,7 @@ class Module(ModuleTemplate):
             "-t", "--timeout", help="Connection timeout (default 5)", default="5"
         )
         self.options.add_argument("-u", "--url", help="URL to get headers")
+        self.options.add_argument("--file", help="Import URLs from file")
         self.options.add_argument(
             "-i",
             "--import_db",
@@ -47,6 +56,62 @@ class Module(ModuleTemplate):
         )
 
     def run(self, args):
+        data = []
+        if args.url:
+            service = args.url.split(':')[0]
+            host = args.url.split('/')[2]
+            
+            if args.url.count(':') == 2:
+                port = args.url.split(':')[2].split('/')[0]
+            elif service == 'http':
+                port = '80'
+            elif service == 'https':
+                port = '443'
+            else:
+                display_error("Could not figure out port number for url: {}".format(args.url))
+                sys.exit(1)
+
+            if check_if_ip(host):
+                created, ip = self.IPAddress.find_or_create(ip_address=host)
+            else:
+                
+                created, domain = self.Domain.find_or_create(domain=host)
+                ip = domain.ip_addresses[0]
+
+            created, service_id = self.Port.find_or_create(ip_address=ip, port_number=port)
+            service_id.service_name = service
+
+            data.append([service_id.id, [args.url], args.timeout])
+            
+
+        if args.file:
+            url = open(args.file).read().split("\n")
+            for u in url:
+                if u:
+                    service = u.split(':')[0]
+                    host = u.split('/')[2]
+                    
+                    if u.count(':') == 2:
+                        port = u.split(':')[2].split('/')[0]
+                    elif service == 'http':
+                        port = '80'
+                    elif service == 'https':
+                        port = '443'
+                    else:
+                        display_error("Could not figure out port number for url: {}".format(args.url))
+                        sys.exit(1)
+
+                    if check_if_ip(host):
+                        created, ip = self.IPAddress.find_or_create(ip_address=host)
+                    else:
+                        
+                        created, domain = self.Domain.find_or_create(domain=host)
+                        ip = domain.ip_addresses[0]
+
+                    created, service_id = self.Port.find_or_create(ip_address=ip, port_number=port)
+                    service_id.service_name = service
+
+                    data.append([service_id.id, [u], args.timeout])
 
         if args.import_db:
 
@@ -56,14 +121,14 @@ class Module(ModuleTemplate):
             else:
                 svc = self.Port.all(service_name="http", tool=self.name)
                 svc += self.Port.all(service_name="https", tool=self.name)
-            data = []
+            
 
             for s in svc:
                 if s.ip_address.in_scope:
                     urls = [
                         "%s://%s:%s"
                         % (s.service_name, s.ip_address.ip_address, s.port_number)
-                    ]
+                        ]
 
                     for d in s.ip_address.domains:
                         urls.append(
@@ -72,6 +137,7 @@ class Module(ModuleTemplate):
 
                     data.append([s.id, urls, args.timeout])
 
+        if data:
             pool = ThreadPool(int(args.threads))
 
             results = pool.map(process_urls, data)

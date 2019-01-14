@@ -69,7 +69,7 @@ class Module(ToolTemplate):
         timestamp = str(int(time()))
         targets = []
         if args.import_file:
-            targets += [t for t in open(args.file).read().split("\n") if t]
+            targets += [t for t in open(args.import_file).read().split("\n") if t]
 
         if args.import_database:
             if args.rescan:
@@ -104,16 +104,16 @@ class Module(ToolTemplate):
                 self.base_config["PROJECT"]["base_path"],
                 args.output_path[1:],
                 timestamp,
-                args.output_path[1:] + "_{}",
+                args.output_path[1:].split('/')[1] + "_{}",
             )
         else:
             self.path = os.path.join(
                 self.base_config["PROJECT"]["base_path"],
                 args.output_path,
                 timestamp,
-                args.output_path + "_{}",
+                args.output_path.split('/')[1] + "_{}",
             )
-
+        
         res = []
         i = 0
 
