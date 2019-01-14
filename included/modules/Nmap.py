@@ -25,6 +25,12 @@ from netaddr import IPNetwork, IPAddress
 if sys.version_info[0] >= 3:
     raw_input = input
 
+def check_if_ip(txt):
+    try:
+        res = int(txt.replace('.', ''))
+        return True
+    except:
+        return False
 
 class Module(ToolTemplate):
     """
@@ -68,16 +74,35 @@ class Module(ToolTemplate):
             help="Output filename. By default will use the current timestamp.",
         )
         self.options.set_defaults(timeout=None)
+        self.options.add_argument(
+            "--import_file", help="Import results from an Nmap XML file.",
+        )
 
     def get_targets(self, args):
 
+        if args.import_file:
+            args.no_binary = True
+            return [{"target": "", "output": args.import_file}]
+
         targets = []
 
+
         if args.hosts:
+
             if type(args.hosts) == list:
-                targets += args.hosts
+                for h in args.hosts:
+                    if check_if_ip(h):
+                        targets.append(h)
+                    else:
+                        created, domain = self.Domain.find_or_create(domain=h)
+                        targets += [i.ip_address for i in domain.ip_addresses]
+
             else:
-                targets += [args.hosts]
+                if check_if_ip(h):
+                    targets.append(h)
+                else:
+                    created, domain = self.Domain.find_or_create(domain=h)
+                    targets += [i.ip_address for i in domain.ip_addresses]
 
         if args.hosts_database:
             if args.rescan:
@@ -93,7 +118,12 @@ class Module(ToolTemplate):
                 targets += [h.cidr for h in self.ScopeCIDR.all(tool=self.name)]
 
         if args.hosts_file:
-            targets += [l for l in open(args.hosts_file).read().split("\n") if l]
+            for h in [l for l in open(args.hosts_file).read().split("\n") if l]:
+                if check_if_ip(h):
+                    targets.append(h)
+                else:
+                    created, domain = self.Domain.find_or_create(domain=h)
+                    targets += [i.ip_address for i in domain.ip_addresses]
 
         # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
         data = []
@@ -139,7 +169,8 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
 
         self.import_nmap(cmds[0]["output"])
-        os.unlink(cmds[0]["target"])
+        if cmds[0]["target"]:
+            os.unlink(cmds[0]["target"])
 
     def parseHeaders(self, httpHeaders):
         bsHeaders = [

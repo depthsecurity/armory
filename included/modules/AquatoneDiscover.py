@@ -51,7 +51,7 @@ class Module(ToolTemplate):
             domainsFile = open(args.file).read().split("\n")
             for d in domainsFile:
                 if d:
-                    created, domain = self.BaseDomain.find_or_create(domain=args.domain)
+                    created, domain = self.BaseDomain.find_or_create(domain=d)
                     targets.append(domain.domain)
 
         elif args.import_database:

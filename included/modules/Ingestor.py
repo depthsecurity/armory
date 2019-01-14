@@ -177,10 +177,17 @@ class Module(ModuleTemplate):
                     % (domain_str, self.in_scope, self.passive_scope)
                 )
 
+
                 domain.in_scope = self.in_scope
                 domain.passive_scope = self.passive_scope
                 domain.update()
 
+                if domain.base_domain.domain == domain.domain:
+                    display("Name also matches a base domain. Updating that as well.")
+                    domain.base_domain.in_scope = self.in_scope
+                    domain.base_domain.passive_scope = self.passive_scope
+                    domain.base_domain.update()
+                    
     def process_ip(self, ip_str, force_scope=True):
 
         created, ip = self.IPAddress.find_or_create(

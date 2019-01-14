@@ -79,7 +79,10 @@ class Module(ToolTemplate):
             targets.append(args.range)
 
         elif args.import_range:
-            cidrs = self.ScopeCIDR.all(tool=self.name)
+            if args.rescan:
+                cidrs = self.ScopeCIDR.all()
+            else:
+                cidrs = self.ScopeCIDR.all(tool=self.name)
 
             for cidr in cidrs:
                 targets.append(cidr.cidr)
