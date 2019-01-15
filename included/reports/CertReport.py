@@ -35,25 +35,17 @@ class Report(ReportTemplate):
                 or (args.scope == "active" and s.ip_address.in_scope)
                 or (args.scope == "all")
             ):
-                if s.meta.get("sslcert", False):
-                    for k in s.meta["sslcert"].keys():
-                        cert = s.meta["sslcert"][k]
-                        # pdb.set_trace()
-                        if not certs.get(cert, False):
-                            certs[cert] = []
-
-                        certs[cert].append(k + ":" + str(s.port_number))
-                elif s.meta.get("NmapCertScan", False):
+                if s.cert:
+                    
+                    cert = s.cert.split('-----')[0]
                     # pdb.set_trace()
-                    for k in s.meta["NmapCertScan"].keys():
-                        if k != "created":
-                            cert = s.meta["NmapCertScan"][k]
-                            # pdb.set_trace()
-                            if not certs.get(cert, False):
-                                certs[cert] = []
-
-                            certs[cert].append(k + ":" + str(s.port_number))
-
+                    if not certs.get(cert, False):
+                        certs[cert] = []
+                    if s.ip_address.domains:
+                        certs[cert].append(s.ip_address.domains[0].domain + ":" + str(s.port_number))
+                    else:
+                        certs[cert].append(s.ip_address.ip_address + ":" + str(s.port_number))
+                
         for k in certs.keys():
             results.append(", ".join(sorted(list(set(certs[k])))))
             for l in k.split("\n"):
