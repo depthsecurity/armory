@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, DateTime, MetaData, types, Boolean
+from sqlalchemy import create_engine, Column, String, DateTime, MetaData, types, Boolean, Text
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_mixins import ActiveRecordMixin, ReprMixin

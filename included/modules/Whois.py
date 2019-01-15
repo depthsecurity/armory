@@ -49,14 +49,14 @@ class Module(ToolTemplate):
 
         targets = []
         if args.domain:
-            created, domain = self.BaseDomain.find_or_create(domain=args.domain)
+            
 
-            targets.append({"domain": domain.domain, "cidr": ""})
+            targets.append({"domain": args.domain, "cidr": ""})
 
         elif args.cidr:
-            created, cidr = self.ScopeCIDR.find_or_create(cidr=args.cidr)
+            
 
-            targets.append({"domain": "", "cidr": cidr.cidr.split("/")[0]})
+            targets.append({"domain": "", "cidr": args.cidr.split("/")[0]})
 
         elif args.import_database:
             

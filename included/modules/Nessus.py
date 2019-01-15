@@ -51,16 +51,6 @@ class Module(ModuleTemplate):
             nargs="+",
         )
         self.options.add_argument(
-            "--interactive",
-            help="Prompt to store domains not in Base Domains already",
-            action="store_true",
-        )
-        self.options.add_argument(
-            "--internal",
-            help="Store domains not in Base Domains already",
-            action="store_true",
-        )
-        self.options.add_argument(
             "--launch",
             help="Launch Nessus scan using Actively scoped IPs and domains in the database",
             action="store_true",
@@ -397,8 +387,8 @@ class Module(ModuleTemplate):
                     db_vuln.ports.append(db_port)
                     db_vuln.exploitable = exploitable
                     if exploitable == True:
-                        print("\nexploit avalable for", findingName)
-                        print()
+                        display_new("exploit avalable for " + findingName)
+                        
                     if vuln_refs:
                         db_vuln.exploit_reference = vuln_refs
 
@@ -453,7 +443,7 @@ class Module(ModuleTemplate):
                             db_cve.vulnerabilities.append(db_vuln)
 
     def process_data(self, nFile, args):
-        print("Reading", nFile)
+        display("Reading " + nFile)
         tree = ET.parse(nFile)
         root = tree.getroot()
         skip = []
@@ -485,8 +475,6 @@ class Module(ModuleTemplate):
                 created, ip = self.IPAddress.find_or_create(ip_address=hostIP)
 
                 if hostname:
-                    if not args.internal:
-
                         created, domain = self.Domain.find_or_create(domain=hostname)
 
                         if ip not in domain.ip_addresses:
@@ -494,13 +482,7 @@ class Module(ModuleTemplate):
                             domain.ip_addresses.append(ip)
                             domain.save()
 
-                    else:
-                        created, domain = self.Domain.find_or_create(domain=hostname)
-
-                        if ip not in domain.ip_addresses:
-                            domain.ip_addresses.append(ip)
-                            domain.update()
-
+                    
                 if os:
                     for o in os:
                         if not ip.OS:

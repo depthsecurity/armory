@@ -50,7 +50,7 @@ class Module(ToolTemplate):
             for d in all_domains:
                 # We need to find all of the http/https ports and create the json file.
                 output_path = os.path.join(
-                    self.base_config["PROJECT"]["base_path"], "aquatone", d.domain
+                    self.base_config["PROJECT"]["base_path"], "output", "aquatone", d.domain
                 )
                 if not os.path.exists(output_path):
                     os.makedirs(output_path)
@@ -124,7 +124,7 @@ class Module(ToolTemplate):
         return cmd
 
     def pre_run(self, args):
-        output_path = self.base_config["PROJECT"]["base_path"]
+        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], 'output')
 
         self.orig_home = os.environ["HOME"]
 

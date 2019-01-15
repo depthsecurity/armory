@@ -39,16 +39,13 @@ class Module(ToolTemplate):
 
         targets = []
         if args.domain:
-            created, domain = self.BaseDomain.find_or_create(domain=args.domain)
-
-            targets.append(domain.domain)
+            targets.append(args.domain)
 
         elif args.file:
             domains = open(args.file).read().split("\n")
             for d in domains:
                 if d:
-                    created, domain = self.BaseDomain.find_or_create(domain=args.domain)
-                    targets.append(domain.domain)
+                    targets.append(d)
 
         elif args.import_database:
             if args.rescan:

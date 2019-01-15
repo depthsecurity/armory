@@ -65,7 +65,7 @@ class Module(ToolTemplate):
         else:
             print("You need to supply domain(s).")
 
-        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], "aquatone")
+        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], "output", "aquatone")
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -75,7 +75,7 @@ class Module(ToolTemplate):
             res.append(
                 {"target": t, "output": "{}/{}/hosts.json".format(output_path, t)}
             )
-
+        
         return res
 
     def build_cmd(self, args):
@@ -90,7 +90,7 @@ class Module(ToolTemplate):
         return cmd
 
     def pre_run(self, args):
-        output_path = self.base_config["PROJECT"]["base_path"]
+        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], 'output')
 
         self.orig_home = os.environ["HOME"]
 

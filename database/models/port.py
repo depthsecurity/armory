@@ -1,5 +1,5 @@
 from .. import BaseModel
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 from database import JsonType
 
@@ -14,5 +14,5 @@ class Port(BaseModel):
     service_name = Column(String(32), unique=False)
     ip_address_id = Column(Integer, ForeignKey("ipaddress.id"))
     urls = relationship("Url", backref="port")
-    cert = Column(String(128))
+    cert = Column(Text)
     info = Column(JsonType)

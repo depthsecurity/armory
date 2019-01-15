@@ -186,7 +186,7 @@ class Module(ModuleTemplate):
                             svc = ""
 
                         port.service_name = svc
-
+                    port.status = 'open'
                     port.meta["shodan_data"] = res
                     port.save()
             else:
@@ -218,6 +218,7 @@ class Module(ModuleTemplate):
                         created, port = self.Port.find_or_create(
                             ip_address=IP, port_number=port_str, proto=transport
                         )
+
                         if created:
                             svc = ""
 
@@ -230,7 +231,7 @@ class Module(ModuleTemplate):
                                 svc = ""
 
                             port.service_name = svc
-
+                        port.status = 'open'
                         port.meta["shodan_data"] = res
                         port.save()
 

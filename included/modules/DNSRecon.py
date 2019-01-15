@@ -3,6 +3,7 @@ from database.repositories import (
     BaseDomainRepository,
     DomainRepository,
     ScopeCIDRRepository,
+    IPRepository,
 )
 from included.utilities.color_display import display, display_error
 import os
@@ -25,6 +26,7 @@ class Module(ToolTemplate):
         self.BaseDomain = BaseDomainRepository(db, self.name)
         self.Domain = DomainRepository(db, self.name)
         self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
+        self.IPAddress = IPRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -143,9 +145,10 @@ class Module(ToolTemplate):
 
             for record in res:
                 domain = None
-
+                ip = None
                 if record.get("type") == "A" or record.get("type") == "PTR":
                     domain = record.get("name").lower().replace("www.", "")
+                    ip = record.get("address")
 
                 elif record.get("type") == "MX":
                     domain = record.get("exchange").lower().replace("www.", "")
@@ -158,5 +161,9 @@ class Module(ToolTemplate):
 
                 if domain:
                     created, domain_obj = self.Domain.find_or_create(domain=domain)
+                    if ip:
+                        created, ip_obj = self.IPAddress.find_or_create(ip_address=ip)
+                        domain_obj.ip_addresses.append(ip_obj)
+                        domain_obj.save()
 
         self.Domain.commit()

@@ -24,7 +24,7 @@ class Module(ToolTemplate):
     def set_options(self):
         super(Module, self).set_options()
 
-        self.options.add_argument("-ho", "--host", help="Host to scan (host:port)")
+        self.options.add_argument("--host", help="Host to scan (host:port)")
         self.options.add_argument("-f", "--file", help="Import hosts from file")
         self.options.add_argument(
             "-i",
@@ -40,18 +40,38 @@ class Module(ToolTemplate):
         )
 
     def get_targets(self, args):
-
+        
         targets = []
         if args.host:
-            targets.append(args.host)
+            if 'http' in args.host:
+                if args.host.count(':') == 2:
+                    service, host, port = args.host.split(':')
+                else:
+                    service, host = args.host.split(':')
+                    port = "443"
+                host = host.split('/')[-1]
+                targets.append({'option':'', 'target':'{}:{}'.format(host, port)})
+            else:
+                targets.append({'option':'', 'target':args.host})
+            
 
-        elif args.file:
+        if args.file:
             hosts = open(args.file).read().split("\n")
             for h in hosts:
                 if h:
-                    targets.append(h)
+                    if 'http' in h:
+                        if h.count(':') == 2:
+                            service, host, port = h.split(':')
+                        else:
+                            service, host = h.split(':')
+                            port = "443"
+                        host = host.split('/')[-1]
+                        targets.append({'option':'', 'target':'{}:{}'.format(host, port)})
+                    else:
+                        targets.append({'option':'', 'target':h})
+                        
 
-        elif args.import_database:
+        if args.import_database:
             
             hosts = []
             svc = []
@@ -122,6 +142,7 @@ class Module(ToolTemplate):
                         {"target": "%s:%s" % (d.domain, port_number), "option": option}
                     )
 
+        
         for t in targets:
             if args.output_path[0] == "/":
                 output_path = os.path.join(
@@ -140,6 +161,7 @@ class Module(ToolTemplate):
             )
             t["output"] = output_path
 
+        
         return targets
 
     def build_cmd(self, args):

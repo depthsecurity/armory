@@ -44,8 +44,8 @@ class Module(ToolTemplate):
 
         targets = []
         if args.domain:
-            created, domain = self.BaseDomain.find_or_create(domain=args.domain)
-            targets.append({"target": domain.domain})
+            
+            targets.append({"target": args.domain})
 
         elif args.file:
             domains = open(args.file).read().split("\n")

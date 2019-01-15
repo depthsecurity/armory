@@ -4,7 +4,7 @@ from included.ModuleTemplate import ToolTemplate
 from included.utilities import get_domain_ip
 import io
 import os
-
+import pdb
 
 class Module(ToolTemplate):
     name = "Subfinder"
@@ -19,14 +19,11 @@ class Module(ToolTemplate):
     def set_options(self):
         super(Module, self).set_options()
         self.options.add_argument(
-            "-a", "--bruteforce-all", help="Brute-force subdomains."
-        )
-        self.options.add_argument(
             "-d", "--domain", help="Domain to run subfinder against."
         )
         self.options.add_argument(
             "-dL",
-            "--domain-list",
+            "--domain_list",
             help="Read in a list of domains within the given file.",
         )
         self.options.add_argument(
@@ -35,47 +32,52 @@ class Module(ToolTemplate):
             help="Import the domains from the database.",
             action="store_true",
         )
-        self.options.add_argument(
-            "-r",
-            "--resolvers",
-            help="A list of resolvers(comma-separated) or a file containing a list of resolvers.",
-        )
+
         self.options.add_argument(
             "--rescan", help="Overwrite files without asking", action="store_true"
-        )
-        self.options.add_argument(
-            "-w", "--wordlist", help="The wordlist for when bruteforcing is selected."
         )
 
     def get_targets(self, args):
         targets = []
         outpath = ""
-        if args.output_path:
-            if not os.path.exists(args.output_path):
-                os.makedirs(args.output_path)
-            outpath = args.output_path
-        if args.domain or args.db_domains:
-            self.db_domain_file = self.__get_tempfile(args.domain, args)
-            out_file = "database_domains.subfinder"
-            if args.domain:
-                created, domain = self.BaseDomains.find_or_create(domain=args.domain)
-                out_file = os.path.join(outpath, "{}.subfinder".format(args.domain))
-            if not self.db_domain_file:
-                return targets
-            targets.append({"target": self.db_domain_file, "output": out_file})
+        if args.output_path[0] == "/":
+            output_path = os.path.join(
+                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+            )
+        else:
+            output_path = os.path.join(
+                self.base_config["PROJECT"]["base_path"], args.output_path
+            )
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+            
+        if args.domain:
+            out_file = os.path.join(outpath, "{}.subfinder".format(args.domain))
+            targets.append({"target": args.domain, "output": os.path.join(output_path, out_file)})
+
+        if args.db_domains:
+            if args.rescan:
+                domains = self.BaseDomains.all(scope_type="passive")
+            else:
+                domains = self.BaseDomains.all(tool=self.name, scope_type="passive")
+            for d in domains:
+                out_file = os.path.join(outpath, "{}.subfinder".format(d.domain))
+                targets.append({"target": d.domain, "output": os.path.join(output_path, out_file)})
+        
+
         elif args.domain_list:
             domains = io.open(args.domain_list, encoding="utf-8").read().split("\n")
             for d in domains:
                 if d:
-                    created, domain = self.BaseDomains.find_or_create(domain=d)
-            targets.append(
-                {
-                    "target": args.domain_list,
-                    "output": os.path.join(
-                        outpath, "{}.subfinder".format(args.domain_list)
-                    ),
-                }
-            )
+                    targets.append(
+                        {
+                            "target": d,
+                            "output": os.path.join(
+                                output_path, "{}.subfinder".format(d)
+                            ),
+                        }
+                    )
+        
         return targets
 
     def build_cmd(self, args):
@@ -83,7 +85,7 @@ class Module(ToolTemplate):
             cmd = "{} ".format(args.binary)
         else:
             cmd = "{} ".format(self.binary_name)
-        cmd = "{} -o {} -dL {}".format(cmd, "{output}", "{target}")
+        cmd = "{} -o {} -d {}".format(cmd, "{output}", "{target}")
         return cmd
 
     def process_output(self, targets):
