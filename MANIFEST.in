@@ -1,0 +1,7 @@
+
+include *.lock
+include Pipfile
+recursive-include armory Readme.md
+recursive-include armory *.md
+recursive-include armory *.py
+recursive-include armory *.default
