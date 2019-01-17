@@ -8,6 +8,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "Readme.md"), encoding="UTF-8") as f:
     long_description = f.read()
 
+
 setup(
     name="armory",
     version="1.0.0",
@@ -17,6 +18,7 @@ setup(
         " related information."
     ),
     long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/depthsecurity/armory",
     author="Depth Security",
     author_email="info@depthsecurity.com",
@@ -42,7 +44,6 @@ setup(
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     install_requires=[
-
         "configparser",
         "sqlalchemy",
         "sqlalchemy_mixins",
