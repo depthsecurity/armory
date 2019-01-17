@@ -1,21 +1,16 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
 
+from configparser import ConfigParser
+from pkg_resources import resource_string
+from . import database
+import argparse
+import argcomplete
+import os
 import pkgutil
 import sys
-import argparse
-import importlib
-from configparser import ConfigParser
-import os
-import pdb
-import argcomplete
-from shutil import copy
 
-if sys.version[0] == "2":
-    print("Python3 is required to run Armory.")
-    sys.exit(1)
-
-import armory.database as database
+# import pdb # Useful for debugging
 
 
 __version__ = "Armory Version 1.0 Beta (still working out the kinks!)"
@@ -42,11 +37,9 @@ def check_and_create_configs():
 
     if not os.path.exists(CONFIG_FOLDER):
         os.mkdir(CONFIG_FOLDER)
+        with open(os.path.join(CONFIG_FOLDER, CONFIG_FILE), "w") as out:
+            out.write(resource_string("armory.default_configs", "settings.ini.default"))
 
-        copy(
-            os.path.join(DEFAULTS_DIR, "settings.ini.default"),
-            os.path.join(CONFIG_FOLDER, CONFIG_FILE),
-        )
         generate_default_configs()
 
 
@@ -57,9 +50,10 @@ def generate_default_configs():
     config_options = {}
     custom_path = config["PROJECT"].get("custom_modules", None)
 
-    for f in os.listdir(custom_path):
-        if os.path.isfile(f) and f[-7:] == ".sample":
-            os.remove(f)
+    if custom_path:
+        for f in os.listdir(custom_path):
+            if os.path.isfile(f) and f[-7:] == ".sample":
+                os.remove(f)
 
     modules = get_modules(os.path.join(PATH, "included/modules"))
     for m in modules:
@@ -289,13 +283,12 @@ def run_report(Report, argv, report):
 
 def get_config_options(config_file=CONFIG_FILE):
     config = ConfigParser()
-    if config_file == CONFIG_FILE and not os.path.exists(
-        os.path.join(CONFIG_FOLDER, config_file)
-    ):
-        copy(
-            os.path.join(DEFAULTS_DIR, "settings.ini.default"),
-            os.path.join(CONFIG_FOLDER, CONFIG_FILE),
+    def_config = os.path.join(CONFIG_FOLDER, config_file)
+    if config_file == CONFIG_FILE and not os.path.exists(def_config):
+        print(
+            "An error occurred while trying to create {}. Aborting!!".format(def_config)
         )
+        sys.exit(1)
     config.read(os.path.join(CONFIG_FOLDER, config_file))
 
     if config_file == CONFIG_FILE:
