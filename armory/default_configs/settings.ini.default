@@ -1,12 +1,12 @@
 [PROJECT]
 # This is the base path of the project. All generated data as well
 # as the database will be stored in here. Ideally, you change this
-# path with each new project. 
-base_path = /tmp/armory_projects/sample
+# path with each new project.
+base_path = .
 
 # This is the path for custom reports and modules that aren't
 # necessarily synced up with git. This is for stuff that doesn't
-# really make sense for anyone else to use except you (or your 
+# really make sense for anyone else to use except you (or your
 # company)
 # custom_reports = /opt/custom/reports
 # custom_modules = /opt/custom/modules
@@ -16,7 +16,7 @@ base_path = /tmp/armory_projects/sample
 backend = sqlite3
 
 # Used for sqlite3 - name of file
-filename = database.sqlite3
+filename = armory.database.sqlite3
 
 # Used for MySQL
 # username = user
