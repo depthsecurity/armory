@@ -38,7 +38,11 @@ def check_and_create_configs():
     if not os.path.exists(CONFIG_FOLDER):
         os.mkdir(CONFIG_FOLDER)
         with open(os.path.join(CONFIG_FOLDER, CONFIG_FILE), "w") as out:
-            out.write(resource_string("armory.default_configs", "settings.ini.default"))
+            out.write(
+                resource_string(
+                    "armory.default_configs", "settings.ini.default"
+                ).encode("UTF-8")
+            )
 
         generate_default_configs()
 
