@@ -28,25 +28,29 @@ else:
 if os.getenv("ARMORY_CONFIG"):
     CONFIG_FILE = os.getenv("ARMORY_CONFIG")
 else:
-    CONFIG_FILE = 'settings.ini'
+    CONFIG_FILE = "settings.ini"
 
 
 DEFAULTS_DIR = os.path.join(os.path.dirname(__file__), "default_configs")
 
+
 def check_and_create_configs():
-    '''
+    """
     This is run if there is no config currently setup. It will create a home .armory folder,
     create a sample base config, and populate sample module configs.
-    '''
+    """
 
     if not os.path.exists(CONFIG_FOLDER):
         os.mkdir(CONFIG_FOLDER)
-        
-        
-        copy(os.path.join(DEFAULTS_DIR, 'settings.ini.default'), os.path.join(CONFIG_FOLDER, CONFIG_FILE))
+
+        copy(
+            os.path.join(DEFAULTS_DIR, "settings.ini.default"),
+            os.path.join(CONFIG_FOLDER, CONFIG_FILE),
+        )
         generate_default_configs()
 
-def generate_default_configs():    
+
+def generate_default_configs():
     config = get_config_options()
     # Delete any .sample files already there
 
@@ -54,33 +58,31 @@ def generate_default_configs():
     custom_path = config["PROJECT"].get("custom_modules", None)
 
     for f in os.listdir(custom_path):
-        if os.path.isfile(f) and f[-7:] == '.sample':
+        if os.path.isfile(f) and f[-7:] == ".sample":
             os.remove(f)
 
-            
-    modules = get_modules(os.path.join(PATH,"included/modules"))
+    modules = get_modules(os.path.join(PATH, "included/modules"))
     for m in modules:
         config_options[m] = get_module_options(".included.modules." + m, m)
-        
+
     if custom_path:
         modules = get_modules(custom_path)
         for m in modules:
             config_options[m] = get_module_options(os.path.join(custom_path, m), m)
-    
+
     for m, options in config_options.items():
         if not os.path.exists(os.path.join(CONFIG_FOLDER, "{}.ini.sample".format(m))):
-            c = open(os.path.join(CONFIG_FOLDER, "{}.ini.sample".format(m)), 'w')
+            c = open(os.path.join(CONFIG_FOLDER, "{}.ini.sample".format(m)), "w")
             c.write("[ModuleSettings]\n\n")
             for o in sorted(options.keys()):
-                c.write("# {}\n".format(options[o]['help']))
-                if options[o]['default']:
-                    c.write("{} = {}\n\n".format(o, options[o]['default']))
+                c.write("# {}\n".format(options[o]["help"]))
+                if options[o]["default"]:
+                    c.write("{} = {}\n\n".format(o, options[o]["default"]))
                 else:
                     c.write("# {} =\n\n".format(o))
             c.close()
 
-    
-        
+
 def get_modules(module_path):
 
     modules = [name for _, name, _ in pkgutil.iter_modules([module_path])]
@@ -94,7 +96,7 @@ def load_module(module_path):
     if "/" not in module_path:
         import importlib
 
-        return importlib.import_module("%s" % module_path, package = "armory")
+        return importlib.import_module("%s" % module_path, package="armory")
     else:
         module_name = module_path.split("/")[-1]
         if sys.version_info.major == 2:
@@ -158,31 +160,30 @@ def list_module_options(module, module_name):
     argcomplete.autocomplete(m.options)
     m.options.parse_args(["-h"])
 
+
 def get_module_options(module, module_name):
     config = get_config_options()
     db = initialize_database(config)
     # Load the module
     Module = load_module(module)
-    
+
     m = Module.Module(db)
 
     # Populate the options
     m.set_options()
-    
+
     options = {}
 
     for a in m.options._actions:
-        cmd = ''
+        cmd = ""
         for c in a.option_strings:
-            if '--' in c:
-                cmd = c.replace('-', '')
+            if "--" in c:
+                cmd = c.replace("-", "")
 
-        if cmd and cmd != 'help':
-            options[cmd] = {'help':a.help,
-                            'default':a.default}
+        if cmd and cmd != "help":
+            options[cmd] = {"help": a.help, "default": a.default}
 
     return options
-    
 
 
 def list_report_options(module, module_name):
@@ -288,8 +289,13 @@ def run_report(Report, argv, report):
 
 def get_config_options(config_file=CONFIG_FILE):
     config = ConfigParser()
-    if config_file == CONFIG_FILE and not os.path.exists(os.path.join(CONFIG_FOLDER, config_file)):
-        copy(os.path.join(DEFAULTS_DIR, 'settings.ini.default'), os.path.join(CONFIG_FOLDER, CONFIG_FILE))
+    if config_file == CONFIG_FILE and not os.path.exists(
+        os.path.join(CONFIG_FOLDER, config_file)
+    ):
+        copy(
+            os.path.join(DEFAULTS_DIR, "settings.ini.default"),
+            os.path.join(CONFIG_FOLDER, CONFIG_FILE),
+        )
     config.read(os.path.join(CONFIG_FOLDER, config_file))
 
     if config_file == CONFIG_FILE:
@@ -304,14 +310,16 @@ def get_connection_string(config):
         base = config["PROJECT"]["base_path"]
         dbname = config["DATABASE"]["filename"]
         connect = "sqlite:///%s" % os.path.join(base, dbname)
-    
-    elif config['DATABASE']['backend'] in ['mysql', 'mariadb']:
-        username = config["DATABASE"]['username']
-        password = config["DATABASE"]['password']
-        server = config["DATABASE"].get('server', '127.0.0.1')
-        port = config["DATABASE"].get('port', '3306')
-        database = config['DATABASE']['database']
-        connect = "mysql://{}:{}@{}:{}/{}".format(username, password, server, port, database)
+
+    elif config["DATABASE"]["backend"] in ["mysql", "mariadb"]:
+        username = config["DATABASE"]["username"]
+        password = config["DATABASE"]["password"]
+        server = config["DATABASE"].get("server", "127.0.0.1")
+        port = config["DATABASE"].get("port", "3306")
+        database = config["DATABASE"]["database"]
+        connect = "mysql://{}:{}@{}:{}/{}".format(
+            username, password, server, port, database
+        )
     return connect
 
 
@@ -389,7 +397,7 @@ def main():
                         os.path.join(custom_path, base_args.module), base_args.module
                     )
                     sys.exit(0)
-            modules = get_modules(os.path.join(PATH,"included/modules"))
+            modules = get_modules(os.path.join(PATH, "included/modules"))
             if base_args.module in modules:
                 list_module_options(
                     ".included.modules." + base_args.module, base_args.module
@@ -411,7 +419,7 @@ def main():
         if custom_path:
             custom_modules = get_modules(custom_path)
 
-        modules = get_modules(os.path.join(PATH,"included/modules"))
+        modules = get_modules(os.path.join(PATH, "included/modules"))
 
         if base_args.module in custom_modules:
             Module = load_module(os.path.join(custom_path, base_args.module))
