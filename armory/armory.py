@@ -41,7 +41,7 @@ def check_and_create_configs():
             out.write(
                 resource_string(
                     "armory.default_configs", "settings.ini.default"
-                ).encode("UTF-8")
+                ).decode("UTF-8")
             )
 
         generate_default_configs()
