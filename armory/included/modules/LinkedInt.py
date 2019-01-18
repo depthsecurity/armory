@@ -1,18 +1,14 @@
 #!/usr/bin/python
-
-from armory.database.repositories import BaseDomainRepository, DomainRepository, UserRepository
-from ..ModuleTemplate import ModuleTemplate
-import subprocess
-from ..utilities import which
-import shlex
-import os
-import pdb
-import xmltodict
-from tld import get_tld
-import csv
-import string
+from armory.database.repositories import BaseDomainRepository, UserRepository
 from collections import Counter
+from ..ModuleTemplate import ModuleTemplate
+from ..utilities import which
 from ..utilities.color_display import display, display_error
+import csv
+import os
+import shlex
+import string
+import subprocess
 
 
 def remove_binary(txt):
@@ -164,7 +160,7 @@ class Module(ModuleTemplate):
         cmd = shlex.split("python " + self.binary + command_args)
         print("Executing: %s" % " ".join(cmd))
 
-        res = subprocess.Popen(cmd).wait()
+        subprocess.Popen(cmd).wait()
 
         os.chdir(current_dir)
         count = 0

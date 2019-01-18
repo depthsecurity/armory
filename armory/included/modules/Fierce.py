@@ -1,10 +1,8 @@
 from armory.included.ModuleTemplate import ToolTemplate
 from armory.database.repositories import BaseDomainRepository, DomainRepository
-from armory.included.utilities.color_display import display, display_error
-from armory.included.utilities import which
+from armory.included.utilities.color_display import display_error
 import os
 import re
-import pdb
 
 
 class Module(ToolTemplate):
@@ -103,7 +101,7 @@ class Module(ToolTemplate):
 
             if "Now performing" in fierceOutput:
                 hosts = re.findall(
-                    "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\t.*$",
+                    r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\t.*$",
                     fierceOutput,
                     re.MULTILINE,
                 )
@@ -119,7 +117,7 @@ class Module(ToolTemplate):
             elif "Whoah, it worked" in fierceOutput:
                 print("Zone transfer found!")
                 hosts = re.findall(
-                    ".*\tA\t\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",
+                    r".*\tA\t\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$",
                     fierceOutput,
                     re.MULTILINE,
                 )

@@ -1,15 +1,8 @@
 #!/usr/bin/python
-
-from ..ModuleTemplate import ToolTemplate
 from armory.database.repositories import DomainRepository
-from ..utilities.color_display import (
-    display_new,
-    display_error,
-    display_warning,
-    display,
-)
+from ..ModuleTemplate import ToolTemplate
+from ..utilities.color_display import display_new, display_warning
 import os
-import pdb
 
 
 class Module(ToolTemplate):

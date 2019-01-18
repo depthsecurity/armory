@@ -1,9 +1,6 @@
 #!/usr/bin/python
-
-from ..ReportTemplate import ReportTemplate
 from armory.database.repositories import PortRepository
-import pdb
-import json
+from ..ReportTemplate import ReportTemplate
 
 
 class Report(ReportTemplate):
@@ -32,20 +29,24 @@ class Report(ReportTemplate):
 
             if (
                 (args.scope == "passive" and s.ip_address.passive_scope)
-                or (args.scope == "active" and s.ip_address.in_scope)
-                or (args.scope == "all")
+                or (args.scope == "active" and s.ip_address.in_scope)  # noqa: W503
+                or (args.scope == "all")  # noqa: W503
             ):
                 if s.cert:
-                    
-                    cert = s.cert.split('-----')[0]
+
+                    cert = s.cert.split("-----")[0]
                     # pdb.set_trace()
                     if not certs.get(cert, False):
                         certs[cert] = []
                     if s.ip_address.domains:
-                        certs[cert].append(s.ip_address.domains[0].domain + ":" + str(s.port_number))
+                        certs[cert].append(
+                            s.ip_address.domains[0].domain + ":" + str(s.port_number)
+                        )
                     else:
-                        certs[cert].append(s.ip_address.ip_address + ":" + str(s.port_number))
-                
+                        certs[cert].append(
+                            s.ip_address.ip_address + ":" + str(s.port_number)
+                        )
+
         for k in certs.keys():
             results.append(", ".join(sorted(list(set(certs[k])))))
             for l in k.split("\n"):

@@ -1,10 +1,14 @@
 #!/usr/bin/env python
-from armory.database.repositories import DomainRepository, BaseDomainRepository, IPRepository
+from armory.database.repositories import (
+    DomainRepository,
+    BaseDomainRepository,
+    IPRepository,
+)
 from ..ModuleTemplate import ToolTemplate
 from ..utilities import get_domain_ip
 import io
 import os
-import pdb
+
 
 class Module(ToolTemplate):
     name = "Subfinder"
@@ -50,10 +54,12 @@ class Module(ToolTemplate):
             )
         if not os.path.exists(output_path):
             os.makedirs(output_path)
-            
+
         if args.domain:
             out_file = os.path.join(outpath, "{}.subfinder".format(args.domain))
-            targets.append({"target": args.domain, "output": os.path.join(output_path, out_file)})
+            targets.append(
+                {"target": args.domain, "output": os.path.join(output_path, out_file)}
+            )
 
         if args.db_domains:
             if args.rescan:
@@ -62,8 +68,9 @@ class Module(ToolTemplate):
                 domains = self.BaseDomains.all(tool=self.name, scope_type="passive")
             for d in domains:
                 out_file = os.path.join(outpath, "{}.subfinder".format(d.domain))
-                targets.append({"target": d.domain, "output": os.path.join(output_path, out_file)})
-        
+                targets.append(
+                    {"target": d.domain, "output": os.path.join(output_path, out_file)}
+                )
 
         elif args.domain_list:
             domains = io.open(args.domain_list, encoding="utf-8").read().split("\n")
@@ -77,7 +84,7 @@ class Module(ToolTemplate):
                             ),
                         }
                     )
-        
+
         return targets
 
     def build_cmd(self, args):

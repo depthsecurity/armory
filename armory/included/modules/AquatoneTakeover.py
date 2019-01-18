@@ -1,11 +1,9 @@
 #!/usr/bin/python
-
-from ..ModuleTemplate import ToolTemplate
 from armory.database.repositories import BaseDomainRepository, DomainRepository
-import os
-import json
-import pdb
+from ..ModuleTemplate import ToolTemplate
 from ..utilities.color_display import display, display_error
+import json
+import os
 
 
 class Module(ToolTemplate):
@@ -50,7 +48,10 @@ class Module(ToolTemplate):
             for d in all_domains:
                 # We need to find all of the http/https ports and create the json file.
                 output_path = os.path.join(
-                    self.base_config["PROJECT"]["base_path"], "output", "aquatone", d.domain
+                    self.base_config["PROJECT"]["base_path"],
+                    "output",
+                    "aquatone",
+                    d.domain,
                 )
                 if not os.path.exists(output_path):
                     os.makedirs(output_path)
@@ -124,7 +125,7 @@ class Module(ToolTemplate):
         return cmd
 
     def pre_run(self, args):
-        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], 'output')
+        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], "output")
 
         self.orig_home = os.environ["HOME"]
 

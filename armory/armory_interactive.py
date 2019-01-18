@@ -7,11 +7,12 @@ from armory import (
     load_module,
     initialize_database,
 )
-import readline
-import sys
-import pdb
 import glob
 import os
+import pdb
+import readline
+import six
+import sys
 
 
 class GlobalCommands(object):
@@ -371,10 +372,10 @@ def show_menu(CommandClass, CompleterClass, name):
     readline.parse_and_bind("tab: complete")
 
     res = False
-    while res != True:
+    while res is not True:
         valid_commands = command.cmd.keys()
 
-        ret_cmd = raw_input("%s> " % name).strip()
+        ret_cmd = six.input("%s> " % name).strip()
         cmd, options = (ret_cmd.split(" ")[0], " ".join(ret_cmd.split(" ")[1:]))
         if cmd == "debug":
             pdb.set_trace()

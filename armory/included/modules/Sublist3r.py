@@ -2,9 +2,8 @@
 
 from armory.database.repositories import BaseDomainRepository, DomainRepository
 from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display, display_error
+from ..utilities.color_display import display_error
 import os
-import pdb
 
 
 class Module(ToolTemplate):
@@ -95,11 +94,12 @@ class Module(ToolTemplate):
 
                     new_domain = d.split(":")[0].lower()
                     if new_domain:
-                        created, subdomain = self.Domain.find_or_create(domain=new_domain)
+                        created, subdomain = self.Domain.find_or_create(
+                            domain=new_domain
+                        )
             else:
                 display_error("{} not found.".format(output_path))
                 next
-            
 
         self.Domain.commit()
         # except IOError:

@@ -5,15 +5,12 @@ from armory.database.repositories import (
     ScopeCIDRRepository,
     IPRepository,
 )
-from armory.included.utilities.color_display import display, display_error
+from armory.included.utilities.color_display import display_error
 import os
-import subprocess
 import json
-import pdb
 
 
 class Module(ToolTemplate):
-
     name = "DNSRecon"
     binary_name = "dnsrecon"
     """

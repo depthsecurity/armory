@@ -1,4 +1,3 @@
-import whois
 from tld import get_tld
 
 

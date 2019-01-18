@@ -1,9 +1,6 @@
 #!/usr/bin/python
-
-from armory.included.ReportTemplate import ReportTemplate
 from armory.database.repositories import PortRepository
-import pdb
-import json
+from armory.included.ReportTemplate import ReportTemplate
 
 
 class Report(ReportTemplate):
@@ -20,7 +17,6 @@ class Report(ReportTemplate):
 
     def run(self, args):
         # Cidrs = self.CIDR.
-        results = {}
 
         ports = self.Ports.all()
         services = {}
@@ -29,9 +25,11 @@ class Report(ReportTemplate):
 
             if (
                 (args.scope == "active" and p.ip_address.in_scope)
-                or (args.scope == "passive" and p.ip_address.passive_scope)
-                or (args.scope == "all")
-                and p.status == "open"
+                or (  # noqa: W503
+                    args.scope == "passive" and p.ip_address.passive_scope
+                )
+                or (args.scope == "all")  # noqa: W503
+                and p.status == "open"  # noqa: W503
             ):
                 if not services.get(p.proto, False):
                     services[p.proto] = {}

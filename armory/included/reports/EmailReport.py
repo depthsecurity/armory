@@ -1,9 +1,6 @@
 #!/usr/bin/python
-
-from armory.included.ReportTemplate import ReportTemplate
 from armory.database.repositories import UserRepository
-import pdb
-import json
+from armory.included.ReportTemplate import ReportTemplate
 
 
 class Report(ReportTemplate):
@@ -29,7 +26,7 @@ class Report(ReportTemplate):
         users = self.User.all()
 
         for u in users:
-            if u.email != None and u.email != "None":
+            if u.email is not None and u.email is not "None":
                 if args.tool:
                     # pdb.set_trace()
                     if not u.meta.get(args.tool, False):
