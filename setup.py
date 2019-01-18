@@ -70,7 +70,10 @@ setup(
     # Additional groups of dependencies.
     # You can install these with the following syntax:
     # $ pip install -e .[dev,test]
-    extras_require={"dev": ["check-manifest", "tox"], "test": ["coverage"]},
+    extras_require={
+        "dev": ["check-manifest", "tox"],
+        "test": ["coverage", "mock; python_version < '3.4'"],
+    },
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.

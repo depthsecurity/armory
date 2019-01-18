@@ -37,6 +37,7 @@ def check_and_create_configs():
 
     if not os.path.exists(CONFIG_FOLDER):
         os.mkdir(CONFIG_FOLDER)
+    if not os.path.exists(os.path.join(CONFIG_FOLDER, CONFIG_FILE)):
         with open(os.path.join(CONFIG_FOLDER, CONFIG_FILE), "w") as out:
             out.write(
                 resource_string(
