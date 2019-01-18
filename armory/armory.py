@@ -293,7 +293,7 @@ def get_config_options(config_file=CONFIG_FILE):
         print(
             "An error occurred while trying to create {}. Aborting!!".format(def_config)
         )
-        sys.exit(1)
+        raise ValueError("{} doesn't exist!".format(def_config))
     config.read(os.path.join(CONFIG_FOLDER, config_file))
 
     if config_file == CONFIG_FILE:

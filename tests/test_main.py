@@ -112,3 +112,16 @@ class CheckAndCreateConfigs(unittest.TestCase):
                 self.assertFalse(
                     mock_gen.called, "Should not have called generate_default_configs. "
                 )
+
+
+class GetConfigOptions(unittest.TestCase):
+    @mock.patch("armory.armory.os.path")
+    def test_config_folder_nofile(self, mock_path):
+        settings_path = os.path.join(armory.CONFIG_FOLDER, armory.CONFIG_FILE)
+        mock_path.exists.return_value = False
+        mock_path.join.return_value = settings_path
+        self.assertRaises(ValueError, armory.get_config_options())
+        self.assertTrue(mock_path.join.called, "os.path.join should have been called.")
+        self.assertTrue(
+            mock_path.exists.called, "os.path.exists should have been called."
+        )
