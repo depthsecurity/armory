@@ -64,6 +64,8 @@ setup(
         "ipaddr",
         "mysqlclient",
         "lxml",
+        "IPython > 5.0,< 6.0; python_version < '3.1'",
+        "IPython; python_version > '3.1'",
     ],
     test_suite="nose.collector",
     tests_require=["nose"],
@@ -77,5 +79,10 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    entry_points={"console_scripts": ["armory=armory.armory:main"]},
+    entry_points={
+        "console_scripts": [
+            "armory=armory.armory:main",
+            "armory-shell=armory.shell:main",
+        ]
+    },
 )
