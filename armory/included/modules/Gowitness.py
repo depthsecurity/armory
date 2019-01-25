@@ -141,8 +141,8 @@ class Module(ToolTemplate):
             os.chdir(output)
 
             Popen(cmd, shell=False).wait()
+            os.chdir(cwd)
 
-        os.chdir(cwd)
         self.IPAddress.commit()
 
     def chunks(self, chunkable, n):
