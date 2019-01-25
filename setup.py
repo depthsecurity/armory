@@ -8,6 +8,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "Readme.md"), encoding="UTF-8") as f:
     long_description = f.read()
 
+
 setup(
     name="armory",
     version="1.0.0",
@@ -17,6 +18,7 @@ setup(
         " related information."
     ),
     long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/depthsecurity/armory",
     author="Depth Security",
     author_email="info@depthsecurity.com",
@@ -42,7 +44,6 @@ setup(
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     install_requires=[
-
         "configparser",
         "sqlalchemy",
         "sqlalchemy_mixins",
@@ -63,15 +64,25 @@ setup(
         "ipaddr",
         "mysqlclient",
         "lxml",
+        "IPython > 5.0,< 6.0; python_version < '3.1'",
+        "IPython; python_version > '3.1'",
     ],
     test_suite="nose.collector",
     tests_require=["nose"],
     # Additional groups of dependencies.
     # You can install these with the following syntax:
     # $ pip install -e .[dev,test]
-    extras_require={"dev": ["check-manifest", "tox"], "test": ["coverage"]},
+    extras_require={
+        "dev": ["check-manifest", "tox"],
+        "test": ["coverage", "mock; python_version < '3.4'"],
+    },
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    entry_points={"console_scripts": ["armory=armory.armory:main"]},
+    entry_points={
+        "console_scripts": [
+            "armory=armory.armory:main",
+            "armory-shell=armory.shell:main",
+        ]
+    },
 )

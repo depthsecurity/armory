@@ -3,7 +3,6 @@ import json
 import argparse
 import pyperclip
 import codecs
-import pdb
 
 
 def get_marker(txt, marker):

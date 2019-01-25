@@ -1,9 +1,6 @@
 #!/usr/bin/python
-
-from armory.included.ReportTemplate import ReportTemplate
 from armory.database.repositories import ScopeCIDRRepository, BaseDomainRepository
-import pdb
-import json
+from armory.included.ReportTemplate import ReportTemplate
 
 
 class Report(ReportTemplate):

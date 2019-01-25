@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 from armory.database.repositories import (
     IPRepository,
     DomainRepository,
@@ -8,17 +7,9 @@ from armory.database.repositories import (
 )
 from ..ModuleTemplate import ToolTemplate
 from ..utilities import get_urls
+from ..utilities.color_display import display_warning
 import os
-import re
-import pdb
-from multiprocessing import Pool as ThreadPool
-from ..utilities.color_display import display, display_warning
 import time
-
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
 
 
 class Module(ToolTemplate):
@@ -98,7 +89,7 @@ class Module(ToolTemplate):
                         .replace("/", "_")
                         .replace("?", "_")
                         .replace("&", "_")
-                        + "-dir.txt",
+                        + "-dir.txt",  # noqa: W503
                     ),
                 }
             )

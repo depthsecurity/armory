@@ -1,4 +1,3 @@
-from ..ModuleTemplate import ToolTemplate
 from armory.database.repositories import (
     BaseDomainRepository,
     DomainRepository,
@@ -8,29 +7,28 @@ from armory.database.repositories import (
     VulnRepository,
     CVERepository,
 )
-from ..utilities import which, get_whois
+from netaddr import IPNetwork
+from ..ModuleTemplate import ToolTemplate
+import datetime
+import json
 import os
-import subprocess
-import pdb
-import xml.etree.ElementTree as ET
 import re
-from tld import get_tld
 import tempfile
 import requests
-import json
 import sys
-import datetime
-from netaddr import IPNetwork, IPAddress
+import xml.etree.ElementTree as ET
 
 if sys.version_info[0] >= 3:
     raw_input = input
 
+
 def check_if_ip(txt):
     try:
-        res = int(txt.replace('.', ''))
+        int(txt.replace(".", ""))
         return True
-    except:
+    except ValueError:
         return False
+
 
 class Module(ToolTemplate):
     """
@@ -75,7 +73,7 @@ class Module(ToolTemplate):
         )
         self.options.set_defaults(timeout=None)
         self.options.add_argument(
-            "--import_file", help="Import results from an Nmap XML file.",
+            "--import_file", help="Import results from an Nmap XML file."
         )
 
     def get_targets(self, args):
@@ -85,7 +83,6 @@ class Module(ToolTemplate):
             return [{"target": "", "output": args.import_file}]
 
         targets = []
-
 
         if args.hosts:
 
@@ -210,15 +207,9 @@ class Module(ToolTemplate):
             root = tree.getroot()
             hosts = root.findall("host")
 
-        except:
+        except Exception:
             print(nFile + " doesn't exist somehow...skipping")
             return
-
-        tmpNames = []
-        tmpIPs = (
-            {}
-        )  # tmpIps = {'127.0.0.1':['domain.com']} -- not really used; decided to just let nslookup take care of IP info
-        skip = []
 
         for host in hosts:
             hostIP = host.find("address").get("addr")
@@ -253,7 +244,7 @@ class Module(ToolTemplate):
                         ip_address=ip,
                     )
 
-                    if port.find("service") != None:
+                    if port.find("service") is not None:
                         portName = port.find("service").get("name")
                         if portName == "http" and hostPort == "443":
                             portName = "https"
@@ -313,14 +304,14 @@ class Module(ToolTemplate):
             self.IPAddress.commit()
 
     def parseVulners(self, scriptOutput, db_port):
-        urls = re.findall("(https://vulners.com/cve/CVE-\d*-\d*)", scriptOutput)
+        urls = re.findall(r"(https://vulners.com/cve/CVE-\d*-\d*)", scriptOutput)
         for url in urls:
             vuln_refs = []
             exploitable = False
             cve = url.split("/cve/")[1]
             vulners = requests.get("https://vulners.com/cve/%s" % cve).text
             exploitdb = re.findall(
-                "https://www.exploit-db.com/exploits/\d{,7}", vulners
+                r"https://www.exploit-db.com/exploits/\d{,7}", vulners
             )
             for edb in exploitdb:
                 exploitable = True
@@ -399,7 +390,7 @@ class Module(ToolTemplate):
 
                     self.Vulnerability.commit()
                     self.CVE.commit()
-                except:
+                except Exception:
                     print("something went wrong with the vuln/cve info gathering")
                     if vulners:
                         print(

@@ -1,6 +1,5 @@
 from .. import BaseModel
 from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class Cred(BaseModel):

@@ -1,0 +1,8 @@
+[report]
+omit = 
+  */nose/*
+  */pkg_resources/*
+  .tox/*
+
+[run]
+source= armory/

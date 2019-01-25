@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 from ...database.repositories import PortRepository
-import pdb
 
 
 def run(db, tool=None, scope_type=None):
@@ -16,9 +15,9 @@ def run(db, tool=None, scope_type=None):
 
         if (
             p.ip_address
-            and (scope_type == "active" and p.ip_address.in_scope == True)
-            or (scope_type == "passive" and p.ip_address.passive_scope == True)
-            or not scope_type
+            and (scope_type == "active" and p.ip_address.in_scope)  # noqa: W503
+            or (scope_type == "passive" and p.ip_address.passive_scope)  # noqa: W503
+            or not scope_type  # noqa: W503
         ):
 
             domain_list = [d.domain for d in p.ip_address.domains]

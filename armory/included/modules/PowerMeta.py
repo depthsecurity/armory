@@ -1,24 +1,21 @@
 #!/usr/bin/python
 
-from armory.database.repositories import BaseDomainRepository, DomainRepository, UserRepository
+from armory.database.repositories import BaseDomainRepository, UserRepository
 from ..ModuleTemplate import ModuleTemplate
-import subprocess
-import os
-import pdb
 import csv
-import string
 import glob
+import six
 
 try:
     from io import BytesIO
-except:
+except ImportError:
     from StringIO import StringIO as BytesIO
 
 
 class Module(ModuleTemplate):
     """
     Unfortunately, this is a Windows only deal. So we output a list of commands
-    to be run, and have a way of ingesting the output. Since metadata is more 
+    to be run, and have a way of ingesting the output. Since metadata is more
     junk then good data, items have to be manually verified
     """
 
@@ -104,7 +101,7 @@ class Module(ModuleTemplate):
 
         for d in data:
             if d.strip():
-                res = raw_input("Is %s a valid name? [y/N] " % d)
+                res = six.input("Is %s a valid name? [y/N] " % d)
                 if res and res[0].lower() == "y":
                     if " " in d:
                         if ", " in d:

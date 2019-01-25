@@ -1,4 +1,11 @@
 #!/usr/bin/python
+from multiprocessing import Pool as ThreadPool
+from armory.included.utilities.color_display import display, display_error
+from armory.included.utilities import which
+import shlex
+import os
+import time
+
 import argparse
 import sys
 
@@ -6,14 +13,6 @@ if sys.version_info[0] < 3:
     from subprocess32 import Popen
 else:
     from subprocess import Popen
-
-from multiprocessing import Pool as ThreadPool
-from armory.included.utilities.color_display import display, display_error
-from armory.included.utilities import which
-import shlex
-import pdb
-import os
-import time
 
 
 class ModuleTemplate(object):
@@ -50,7 +49,6 @@ class ToolTemplate(ModuleTemplate):
 
     def set_options(self):
         super(ToolTemplate, self).set_options()
-
 
         self.options.add_argument("-b", "--binary", help="Path to the binary")
         self.options.add_argument(
@@ -141,11 +139,11 @@ class ToolTemplate(ModuleTemplate):
                 timeout = int(args.timeout)
             else:
                 timeout = None
-
-            if args.hard_timeout and args.hard_timeout != "0":
-                hard_timeout = int(args.hard_timeout)
-            else:
-                hard_timeout = None
+            # Currently not used, therefor to please flake8 commenting out.
+            # if args.hard_timeout and args.hard_timeout != "0":
+            #    hard_timeout = int(args.hard_timeout)
+            # else:
+            #    hard_timeout = None
 
             targets = self.get_targets(args)
 
@@ -221,4 +219,3 @@ def run_cmd(cmd):
 
     else:
         Popen(c).wait()
-

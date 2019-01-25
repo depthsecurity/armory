@@ -1,26 +1,14 @@
 #!/usr/bin/python
 
-from armory.database.repositories import (
-    IPRepository,
-    DomainRepository,
-    PortRepository,
-    UrlRepository,
-)
+from armory.database.repositories import IPRepository
 from ..ModuleTemplate import ToolTemplate
 from subprocess import Popen
-from ..utilities import which, get_urls
-import shlex
+from ..utilities import get_urls
 import os
-import pdb
 import tempfile
 from time import time
-import glob
 import sys
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
 
 if sys.version[0] == "3":
     xrange = range
@@ -104,16 +92,16 @@ class Module(ToolTemplate):
                 self.base_config["PROJECT"]["base_path"],
                 args.output_path[1:],
                 timestamp,
-                args.output_path[1:].split('/')[1] + "_{}",
+                args.output_path[1:].split("/")[1] + "_{}",
             )
         else:
             self.path = os.path.join(
                 self.base_config["PROJECT"]["base_path"],
                 args.output_path,
                 timestamp,
-                args.output_path.split('/')[1] + "_{}",
+                args.output_path.split("/")[1] + "_{}",
             )
-        
+
         res = []
         i = 0
 
@@ -135,7 +123,7 @@ class Module(ToolTemplate):
         )
 
         if args.tool_args:
-            command += tool_args
+            command += args.tool_args
 
         return command
 
@@ -147,7 +135,6 @@ class Module(ToolTemplate):
 
         cwd = os.getcwd()
         for cmd in cmds:
-            target = cmd["target"]
             output = cmd["output"]
 
             cmd = [self.binary, "generate"]
@@ -162,4 +149,4 @@ class Module(ToolTemplate):
         """ Yield successive n-sized chunks from l.
         """
         for i in xrange(0, len(chunkable), n):
-            yield chunkable[i : i + n]
+            yield chunkable[i : i + n]  # noqa: E203

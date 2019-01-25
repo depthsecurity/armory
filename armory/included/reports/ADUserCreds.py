@@ -1,10 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
-from ..ReportTemplate import ReportTemplate
-import pdb
-import json
 from fuzzywuzzy import process
+from ..ReportTemplate import ReportTemplate
 import datetime
 
 
@@ -107,7 +104,7 @@ class Report(ReportTemplate):
 
                         if hash_map.get(h, False):
                             user_map[username] = hash_map[h]
-                    except:
+                    except Exception:
                         print("couldn't parse", l)
 
             if args.columns:
@@ -170,7 +167,7 @@ class Report(ReportTemplate):
                             hash_count[h] = 0
 
                         hash_count[h] += 1
-                    except:
+                    except Exception:
                         print("Couldn't parse", l)
 
             # Build out the stats
@@ -181,7 +178,7 @@ class Report(ReportTemplate):
             total_hashes = sum([hash_count[c] for c in hash_count.keys()])
             total_hashes_unique = len(hash_count.keys())
 
-            total_pws = sum([pw_count[h]["count"] for h in pw_count.keys()])
+            total_pws = sum([pw_count[_h]["count"] for _h in pw_count.keys()])
             total_pws_unique = len(pw_count.keys())
 
             total_cracked = int(total_pws / float(total_hashes) * 1000) / 10.0

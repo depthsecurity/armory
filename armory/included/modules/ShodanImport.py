@@ -1,21 +1,16 @@
 #!/usr/bin/python
-
-from ..ModuleTemplate import ModuleTemplate
-
-from armory.database.repositories import PortRepository, IPRepository, ScopeCIDRRepository
-import time
-import os
-import sys
-import pdb
-from ..utilities.color_display import (
-    display,
-    display_error,
-    display_warning,
-    display_new,
+from armory.database.repositories import (
+    PortRepository,
+    IPRepository,
+    ScopeCIDRRepository,
 )
-import requests
-import json
 from netaddr import IPNetwork
+from ..ModuleTemplate import ModuleTemplate
+from ..utilities.color_display import display, display_error, display_warning
+import json
+import pdb
+import requests
+import time
 
 
 class Module(ModuleTemplate):
@@ -139,7 +134,7 @@ class Module(ModuleTemplate):
                         )
                         if (
                             results.get("error")
-                            and "request timed out" in results["error"]
+                            and "request timed out" in results["error"]  # noqa: W503
                         ):
                             display_warning(
                                 "Timeout occurred on Shodan's side.. trying again in 5 seconds."
@@ -186,7 +181,7 @@ class Module(ModuleTemplate):
                             svc = ""
 
                         port.service_name = svc
-                    port.status = 'open'
+                    port.status = "open"
                     port.meta["shodan_data"] = res
                     port.save()
             else:
@@ -231,7 +226,7 @@ class Module(ModuleTemplate):
                                 svc = ""
 
                             port.service_name = svc
-                        port.status = 'open'
+                        port.status = "open"
                         port.meta["shodan_data"] = res
                         port.save()
 
