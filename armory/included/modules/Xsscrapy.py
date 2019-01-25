@@ -107,8 +107,17 @@ class Module(ToolTemplate):
 
         return cmd
 
+    def pre_run(self, args):
+
+        self.orig_path = os.getcwd()
+        os.chdir(os.path.dirname(self.binary))
+
     def process_output(self, cmds):
 
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
         )
+
+    def post_run(self, args):
+
+        os.chdir(self.orig_path)
