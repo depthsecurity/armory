@@ -100,7 +100,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = "python " + self.binary + " -u http://{target} "
+        cmd = self.binary + " -u http://{target} "
 
         if args.tool_args:
             cmd += args.tool_args
