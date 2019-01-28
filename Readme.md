@@ -53,22 +53,22 @@ Usage is split into **modules** and **reports**.
 
 Modules run tools, ingest output, and write it to the database. To see a list of available modules, type:
 
-`./armory.py -lm`
+`armory -lm`
 
 To see a list of module options, type:
 
-`./armory.py -m <module> -M`
+`armory -m <module> -M`
 
 
 ## Reports
 
 Reports are similar to modules, except they are meant to pull data from the database, and display it in a usable format. To view all of the available reports:
 
-`./armory.py -lr`
+`armory -lr`
 
 To view available report options:
 
-`./armory.py -r <report> -R`
+`armory -r <report> -R`
 
 
 ## Interactive Shell

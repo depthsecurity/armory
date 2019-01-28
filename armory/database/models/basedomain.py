@@ -12,3 +12,6 @@ class BaseDomain(BaseModel):
     subdomains = relationship("Domain", backref="base_domain")
     users = relationship("User", backref="domain")
     dns = Column(JsonType, unique=False)
+
+    def __repr__(self):
+        return self.domain

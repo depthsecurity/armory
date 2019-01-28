@@ -6,6 +6,7 @@ from armory.database.repositories import (
 )
 from ..ModuleTemplate import ToolTemplate
 from ..utilities import get_domain_ip
+from ..utilities.color_display import display, display_error, display_warning
 import io
 import os
 
@@ -97,18 +98,23 @@ class Module(ToolTemplate):
 
     def process_output(self, targets):
         for target in targets:
-            with io.open(target["output"], encoding="utf-8") as fd:
-                for line in fd:
-                    domain = line.strip()
-                    ips = get_domain_ip.run(domain)
-                    ip_obj = None
-                    _, dom = self.Domains.find_or_create(domain=domain)
-                    if ips:
-                        for ip in ips:
-                            _, ip_obj = self.IPs.find_or_create(ip_address=ip)
-                            if ip_obj:
-                                dom.ip_addresses.append(ip_obj)
-                        dom.save()
+            try:
+                with io.open(target["output"], encoding="utf-8") as fd:
+                    for line in fd:
+                        domain = line.strip()
+                        if domain[0] == '.':
+                            domain = domain[1:]
+                        ips = get_domain_ip.run(domain)
+                        ip_obj = None
+                        _, dom = self.Domains.find_or_create(domain=domain)
+                        if ips:
+                            for ip in ips:
+                                _, ip_obj = self.IPs.find_or_create(ip_address=ip)
+                                if ip_obj:
+                                    dom.ip_addresses.append(ip_obj)
+                            dom.save()
+            except FileNotFoundError:
+                display_error("File doesn't exist for {}".format(target["output"]))
         self.BaseDomains.commit()
         self.IPs.commit()
 

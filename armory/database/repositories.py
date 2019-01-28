@@ -98,8 +98,9 @@ class BaseRepository(object):
                 created = True
                 try:
                     obj = self.model.create(**kwargs)
-                except Exception:
-                    pdb.set_trace()
+                except Exception as e:
+                    print("Exception: {}".format(e))
+                    
                 meta = {self.toolname: {"created": str(datetime.datetime.now())}}
                 obj.meta = meta
                 obj.save()
