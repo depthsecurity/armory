@@ -1,10 +1,9 @@
 #!/usr/bin/python
 
-from ..ModuleTemplate import ToolTemplate
 from armory.database.repositories import BaseDomainRepository, DomainRepository
+from ..ModuleTemplate import ToolTemplate
 import os
 import json
-import pdb
 
 
 class Module(ToolTemplate):
@@ -65,7 +64,9 @@ class Module(ToolTemplate):
         else:
             print("You need to supply domain(s).")
 
-        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], "output", "aquatone")
+        output_path = os.path.join(
+            self.base_config["PROJECT"]["base_path"], "output", "aquatone"
+        )
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -75,7 +76,7 @@ class Module(ToolTemplate):
             res.append(
                 {"target": t, "output": "{}/{}/hosts.json".format(output_path, t)}
             )
-        
+
         return res
 
     def build_cmd(self, args):
@@ -90,7 +91,7 @@ class Module(ToolTemplate):
         return cmd
 
     def pre_run(self, args):
-        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], 'output')
+        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], "output")
 
         self.orig_home = os.environ["HOME"]
 

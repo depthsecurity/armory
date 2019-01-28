@@ -8,25 +8,14 @@ from armory.database.repositories import (
     CVERepository,
     ScopeCIDRRepository,
 )
-from ..utilities import which
-from ..utilities.sort_ranges import merge_ranges
-
-import os
-import re
-
-try:
-    from exceptions import IOError
-except:
-    pass
-
-from tld import get_tld
-import xml.etree.cElementTree as ET
-import requests
-import json
-import pdb
 from ..utilities.color_display import display, display_new, display_error
 from ..utilities.nessus import NessusRequest
+from ..utilities.sort_ranges import merge_ranges
+import json
+import os
+import requests
 import time
+import xml.etree.cElementTree as ET
 
 
 class Module(ModuleTemplate):
@@ -84,12 +73,12 @@ class Module(ModuleTemplate):
                 self.process_data(nFile, args)
         elif args.launch:
             if (
-                not args.username
-                and not args.password
-                and not args.host
-                and not args.uuid
-                and not args.policy_id
-                and not args.folder_id
+                not args.username  # noqa: W503
+                and not args.password  # noqa: W503
+                and not args.host  # noqa: W503
+                and not args.uuid  # noqa: W503
+                and not args.policy_id  # noqa: W503
+                and not args.folder_id  # noqa: W503
             ):
                 display_error(
                     "You must supply a username, password, and host to launch a Nessus job"
@@ -124,10 +113,10 @@ class Module(ModuleTemplate):
 
         elif args.download:
             if (
-                not args.username
-                and not args.password
-                and not args.host
-                and not args.job_id
+                not args.username  # noqa: W503
+                and not args.password  # noqa: W503
+                and not args.host  # noqa: W503
+                and not args.job_id  # noqa: W503
             ):
                 display_error(
                     "You must supply host, username, password and job_id to download a report to import"
@@ -267,7 +256,7 @@ class Module(ModuleTemplate):
                         for i, item in enumerate(line):
                             item = item.strip()
                             if "Cookie" in item:
-                                cabbage = line.pop(i)
+                                line.pop(i)  # Pop to remove the first?
                                 tmp = line.pop(i)
                                 tmp.strip()
                                 cookieVal.append(tmp)
@@ -386,9 +375,9 @@ class Module(ModuleTemplate):
                     )
                     db_vuln.ports.append(db_port)
                     db_vuln.exploitable = exploitable
-                    if exploitable == True:
+                    if exploitable:
                         display_new("exploit avalable for " + findingName)
-                        
+
                     if vuln_refs:
                         db_vuln.exploit_reference = vuln_refs
 
@@ -420,7 +409,7 @@ class Module(ModuleTemplate):
                             cveDescription = res["summary"]
                             cvss = float(res["cvss"])
 
-                        except:
+                        except Exception:
                             cveDescription = None
                             cvss = None
 
@@ -435,7 +424,7 @@ class Module(ModuleTemplate):
                             db_cve = self.CVE.find(name=cve)
                             if (
                                 db_cve.description is None
-                                and cveDescription is not None
+                                and cveDescription is not None  # noqa: W503
                             ):
                                 db_cve.description = cveDescription
                             if db_cve.temporal_score is None and cvss is not None:
@@ -446,7 +435,6 @@ class Module(ModuleTemplate):
         display("Reading " + nFile)
         tree = ET.parse(nFile)
         root = tree.getroot()
-        skip = []
         for ReportHost in root.iter("ReportHost"):
             os = []
             hostname = ""
@@ -475,14 +463,13 @@ class Module(ModuleTemplate):
                 created, ip = self.IPAddress.find_or_create(ip_address=hostIP)
 
                 if hostname:
-                        created, domain = self.Domain.find_or_create(domain=hostname)
+                    created, domain = self.Domain.find_or_create(domain=hostname)
 
-                        if ip not in domain.ip_addresses:
-                            ip.save()
-                            domain.ip_addresses.append(ip)
-                            domain.save()
+                    if ip not in domain.ip_addresses:
+                        ip.save()
+                        domain.ip_addresses.append(ip)
+                        domain.save()
 
-                    
                 if os:
                     for o in os:
                         if not ip.OS:

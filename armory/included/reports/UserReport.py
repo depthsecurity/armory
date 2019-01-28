@@ -1,9 +1,10 @@
 #!/usr/bin/python
-
+from armory.database.repositories import (
+    BaseDomainRepository,
+    UserRepository,
+    CredRepository,
+)
 from armory.included.ReportTemplate import ReportTemplate
-from armory.database.repositories import BaseDomainRepository, UserRepository, CredRepository
-import pdb
-import json
 
 
 class Report(ReportTemplate):

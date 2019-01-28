@@ -4,10 +4,9 @@ import datetime
 import pdb
 import time
 import tldextract
-from netaddr import IPNetwork, IPAddress, iprange_to_cidrs
+from netaddr import IPNetwork, IPAddress
 from ipwhois import IPWhois
 import warnings
-from tld import get_tld
 import dns.resolver
 from ..included.utilities.color_display import display, display_warning, display_new
 
@@ -99,7 +98,7 @@ class BaseRepository(object):
                 created = True
                 try:
                     obj = self.model.create(**kwargs)
-                except:
+                except Exception:
                     pdb.set_trace()
                 meta = {self.toolname: {"created": str(datetime.datetime.now())}}
                 obj.meta = meta
@@ -151,8 +150,8 @@ class BaseRepository(object):
             for o in obj:
                 if (
                     o.meta
-                    and o.meta.get(tool, False)
-                    and o.meta[tool].get("created", False)
+                    and o.meta.get(tool, False)  # noqa: W503
+                    and o.meta[tool].get("created", False)  # noqa: W503
                 ):
                     pass
                 else:
@@ -213,7 +212,7 @@ class DomainRepository(BaseRepository):
                 for a in answers:
                     ips.append(a.address)
 
-            except:
+            except Exception:
                 # If something goes wrong with DNS, we end up here
                 pass
 
@@ -304,7 +303,7 @@ class IPRepository(BaseRepository):
                 while True:
                     try:
                         res = IPWhois(ip_str).lookup_whois(get_referral=True)
-                    except:
+                    except Exception:
                         res = IPWhois(ip_str).lookup_whois()
                     if res["nets"]:
                         break
@@ -330,7 +329,7 @@ class IPRepository(BaseRepository):
 
             try:
                 cidr_len = len(IPNetwork(cidr_data[0][0]))
-            except:
+            except Exception:
                 pdb.set_trace()
             matching_cidr = cidr_data[0]
             for c in cidr_data:

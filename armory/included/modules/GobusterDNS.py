@@ -1,12 +1,8 @@
 #!/usr/bin/python
-
 from armory.database.repositories import BaseDomainRepository, DomainRepository
 from ..ModuleTemplate import ToolTemplate
-from subprocess import check_output
-from ..utilities import which
-import shlex
+from ..utilities.color_display import display_error
 import os
-from ..utilities.color_display import display, display_error
 
 
 class Module(ToolTemplate):
@@ -99,7 +95,6 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
 
         for c in cmds:
-            target = c["target"]
             output_path = c["output"]
             if os.path.isfile(output_path):
                 data = open(output_path).read().split("\n")

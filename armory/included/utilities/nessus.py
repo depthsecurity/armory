@@ -1,11 +1,9 @@
 #!/usr/bin/python
-
-import requests
 import json
-import pdb
-import urllib3
+import requests
 import shutil
 import time
+import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -64,7 +62,7 @@ class NessusRequest(object):
         token_location = res.text.find('getApiToken",value:function(){return')
 
         self.HEADERS["X-API-TOKEN"] = res.text[
-            token_location : token_location + 200
+            token_location : token_location + 200  # noqa: E203
         ].split('"')[2]
         self.HEADERS["Content-Type"] = "application/json"
         data = '{"username":"%s","password":"%s"}' % (username, password)
@@ -109,7 +107,6 @@ class NessusRequest(object):
         )
 
         token = res["token"]
-        fsize = res["file"]
 
         res = json.loads(self.req("get", "/tokens/{}/status".format(token)).text)
 

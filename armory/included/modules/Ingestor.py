@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 from armory.database.repositories import (
     DomainRepository,
     IPRepository,
@@ -7,14 +6,11 @@ from armory.database.repositories import (
     BaseDomainRepository,
     ScopeCIDRRepository,
 )
-from tld import get_tld
-import dns.resolver
-from ..ModuleTemplate import ModuleTemplate
 from netaddr import IPNetwork, IPAddress, iprange_to_cidrs
-from ipwhois import IPWhois
-import pdb
-import warnings
+from ..ModuleTemplate import ModuleTemplate
 from ..utilities.color_display import display, display_new, display_error
+import dns.resolver
+import six
 import string
 
 
@@ -156,7 +152,7 @@ class Module(ModuleTemplate):
             for a in answers:
                 ips.append(a.address)
             return ips
-        except:
+        except Exception:
             return []
 
     def process_domain(self, domain_str):
@@ -170,13 +166,12 @@ class Module(ModuleTemplate):
         if not created:
             if (
                 domain.in_scope != self.in_scope
-                or domain.passive_scope != self.passive_scope
+                or domain.passive_scope != self.passive_scope  # noqa: W503
             ):
                 display(
                     "Domain %s already exists with different scoping. Updating to Active Scope: %s Passive Scope: %s"
                     % (domain_str, self.in_scope, self.passive_scope)
                 )
-
 
                 domain.in_scope = self.in_scope
                 domain.passive_scope = self.passive_scope
@@ -187,7 +182,7 @@ class Module(ModuleTemplate):
                     domain.base_domain.in_scope = self.in_scope
                     domain.base_domain.passive_scope = self.passive_scope
                     domain.base_domain.update()
-                    
+
     def process_ip(self, ip_str, force_scope=True):
 
         created, ip = self.IPAddress.find_or_create(
@@ -232,14 +227,11 @@ class Module(ModuleTemplate):
                     cidr.in_scope = True
                     cidr.update()
 
-    def scope_ips(self):
-        IPAddresses = self.IPAddress.all()
-
     def reclassify_domain(self, bd):
         if bd.meta.get("whois", False):
             display_new("Whois data found for {}".format(bd.domain))
             print(bd.meta["whois"])
-            res = raw_input(
+            res = six.input(
                 "Should this domain be scoped (A)ctive, (P)assive, or (N)ot? [a/p/N] "
             )
             if res.lower() == "a":

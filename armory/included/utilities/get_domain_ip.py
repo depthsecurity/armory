@@ -8,5 +8,5 @@ def run(domain):
         for a in answers:
             ips.append(a.address)
         return ips
-    except:
+    except Exception:
         return []

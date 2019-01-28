@@ -1,14 +1,13 @@
 #!/usr/bin/python
-
-from armory.database.repositories import BaseDomainRepository, DomainRepository, UserRepository
+from armory.database.repositories import (
+    BaseDomainRepository,
+    DomainRepository,
+    UserRepository,
+)
 from ..ModuleTemplate import ToolTemplate
-
-from ..utilities import which
-import shlex
+from ..utilities.color_display import display_new
 import os
-import pdb
 import xmltodict
-from tld import get_tld
 
 
 class Module(ToolTemplate):
@@ -44,7 +43,7 @@ class Module(ToolTemplate):
 
         targets = []
         if args.domain:
-            
+
             targets.append({"target": args.domain})
 
         elif args.file:
@@ -97,7 +96,7 @@ class Module(ToolTemplate):
 
             try:
                 data = xmltodict.parse(open(cmd["output"] + ".xml").read())
-            except:
+            except Exception:
                 data = None
 
             if data:

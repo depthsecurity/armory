@@ -37,6 +37,7 @@ def check_and_create_configs():
 
     if not os.path.exists(CONFIG_FOLDER):
         os.mkdir(CONFIG_FOLDER)
+    if not os.path.exists(os.path.join(CONFIG_FOLDER, CONFIG_FILE)):
         with open(os.path.join(CONFIG_FOLDER, CONFIG_FILE), "w") as out:
             out.write(
                 resource_string(
@@ -292,7 +293,7 @@ def get_config_options(config_file=CONFIG_FILE):
         print(
             "An error occurred while trying to create {}. Aborting!!".format(def_config)
         )
-        sys.exit(1)
+        raise ValueError("{} doesn't exist!".format(def_config))
     config.read(os.path.join(CONFIG_FOLDER, config_file))
 
     if config_file == CONFIG_FILE:
@@ -326,20 +327,20 @@ def initialize_database(config):
 
 def print_banner():
     banner = """
-       _                                                          
-      dM.                                                         
-     ,MMb                                                         
-     d'YM.   ___  __ ___  __    __     _____  ___  __ ____    ___ 
-    ,P `Mb   `MM 6MM `MM 6MMb  6MMb   6MMMMMb `MM 6MM `MM(    )M' 
-    d'  YM.   MM69 "  MM69 `MM69 `Mb 6M'   `Mb MM69 "  `Mb    d'  
+       _
+      dM.
+     ,MMb
+     d'YM.   ___  __ ___  __    __     _____  ___  __ ____    ___
+    ,P `Mb   `MM 6MM `MM 6MMb  6MMb   6MMMMMb `MM 6MM `MM(    )M'
+    d'  YM.   MM69 "  MM69 `MM69 `Mb 6M'   `Mb MM69 "  `Mb    d'
 ___,P____Mb___MM______MM____MM____MM_MM_____MM_MM_______YM.__,P___
-   d'    YM.  MM      MM    MM    MM MM     MM MM        MM  M    \\ 
+   d'    YM.  MM      MM    MM    MM MM     MM MM        MM  M    \\
 __,MMMMMMMMb__MM______MM____MM____MM_MM_____MM_MM________`Mbd'_____\\
-  d'      YM. MM      MM    MM    MM YM.   ,M9 MM         YMP      
-_dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M      
-                                                          d'      
-                                                      (8),P       
-                                                       YMM        
+  d'      YM. MM      MM    MM    MM YM.   ,M9 MM         YMP
+_dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
+                                                          d'
+                                                      (8),P
+                                                       YMM
 
         Originally By:
         Daniel Lawson @fang0654

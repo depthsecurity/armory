@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 from armory.database.repositories import (
     IPRepository,
     DomainRepository,
@@ -7,15 +8,23 @@ from armory.database.repositories import (
 )
 from ..ModuleTemplate import ToolTemplate
 from ..utilities import get_urls
-from ..utilities.color_display import display_warning
 import os
+import re
+import pdb
+from multiprocessing import Pool as ThreadPool
+from ..utilities.color_display import display, display_warning
 import time
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 
 class Module(ToolTemplate):
 
-    name = "Nikto"
-    binary_name = "nikto"
+    name = "Xsscrapy"
+    binary_name = "xsscrapy.py"
 
     def __init__(self, db):
         self.db = db
@@ -27,7 +36,7 @@ class Module(ToolTemplate):
     def set_options(self):
         super(Module, self).set_options()
 
-        self.options.add_argument("-u", "--url", help="URL to scan")
+        self.options.add_argument("-d", "--domain", help="Base domain to start crawling. ")
         self.options.add_argument("--file", help="Import URLs from file")
         self.options.add_argument(
             "-i",
@@ -37,7 +46,7 @@ class Module(ToolTemplate):
         )
         self.options.add_argument(
             "--rescan",
-            help="Rescan URLs that have already been brute forced",
+            help="Run xsscrapy on hosts that have already been processed.",
             action="store_true",
         )
         self.options.set_defaults(timeout=600)  # Kick the default timeout to 10 minutes
@@ -45,9 +54,9 @@ class Module(ToolTemplate):
     def get_targets(self, args):
         targets = []
 
-        if args.url:
+        if args.domain:
 
-            targets.append(args.url)
+            targets.append(args.domain)
 
         if args.file:
             urls = open(args.file).read().split("\n")
@@ -83,14 +92,7 @@ class Module(ToolTemplate):
             res.append(
                 {
                     "target": t,
-                    "output": os.path.join(
-                        output_path,
-                        t.replace(":", "_")
-                        .replace("/", "_")
-                        .replace("?", "_")
-                        .replace("&", "_")
-                        + "-dir.txt",  # noqa: W503
-                    ),
+                    "output": "{}/{}.txt".format(output_path, t)
                 }
             )
 
@@ -98,15 +100,24 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " -output {output} -host {target} "
+        cmd = self.binary + " -u http://{target} "
 
         if args.tool_args:
             cmd += args.tool_args
 
         return cmd
 
+    def pre_run(self, args):
+
+        self.orig_path = os.getcwd()
+        os.chdir(os.path.dirname(self.binary))
+
     def process_output(self, cmds):
 
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
         )
+
+    def post_run(self, args):
+
+        os.chdir(self.orig_path)

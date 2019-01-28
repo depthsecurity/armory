@@ -2,12 +2,8 @@
 
 from armory.database.repositories import BaseDomainRepository, ScopeCIDRRepository
 from ..ModuleTemplate import ToolTemplate
-from ..utilities import which
-import shlex
+from ..utilities.color_display import display
 import os
-import pdb
-from ..utilities.color_display import display, display_error
-import json
 
 
 class Module(ToolTemplate):
@@ -39,7 +35,7 @@ class Module(ToolTemplate):
             action="store_true",
         )
         self.options.add_argument(
-            "-i", 
+            "-i",
             "--import_database",
             help="Run WHOIS on all domains and CIDRs in database",
             action="store_true",
@@ -49,17 +45,15 @@ class Module(ToolTemplate):
 
         targets = []
         if args.domain:
-            
 
             targets.append({"domain": args.domain, "cidr": ""})
 
         elif args.cidr:
-            
 
             targets.append({"domain": "", "cidr": args.cidr.split("/")[0]})
 
         elif args.import_database:
-            
+
             if args.all_data:
                 scope_type = ""
             else:
@@ -99,10 +93,10 @@ class Module(ToolTemplate):
             args.tool_args = ""
         cmd = (
             'bash -c "'
-            + self.binary
-            + " {domain}{cidr} "
-            + args.tool_args
-            + '> {output}" '
+            + self.binary  # noqa: W503
+            + " {domain}{cidr} "  # noqa: W503
+            + args.tool_args  # noqa: W503
+            + '> {output}" '  # noqa: W503
         )
 
         return cmd

@@ -2,7 +2,6 @@
 
 from ...database.repositories import IPRepository, DomainRepository
 from .get_domain_ip import run as get_ip
-import pdb
 
 
 def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
@@ -27,7 +26,7 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
             if (port, svc) not in ips[host]["ports"]:
                 ips[host]["ports"].append((port, svc))
 
-        except:
+        except Exception:
             domains = Domain.all(domain=host)
             if domains:
                 domain = domains[0]
@@ -62,8 +61,8 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
                             ", ".join(sorted(domains)),
                             ", ".join(
                                 [
-                                    "%s/%s/%s" % (proto, p, svc)
-                                    for p, svc in sorted(ips[ip]["ports"])
+                                    "%s/%s/%s" % (proto, p, _svc)
+                                    for p, _svc in sorted(ips[ip]["ports"])
                                 ]
                             ),
                         )
@@ -75,13 +74,13 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
                             ip,
                             ", ".join(
                                 [
-                                    "%s/%s/%s" % (proto, p, svc)
-                                    for p, svc in sorted(ips[ip]["ports"])
+                                    "%s/%s/%s" % (proto, p, _svc)
+                                    for p, _svc in sorted(ips[ip]["ports"])
                                 ]
                             ),
                         )
                     )
-            except:
+            except Exception:
                 if ips[ip]["domains"]:
                     results.append(
                         "%s / %s: %s"
@@ -90,8 +89,8 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
                             ", ".join(sorted(ips[ip]["domains"])),
                             ", ".join(
                                 [
-                                    "%s/%s/%s" % (proto, p, svc)
-                                    for p, svc in sorted(ips[ip]["ports"])
+                                    "%s/%s/%s" % (proto, p, _svc)
+                                    for p, _svc in sorted(ips[ip]["ports"])
                                 ]
                             ),
                         )
@@ -103,8 +102,8 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
                             ip,
                             ", ".join(
                                 [
-                                    "%s/%s/%s" % (proto, p, svc)
-                                    for p, svc in sorted(ips[ip]["ports"])
+                                    "%s/%s/%s" % (proto, p, _svc)
+                                    for p, _svc in sorted(ips[ip]["ports"])
                                 ]
                             ),
                         )
@@ -120,8 +119,8 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
                         ", ".join(sorted(ips[ip]["domains"])),
                         ", ".join(
                             [
-                                "%s/%s/%s" % (proto, p, svc)
-                                for p, svc in sorted(ips[ip]["ports"])
+                                "%s/%s/%s" % (proto, p, _svc)
+                                for p, _svc in sorted(ips[ip]["ports"])
                             ]
                         ),
                     )
@@ -133,8 +132,8 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
                         ip,
                         ", ".join(
                             [
-                                "%s/%s/%s" % (proto, p, svc)
-                                for p, svc in sorted(ips[ip]["ports"])
+                                "%s/%s/%s" % (proto, p, _svc)
+                                for p, _svc in sorted(ips[ip]["ports"])
                             ]
                         ),
                     )

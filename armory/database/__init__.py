@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, DateTime, MetaData, types, Boolean, Text
+from sqlalchemy import create_engine, Column, String, DateTime, MetaData, types, Boolean
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_mixins import ActiveRecordMixin, ReprMixin
@@ -56,20 +56,14 @@ class BaseModel(Base, ActiveRecordMixin, ReprMixin):
         meta = self.meta
         if meta:
             if meta.get(tool, False):
-                if meta[tool].get("created", False):
-                    created = False
-                else:
+                if not meta[tool].get("created", False):
                     meta[tool]["created"] = str(datetime.now())
-                    created = False
             else:
                 meta[tool] = {"created": str(datetime.now())}
-                created = False
         else:
             meta = {tool: {"created": str(datetime.now())}}
-            created = False
-
-            obj.meta = meta
-            obj.save()
+            self.meta = meta
+            self.save()
 
 
 class Database(object):

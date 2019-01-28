@@ -1,13 +1,7 @@
 #!/usr/bin/python
-
 from armory.database.repositories import DomainRepository, IPRepository, PortRepository
 from ..ModuleTemplate import ToolTemplate
-import subprocess
-from ..utilities import which
-import shlex
 import os
-import pdb
-from multiprocessing import Pool as ThreadPool
 
 
 class Module(ToolTemplate):
@@ -40,39 +34,39 @@ class Module(ToolTemplate):
         )
 
     def get_targets(self, args):
-        
+
         targets = []
         if args.host:
-            if 'http' in args.host:
-                if args.host.count(':') == 2:
-                    service, host, port = args.host.split(':')
+            if "http" in args.host:
+                if args.host.count(":") == 2:
+                    service, host, port = args.host.split(":")
                 else:
-                    service, host = args.host.split(':')
+                    service, host = args.host.split(":")
                     port = "443"
-                host = host.split('/')[-1]
-                targets.append({'option':'', 'target':'{}:{}'.format(host, port)})
+                host = host.split("/")[-1]
+                targets.append({"option": "", "target": "{}:{}".format(host, port)})
             else:
-                targets.append({'option':'', 'target':args.host})
-            
+                targets.append({"option": "", "target": args.host})
 
         if args.file:
             hosts = open(args.file).read().split("\n")
             for h in hosts:
                 if h:
-                    if 'http' in h:
-                        if h.count(':') == 2:
-                            service, host, port = h.split(':')
+                    if "http" in h:
+                        if h.count(":") == 2:
+                            service, host, port = h.split(":")
                         else:
-                            service, host = h.split(':')
+                            service, host = h.split(":")
                             port = "443"
-                        host = host.split('/')[-1]
-                        targets.append({'option':'', 'target':'{}:{}'.format(host, port)})
+                        host = host.split("/")[-1]
+                        targets.append(
+                            {"option": "", "target": "{}:{}".format(host, port)}
+                        )
                     else:
-                        targets.append({'option':'', 'target':h})
-                        
+                        targets.append({"option": "", "target": h})
 
         if args.import_database:
-            
+
             hosts = []
             svc = []
 
@@ -142,7 +136,6 @@ class Module(ToolTemplate):
                         {"target": "%s:%s" % (d.domain, port_number), "option": option}
                     )
 
-        
         for t in targets:
             if args.output_path[0] == "/":
                 output_path = os.path.join(
@@ -161,7 +154,6 @@ class Module(ToolTemplate):
             )
             t["output"] = output_path
 
-        
         return targets
 
     def build_cmd(self, args):

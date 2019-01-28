@@ -1,5 +1,5 @@
 from .. import BaseModel
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from .. import JsonType
 

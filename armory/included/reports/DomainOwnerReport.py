@@ -1,14 +1,6 @@
 #!/usr/bin/python
-
+from armory.database.repositories import DomainRepository, IPRepository, CIDRRepository
 from armory.included.ReportTemplate import ReportTemplate
-from armory.database.repositories import (
-    DomainRepository,
-    IPRepository,
-    CIDRRepository,
-    BaseDomainRepository,
-)
-import pdb
-import json
 
 
 class Report(ReportTemplate):

@@ -1,13 +1,7 @@
 #!/usr/bin/python
-
 from armory.database.repositories import DomainRepository, IPRepository, PortRepository
 from ..ModuleTemplate import ToolTemplate
-import subprocess
-from ..utilities import which
-import shlex
 import os
-import pdb
-from multiprocessing import Pool as ThreadPool
 
 
 class Module(ToolTemplate):

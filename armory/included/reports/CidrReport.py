@@ -1,14 +1,11 @@
 #!/usr/bin/python
-
-from armory.included.ReportTemplate import ReportTemplate
 from armory.database.repositories import (
     DomainRepository,
     IPRepository,
     CIDRRepository,
     BaseDomainRepository,
 )
-import pdb
-import json
+from armory.included.ReportTemplate import ReportTemplate
 
 
 class Report(ReportTemplate):
@@ -49,7 +46,7 @@ class Report(ReportTemplate):
         res = []
         if results.get(None, False):
             results[""] = results.pop(None)
-        
+
         for cidr in sorted(results.keys()):
             if not cidr:
                 res.append("")
