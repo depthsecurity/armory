@@ -8,3 +8,6 @@ class ScopeCIDR(BaseModel):
     id = Column(Integer, primary_key=True)
     cidr = Column(String(18), unique=True)
     org_name = Column(String(32), unique=False)
+
+    def __repr__(self):
+        return "Scoped CIDR: {}".format(self.cidr)

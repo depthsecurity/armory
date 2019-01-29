@@ -13,3 +13,6 @@ class IPAddress(BaseModel):
     OS = Column(String(64))
     whois = Column(String(512))
     ports = relationship("Port", backref="ip_address")
+
+    def __repr__(self):
+        return "IP Address: {}".format(self.ip_address)

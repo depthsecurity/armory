@@ -21,3 +21,6 @@ class CVE(BaseModel):
 
     temporal_score = Column(Float)
     description = Column(String(256))
+
+    def __repr__(self):
+        return "CVE: {}".format(self.name)

@@ -10,3 +10,8 @@ class Cred(BaseModel):
     password = Column(String(64), unique=False)
     passhash = Column(String(128), unique=False)
     source = Column(String(128), unique=False)
+
+    def __repr__(self):
+        return "Cred: {} ({}): {}".format(self.user_id, self.source, self.password)
+
+        

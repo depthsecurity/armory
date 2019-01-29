@@ -23,3 +23,5 @@ class Domain(BaseModel):
     whois = Column(String(512), unique=False)
 
     # base_domain = relationship("BaseDomain", back_populates="subdomains")
+    def __repr__(self):
+        return "Domain: {}".format(self.domain)

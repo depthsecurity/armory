@@ -11,3 +11,6 @@ class Url(BaseModel):
     method = Column(String(16), unique=False)
     status_code = Column(Integer, unique=False)
     port_id = Column(Integer, ForeignKey("port.id"))
+
+    def __repr__(self):
+        return "URL: {}".format(self.path)

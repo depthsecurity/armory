@@ -16,3 +16,6 @@ class Port(BaseModel):
     urls = relationship("Url", backref="port")
     cert = Column(Text)
     info = Column(JsonType)
+
+    def __repr__(self):
+        return "Port: {}/{}/{} - {}".format(self.proto, self.port_number, self.service_name, self.status)

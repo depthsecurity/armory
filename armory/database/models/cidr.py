@@ -10,3 +10,6 @@ class CIDR(BaseModel):
     cidr = Column(String(19), unique=True)
     org_name = Column(String(64), unique=False)
     ip_addresses = relationship("IPAddress", backref="cidr")
+
+    def __repr__(self):
+        return "CIDR: {} - {}".format(self.cidr, self.org_name)

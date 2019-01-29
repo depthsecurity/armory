@@ -6,7 +6,7 @@ from armory.database.repositories import (
     BaseDomainRepository,
 )
 from armory.included.ReportTemplate import ReportTemplate
-
+import pdb
 
 class Report(ReportTemplate):
     """
@@ -37,7 +37,9 @@ class Report(ReportTemplate):
             else:
                 results[c.org_name] = {c.cidr: {}}
             for ip in c.ip_addresses:
-                if ip.passive_scope:
+                if (args.scope == "passive" and ip.passive_scope) or (
+                    args.scope == "active" and ip.in_scope) or (
+                    args.scope == "all"):
                     results[c.org_name][c.cidr][ip.ip_address] = []
                     for d in ip.domains:
                         if d.passive_scope:
@@ -46,7 +48,19 @@ class Report(ReportTemplate):
         res = []
         if results.get(None, False):
             results[""] = results.pop(None)
+        
+        # This cleans out any CIDRs that don't have scoped hosts.
+        newresults = results.copy()
+        for k, v in results.items():
+            new_vals = v.copy()
+            for c, r in v.items():
+                if not r:
+                    new_vals.pop(c)
+            if not new_vals:
+                newresults.pop(k)
 
+        results = newresults.copy()
+        
         for cidr in sorted(results.keys()):
             if not cidr:
                 res.append("")

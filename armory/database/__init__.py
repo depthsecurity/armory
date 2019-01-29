@@ -5,7 +5,7 @@ from sqlalchemy_mixins import ActiveRecordMixin, ReprMixin
 from sqlalchemy.ext.mutable import MutableDict
 from datetime import datetime
 import json
-
+import pdb
 
 def create_database(connect_str, init_db=True):
     return Database(connect_str, init_db)
@@ -15,7 +15,8 @@ Base = declarative_base()
 
 
 class JSONEncodedDict(types.TypeDecorator):
-    impl = types.TEXT
+    
+    impl = types.UnicodeText(length=2**31)
 
     def process_bind_param(self, value, dialect):
         if value is not None:

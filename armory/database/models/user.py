@@ -15,3 +15,6 @@ class User(BaseModel):
     creds = relationship("Cred", backref="user")
     job_title = Column(String(128), unique=False)
     location = Column(String(128), unique=False)
+
+    def __repr__(self):
+        return "User: {} {}".format(self.first_name, self.last_name)
