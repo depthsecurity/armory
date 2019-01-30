@@ -16,6 +16,7 @@ import os
 import requests
 import time
 import xml.etree.cElementTree as ET
+import pdb
 
 
 class Module(ModuleTemplate):
@@ -229,10 +230,11 @@ class Module(ModuleTemplate):
             if pluginID == "11411":  # Backup Files Disclosure
                 if tag.find("plugin_output") is not None:
                     urls = []
+                    
                     tmp = (
                         tag.find("plugin_output")
                         .text.split(
-                            "It is possible to read the following backup files :"
+                            "It is possible to read the following backup file"
                         )[1]
                         .strip()
                     )
