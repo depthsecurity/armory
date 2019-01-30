@@ -11,7 +11,11 @@ import sys
 if sys.version[0] == '3':
     raw_input = input
 class Module(ToolTemplate):
+'''
+PyMeta is a tool used for searching domains on various search engines, finding all of the relevant
+documents, and raiding the exif data to find users.
 
+'''
     name = "PyMeta"
     binary_name = "pymeta"
 
@@ -149,8 +153,4 @@ class Module(ToolTemplate):
                 display_error("Error processing pymeta_{}.csv: {}".format(cmd["target"], e))
             
         self.User.commit()
-        # except IOError:
-        #     display_error("No results found.")
 
-        # else:
-        # print("%s already in database." % new_domain)
