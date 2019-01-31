@@ -13,7 +13,7 @@ import sys
 # import pdb # Useful for debugging
 
 
-__version__ = "Armory Version 1.0 Beta (still working out the kinks!)"
+__version__ = "Armory Version 1.0 Release"
 PATH = os.path.dirname(__file__)
 if os.getenv("ARMORY_HOME"):
     CONFIG_FOLDER = os.getenv("ARMORY_HOME")
