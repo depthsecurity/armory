@@ -169,31 +169,24 @@ class Module(ModuleTemplate):
 
             for row in csvreader:
                 count += 1
-                if self.User.find(email=row[3]):
-                    created, user = self.User.find_or_create(
+                
+                created, user = self.User.find_or_create(
                         email=remove_binary(row[3])
                     )
 
-                    user.first_name = remove_binary(row[0])
-                    user.last_name = remove_binary(row[1])
-                    user.job_title = remove_binary(row[4])
-                    user.location = remove_binary(row[5])
+                user.first_name = remove_binary(row[0])
+                user.last_name = remove_binary(row[1]).split(',')[0]
+                user.job_title = remove_binary(row[4])
+                user.location = remove_binary(row[5])
 
-                else:
-                    created, user = self.User.find_or_create(
-                        first_name=remove_binary(row[0]),
-                        last_name=remove_binary(row[1]),
-                        domain=domain_obj,
+                if created:
+                    user.domain = domain_obj
+
+                    print(
+                        "New user: %s %s"
+                        % (remove_binary(row[0]), remove_binary(row[1]))
                     )
-                    if created:
-                        print(
-                            "New user: %s %s"
-                            % (remove_binary(row[0]), remove_binary(row[1]))
-                        )
 
-                    user.email = remove_binary(row[3])
-                    user.job_title = remove_binary(row[4])
-                    user.location = remove_binary(row[5])
                 user.update()
 
         print("%s found and imported" % count)

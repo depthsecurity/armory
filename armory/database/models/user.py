@@ -13,7 +13,7 @@ class User(BaseModel):
     user_name = Column(String(128), unique=False)
     domain_id = Column(Integer, ForeignKey("basedomain.id"))
     creds = relationship("Cred", backref="user")
-    job_title = Column(String(128), unique=False)
+    job_title = Column(String(512), unique=False)
     location = Column(String(128), unique=False)
 
     def __repr__(self):

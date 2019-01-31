@@ -5,10 +5,10 @@ from armory.database.repositories import (
     UserRepository,
 )
 from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_new
+from ..utilities.color_display import display_new, display_error, display
 import os
 import xmltodict
-
+import pdb
 
 class Module(ToolTemplate):
 
@@ -83,7 +83,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " -f {output} -b all -d {target} "
+        cmd = self.binary + " -f {output} -b default -d {target} "
 
         if args.tool_args:
             cmd += args.tool_args
@@ -96,20 +96,22 @@ class Module(ToolTemplate):
 
             try:
                 data = xmltodict.parse(open(cmd["output"] + ".xml").read())
-            except Exception:
+            except Exception as e:
+                # display_error("Error with {}: {}".format(cmd["output"], e))
                 data = None
 
             if data:
-
+                
                 if data["theHarvester"].get("email", False):
                     if type(data["theHarvester"]["email"]) == list:
                         emails = data["theHarvester"]["email"]
                     else:
                         emails = [data["theHarvester"]["email"]]
                     for e in emails:
-
+                        display("Processing E-mail: {}".format(e))
                         created, user = self.User.find_or_create(email=e)
-                        _, domain = self.BaseDomain.find_or_create(e.split("@")[1])
+                        
+                        _, domain = self.BaseDomain.find_or_create(domain=e.split("@")[1])
                         user.domain = domain
                         user.update()
 
@@ -122,16 +124,18 @@ class Module(ToolTemplate):
                         hosts = [data["theHarvester"]["host"]]
 
                     for d in hosts:
+                        
                         created, domain = self.Domain.find_or_create(
                             domain=d["hostname"]
                         )
 
-            if data["theHarvester"].get("vhost", False):
-                if type(data["theHarvester"]["vhost"]) == list:
-                    hosts = data["theHarvester"]["vhost"]
-                else:
-                    hosts = [data["theHarvester"]["vhost"]]
+                if data["theHarvester"].get("vhost", False):
+                    if type(data["theHarvester"]["vhost"]) == list:
+                        hosts = data["theHarvester"]["vhost"]
+                    else:
+                        hosts = [data["theHarvester"]["vhost"]]
 
-                for d in hosts:
-                    created, domain = self.Domain.find_or_create(domain=d["hostname"])
+                    for d in hosts:
+                        
+                        created, domain = self.Domain.find_or_create(domain=d["hostname"])
         self.BaseDomain.commit()

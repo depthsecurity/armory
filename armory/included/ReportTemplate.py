@@ -3,6 +3,7 @@ import json
 import argparse
 import pyperclip
 import codecs
+import pdb
 
 
 def get_marker(txt, marker):
@@ -95,8 +96,10 @@ class ReportTemplate(object):
         This pretty much needs to be defined on a report by report basis
         """
         text = ""
+        
         for d in data:
-            parts = get_marker(d, self.depth_marker)
-            text += "%s%s\n" % (self.markdown[parts[0]], parts[1])
+            if d != None:
+                parts = get_marker(d, self.depth_marker)
+                text += "%s%s\n" % (self.markdown[parts[0]], parts[1])
 
         return text

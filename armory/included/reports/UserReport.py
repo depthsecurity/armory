@@ -5,7 +5,7 @@ from armory.database.repositories import (
     CredRepository,
 )
 from armory.included.ReportTemplate import ReportTemplate
-
+import pdb
 
 class Report(ReportTemplate):
     """
@@ -13,6 +13,7 @@ class Report(ReportTemplate):
     """
 
     name = "UserReport"
+    markdown = ["-", "--"]
 
     def __init__(self, db):
 
@@ -45,25 +46,47 @@ class Report(ReportTemplate):
         self.options.add_argument(
             "-u5", "--full", help="Prints out full user data", action="store_true"
         )
+        self.options.add_argument(
+            '-t', '--title', help="Add title to the sections of results", action="store_true"
+        )
 
     def run(self, args):
 
         results = []
-
-        domains = self.BaseDomain.all()
+        qry, model = self.BaseDomain.get_query()
+        if args.scope == 'active':
+            domains = qry.filter_by(in_scope=True).order_by(model.domain).all()
+        elif args.scope == 'passive':
+            domains = qry.filter_by(passive_scope=True).order_by(model.domain).all()
+        else:
+            domains = qry.order_by(model.domain).all()
+        
         for d in domains:
-            for user in d.users:
-                if args.emails:
-                    results.append(user.email)
-                elif args.accounts:
-                    results.append(user.email.split("@")[0])
-                elif args.full:
+            if args.title and d.users:
+                results.append('{}'.format(d.domain))
+            
+            if args.emails:
+                emails = sorted([u.email.lower() for u in d.users if u.email])
+                if args.title:
+                    results += ['\t{}'.format(e) for e in emails]
+                else:
+                    results += ['{}'.format(e) for e in emails]
+            elif args.accounts:
+                emails = sorted([u.email.lower() for u in d.users if u.email])
+                if args.title:
+                    results += ['\t{}'.format(e.split("@")[0]) for e in emails]
+                else:
+                    results += ['{}'.format(e.split("@")[0]) for e in emails]
+
+            elif args.full:
+                for user in d.users:
                     results.append(
                         "{}|{}|{}|{}".format(
                             user.first_name, user.last_name, user.email, user.job_title
-                        )
                     )
-                else:
+                )
+            else:
+                 for user in d.users:
                     for cred in user.creds:
                         if cred.password and cred.password != "None":
                             if args.emails_passwords:
@@ -77,5 +100,5 @@ class Report(ReportTemplate):
 
                             if txt not in results:
                                 results.append(txt)
-
+    
         self.process_output(results, args)
