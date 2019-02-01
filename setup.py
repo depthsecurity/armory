@@ -10,7 +10,7 @@ with open(path.join(here, "Readme.md"), encoding="UTF-8") as f:
 
 
 setup(
-    name="armory",
+    name="depth-armory",
     version="1.0.0",
     description=(
         "Armory is a tool meant to take in a lot of external and discovery "
@@ -27,7 +27,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         # Indicate who your project is intended for
         "Intended Audience :: Information Technology",
         "Intended Audience :: System Administrators",
