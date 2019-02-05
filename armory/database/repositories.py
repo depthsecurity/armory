@@ -8,7 +8,7 @@ from netaddr import IPNetwork, IPAddress
 from ipwhois import IPWhois
 import warnings
 import dns.resolver
-from ..included.utilities.color_display import display, display_warning, display_new
+from ..included.utilities.color_display import display, display_warning, display_new, display_error
 import sys
 if sys.version[0] == '3':
     raw_input = input
