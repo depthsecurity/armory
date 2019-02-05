@@ -9,6 +9,9 @@ from ipwhois import IPWhois
 import warnings
 import dns.resolver
 from ..included.utilities.color_display import display, display_warning, display_new
+import sys
+if sys.version[0] == '3':
+    raw_input = input
 
 # Shut up whois warnings.
 
@@ -309,14 +312,24 @@ class IPRepository(BaseRepository):
                     try:
                         res = IPWhois(ip_str).lookup_whois(get_referral=True)
                     except Exception:
-                        res = IPWhois(ip_str).lookup_whois()
+                        try:
+                            res = IPWhois(ip_str).lookup_whois()
+                        except Exception as e:
+                            display_error("Error trying to resolve whois: {}".format(e))
+                            res = {}
                     if res["nets"]:
                         break
                     else:
                         display_warning(
                             "The networks didn't populate from whois. Usually retrying after a couple of seconds resolves this. Sleeping for 5 seconds and trying again."
                         )
-                        time.sleep(5)
+                        again = raw_input("Would you like to try again? [Y/n]").lower()
+                        if again == 'y':
+                            time.sleep(5)
+                        else:
+                            res['nets'] = {'cidr':'0.0.0.0/0', 'description':'Whois failed to resolve.'}
+                            break
+
                 cidr_data = []
 
                 for n in res["nets"]:
