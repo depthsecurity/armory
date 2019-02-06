@@ -1,0 +1,37 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+  nose = "*"
+  tox = "*"
+  coverage = "*"
+  twine = "*"
+  check-manifest = "*"
+  cmarkgfm = "*"
+  readme_renderer = "*"
+  flake8 = "*"
+  mock = {version = "*", markers="python_version < '3.4'"}
+
+[packages]
+  configparser = "*"
+  sqlalchemy = "*"
+  sqlalchemy_mixins = "*"
+  tld = "*"
+  dnspython = "*"
+  netaddr = "*"
+  pyperclip = "*"
+  requests = "*"
+  ipwhois = "*"
+  whois = "*"
+  fuzzywuzzy = {extras = ["speedup"]}
+  xmltodict = "*"
+  bs4 = "*"
+  thready = "*"
+  argcomplete = "*"
+  tldextract = "*"
+  subprocess32 = {version = "*", markers = "python_version < '3.3'"}
+  ipaddr = "*"
+  mysqlclient = "*"
+  lxml = "*"

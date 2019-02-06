@@ -1,0 +1,9 @@
+include .coveragerc
+include LICENSE
+include *.py
+include Readme.md
+include Pipfile
+include Pipfile.lock
+recursive-include armory *.md
+recursive-include armory *.py
+recursive-include armory *.default
