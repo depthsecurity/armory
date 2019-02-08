@@ -317,7 +317,7 @@ class IPRepository(BaseRepository):
                         except Exception as e:
                             display_error("Error trying to resolve whois: {}".format(e))
                             res = {}
-                    if res["nets"]:
+                    if "nets" in res.keys():
                         break
                     else:
                         display_warning(
@@ -327,7 +327,7 @@ class IPRepository(BaseRepository):
                         if again == 'y':
                             time.sleep(5)
                         else:
-                            res['nets'] = {'cidr':'0.0.0.0/0', 'description':'Whois failed to resolve.'}
+                            res = {'nets': [{'cidr': '0.0.0.0/0', 'description': 'Whois failed to resolve.'}]}
                             break
 
                 cidr_data = []
