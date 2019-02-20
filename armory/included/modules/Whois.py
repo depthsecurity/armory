@@ -108,13 +108,31 @@ class Module(ToolTemplate):
         for cmd in cmds:
             if cmd["cidr"]:
                 _, cidr = self.ScopeCidr.find_or_create(cidr=cmd["cidr"])
-                cidr.meta["whois"] = open(cmd["output"]).read()
+                
+                ##need to handle potentially bad encoding with WHOIS data...
+                try:
+                    cidr.meta["whois"] = open(cmd["output"],encoding="utf-8").read()
+                except UnicodeDecodeError:
+                    pass
+                try: #is is latin??
+                    cidr.meta["whois"] = open(cmd["output"],encoding="latin-1").read()
+                except UnicodeDecodeError:
+                    print("Could not pick the right encoding...\n")
                 display(cidr.meta["whois"])
                 cidr.update()
 
             elif cmd["domain"]:
                 _, domain = self.BaseDomain.find_or_create(domain=cmd["domain"])
-                domain.meta["whois"] = open(cmd["output"]).read()
+
+                try:
+                    domain.meta["whois"] = open(cmd["output"],encoding="utf-8").read()
+                except UnicodeDecodeError:
+                    pass
+                try: #turns out it is latin-1... who knew?
+                    domain.meta["whois"] = open(cmd["output"],encoding="latin-1").read()
+                except UnicodeDecodeError:
+                    print("Could not pick the right encoding...\n")
+                
                 display(domain.meta["whois"])
                 domain.update()
 
