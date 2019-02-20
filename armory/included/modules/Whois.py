@@ -3,6 +3,7 @@
 from armory.database.repositories import BaseDomainRepository, ScopeCIDRRepository
 from ..ModuleTemplate import ToolTemplate
 from ..utilities.color_display import display
+from ..utilities.readFile import read_file
 import os
 
 
@@ -108,13 +109,13 @@ class Module(ToolTemplate):
         for cmd in cmds:
             if cmd["cidr"]:
                 _, cidr = self.ScopeCidr.find_or_create(cidr=cmd["cidr"])
-                cidr.meta["whois"] = open(cmd["output"]).read()
+                cidr.meta["whois"] = read_file(cmd["output"])
                 display(cidr.meta["whois"])
                 cidr.update()
 
             elif cmd["domain"]:
                 _, domain = self.BaseDomain.find_or_create(domain=cmd["domain"])
-                domain.meta["whois"] = open(cmd["output"]).read()
+                domain.meta["whois"] = read_file(cmd["output"])
                 display(domain.meta["whois"])
                 domain.update()
 
