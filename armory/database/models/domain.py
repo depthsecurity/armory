@@ -15,7 +15,7 @@ class Domain(BaseModel):
     __tablename__ = "domain"
     __repr_attrs__ = ["domain"]
     id = Column(Integer, primary_key=True)
-    domain = Column(String(256), unique=True)
+    domain = Column(String(128), unique=True)
     ip_addresses = relationship(
         "IPAddress", secondary=domain_ip_table, backref="domains"
     )
