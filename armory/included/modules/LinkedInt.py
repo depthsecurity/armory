@@ -1,9 +1,9 @@
 #!/usr/bin/python
 from armory.database.repositories import BaseDomainRepository, UserRepository
 from collections import Counter
-from ..ModuleTemplate import ModuleTemplate
-from ..utilities import which
-from ..utilities.color_display import display, display_error
+from armory.included.ModuleTemplate import ModuleTemplate
+from armory.included.utilities import which
+from armory.included.utilities.color_display import display, display_error
 import csv
 import os
 import shlex
@@ -14,6 +14,20 @@ import subprocess
 def remove_binary(txt):
     return "".join([t for t in txt if t in string.printable])
 
+def get_words(txt):
+    clean = ''
+    res = []
+    for l in txt:
+        if l in string.ascii_letters:
+            clean += l
+        else:
+            clean += ' '
+    while '  ' in clean:
+        clean = clean.replace('  ', ' ')
+    for w in clean.split(' '):
+        if w:
+            res.append(w.lower())
+    return res
 
 class Module(ModuleTemplate):
 
@@ -65,6 +79,11 @@ class Module(ModuleTemplate):
         self.options.add_argument(
             "--top", help="Use the top X keywords from the job titles for smart shuffle"
         )
+        self.options.add_argument(
+            "--auto_keyword",
+            help="Generate a list of keywords from titles already discovered, and search repeatedly using the top x number of results (specified with --top).",
+            action="store_true"
+        )
 
     def run(self, args):
         # pdb.set_trace()
@@ -89,7 +108,7 @@ class Module(ModuleTemplate):
                 ]
                 words = []
                 for t in titles:
-                    words += [w.lower() for w in t.split(" ")]
+                    words += [w.lower() for w in get_words(t)]
 
                 word_count = Counter(words).most_common()
 
@@ -102,17 +121,41 @@ class Module(ModuleTemplate):
                 # pdb.set_trace()
                 args.smart_shuffle = ",".join(res)
 
-            if args.smart_shuffle:
+            if args.auto_keyword:
+                if not args.top:
+                    display_error("You must specify the top number of keywords using --top")
+                else:
+                    if os.path.isfile('/tmp/armory_linkedinsearchqueries'):
+                        blacklist = open('/tmp/armory_linkedinsearchqueries').read().split('\n')
+                    else:
+                        blacklist = []
+                    bfile = open('/tmp/armory_linkedinsearchqueries', 'a')
+                    for w in args.smart_shuffle.split(','):
+                        
+                        if w not in blacklist:
+                            
+                            args.keywords = w
+                            self.process_domain(domain, args)
+                            self.BaseDomain.commit()
+                            bfile.write('{}\n'.format(w))
+                        else:
+                            display("Skipped {} due to it already being searched.".format(w))
+                    bfile.close()
+            elif args.smart_shuffle:
                 args.keywords = " OR ".join(
                     ['"{}"'.format(i) for i in args.smart_shuffle.split(",")]
                 )
                 self.process_domain(domain, args)
+                self.BaseDomain.commit()
                 args.keywords = " AND ".join(
                     ['-"{}"'.format(i) for i in args.smart_shuffle.split(",")]
                 )
                 self.process_domain(domain, args)
+                self.BaseDomain.commit()
             else:
                 self.process_domain(domain, args)
+                self.BaseDomain.commit()            
+
             self.BaseDomain.commit()
 
     def process_domain(self, domain_obj, args):

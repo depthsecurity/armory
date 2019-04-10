@@ -366,6 +366,9 @@ class Module(ModuleTemplate):
                 if c.text not in cves:
                     cves.append(c.text)
 
+            cwe_ids = [c.text for c in tag.findall("cwe")]
+            references = [c.text for c in tag.findall("see_also")]
+
             if not self.Vulnerability.find(name=findingName):
                 created, db_vuln = self.Vulnerability.find_or_create(
                     name=findingName,
@@ -396,7 +399,8 @@ class Module(ModuleTemplate):
                                         db_vuln.exploit_reference[key].append(ref)
                     else:
                         db_vuln.exploit_reference = vuln_refs
-
+            db_vuln.meta['CWEs'] = cwe_ids
+            db_vuln.meta['Refs'] = references
             for cve in cves:
                 if not self.CVE.find(name=cve):
                     try:
