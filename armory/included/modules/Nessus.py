@@ -1,4 +1,4 @@
-from ..ModuleTemplate import ModuleTemplate
+from armory.included.ModuleTemplate import ModuleTemplate
 from armory.database.repositories import (
     BaseDomainRepository,
     DomainRepository,
@@ -8,9 +8,9 @@ from armory.database.repositories import (
     CVERepository,
     ScopeCIDRRepository,
 )
-from ..utilities.color_display import display, display_new, display_error
-from ..utilities.nessus import NessusRequest
-from ..utilities.sort_ranges import merge_ranges
+from armory.included.utilities.color_display import display, display_new, display_error
+from armory.included.utilities.nessus import NessusRequest
+from armory.included.utilities.sort_ranges import merge_ranges
 import json
 import os
 import requests
@@ -67,7 +67,12 @@ class Module(ModuleTemplate):
             help="Path to store downloaded file (Default: Nessus)",
             default=self.name,
         )
+        self.options.add_argument(
+            "--disable_mitre",
+            help="Disable mitre CVE data gathering.",
+            action="store_true",
 
+        )
     def run(self, args):
         if args.import_file:
             for nFile in args.import_file:
@@ -128,7 +133,7 @@ class Module(ModuleTemplate):
                     args.username,
                     args.password,
                     args.host,
-                    proxies={"https": "127.0.0.1:8080"},
+                    
                 )
 
                 if args.output_path[0] == "/":
@@ -293,6 +298,7 @@ class Module(ModuleTemplate):
             proto = tag.get("protocol")
             port = tag.get("port")
             svc_name = tag.get("svc_name").replace("?", "")
+            plugin_output = []
 
             tmpPort = proto + "/" + port
             if tmpPort.lower() == "tcp/443":
@@ -330,6 +336,8 @@ class Module(ModuleTemplate):
 
             findingName = tag.get("pluginName")
             description = tag.find("description").text
+            
+            
 
             if tag.find("solution") is not None and tag.find("solution") != "n/a":
                 solution = tag.find("solution").text
@@ -401,43 +409,62 @@ class Module(ModuleTemplate):
                         db_vuln.exploit_reference = vuln_refs
             db_vuln.meta['CWEs'] = cwe_ids
             db_vuln.meta['Refs'] = references
-            for cve in cves:
-                if not self.CVE.find(name=cve):
-                    try:
-                        res = json.loads(
-                            requests.get(
-                                "http://cve.circl.lu/api/cve/%s" % cve
-                            ).text
-                        )
-                        cveDescription = res["summary"]
-                        cvss = float(res["cvss"])
+            
+            if tag.find("plugin_output") is not None:
+                
+                plugin_output = tag.find("plugin_output").text
+                if not db_vuln.meta.get('plugin_output', False):
+                    db_vuln.meta['plugin_output'] = {}
+                if not db_vuln.meta['plugin_output'].get(ip.ip_address, False):
+                    db_vuln.meta['plugin_output'][ip.ip_address] = {}
 
-                    except Exception:
-                        cveDescription = None
-                        cvss = None
+                if not db_vuln.meta['plugin_output'][ip.ip_address].get(port, False):
+                    db_vuln.meta['plugin_output'][ip.ip_address][port] = []
 
+                if plugin_output not in db_vuln.meta['plugin_output'][ip.ip_address][port]:
+                
+                    db_vuln.meta['plugin_output'][ip.ip_address][port].append(plugin_output)
+                
+
+            if not self.args.disable_mitre:
+                for cve in cves:
                     if not self.CVE.find(name=cve):
-                        created, db_cve = self.CVE.find_or_create(
-                            name=cve,
-                            description=cveDescription,
-                            temporal_score=cvss,
-                        )
-                        db_cve.vulnerabilities.append(db_vuln)
-                    else:
-                        db_cve = self.CVE.find(name=cve)
-                        if (
-                            db_cve.description is None
-                            and cveDescription is not None  # noqa: W503
-                        ):
-                            db_cve.description = cveDescription
-                        if db_cve.temporal_score is None and cvss is not None:
-                            db_cve.temporal_score = cvss
-                        db_cve.vulnerabilities.append(db_vuln)
+                        try:
+                            res = json.loads(
+                                requests.get(
+                                    "http://cve.circl.lu/api/cve/%s" % cve
+                                ).text
+                            )
+                            cveDescription = res["summary"]
+                            cvss = float(res["cvss"])
+
+                        except Exception:
+                            cveDescription = None
+                            cvss = None
+
+                        if not self.CVE.find(name=cve):
+                            created, db_cve = self.CVE.find_or_create(
+                                name=cve,
+                                description=cveDescription,
+                                temporal_score=cvss,
+                            )
+                            db_cve.vulnerabilities.append(db_vuln)
+                        else:
+                            db_cve = self.CVE.find(name=cve)
+                            if (
+                                db_cve.description is None
+                                and cveDescription is not None  # noqa: W503
+                            ):
+                                db_cve.description = cveDescription
+                            if db_cve.temporal_score is None and cvss is not None:
+                                db_cve.temporal_score = cvss
+                            db_cve.vulnerabilities.append(db_vuln)
 
     def process_data(self, nFile, args):
         display("Reading " + nFile)
         tree = ET.parse(nFile)
         root = tree.getroot()
+        self.args = args
         for ReportHost in root.iter("ReportHost"):
             os = []
             hostname = ""
