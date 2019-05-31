@@ -41,7 +41,7 @@ def main():
     print()
     print("Additional ORM commands available on wiki at https://github.com/depthsecurity/armory/wiki/armory-shell")
     print()
-    embed()
+    embed(using=False)
 
 
 def get_domains(ip_addr):
