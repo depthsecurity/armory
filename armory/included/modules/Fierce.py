@@ -6,7 +6,12 @@ import re
 
 
 class Module(ToolTemplate):
+    '''
+    This module uses Fierce, a Perl based domain brute forcing tool. It can be installed from 
 
+    https://github.com/davidpepper/fierce-domain-scanner
+
+    '''
     name = "Fierce"
     binary_name = "fierce"
 

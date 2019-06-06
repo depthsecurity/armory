@@ -8,7 +8,10 @@ import json
 
 
 class Module(ToolTemplate):
+    '''
+    This module uses the Ruby version of Aquatone. You can usually install it with "gem install aquatone"
 
+    '''
     name = "aquatone-discover"
     binary_name = "aquatone-discover"
 

@@ -7,7 +7,10 @@ import os
 
 
 class Module(ToolTemplate):
+    '''
+    This module uses the Ruby version of Aquatone. You can usually install it with "gem install aquatone"
 
+    '''
     name = "Aquatone Takeover"
     binary_name = "aquatone-takeover"
 

@@ -6,7 +6,12 @@ import os
 
 
 class Module(ToolTemplate):
+    '''
+    This module uses Gobuster in the DNS brute forcing mode. Gobuster can be installed from:
 
+    https://github.com/OJ/gobuster
+    '''
+    
     name = "GobusterDNS"
     binary_name = "gobuster"
 

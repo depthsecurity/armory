@@ -15,7 +15,12 @@ if sys.version[0] == "3":
 
 
 class Module(ToolTemplate):
+    '''
+    This module uses Gowitness to take a screenshot of any discovered web servers. It can be installed from:
 
+    https://github.com/sensepost/gowitness
+
+    '''
     name = "Gowitness"
     binary_name = "gowitness"
 

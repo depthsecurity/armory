@@ -14,7 +14,12 @@ import time
 
 
 class Module(ToolTemplate):
+    '''
+    This module uses Gobuster in the directory brute forcing mode. Gobuster can be installed from:
 
+    https://github.com/OJ/gobuster
+    '''
+    
     name = "GobusterDir"
     binary_name = "gobuster"
 

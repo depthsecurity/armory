@@ -14,7 +14,12 @@ import time
 
 
 class Module(ToolTemplate):
+    '''
+    This module uses Fuzz Faster U Fool (FFuF) for directory fuzzing. It can be installed from:
 
+    https://github.com/ffuf/ffuf
+
+    '''
     name = "FFuF"
     binary_name = "ffuf"
 
@@ -42,7 +47,7 @@ class Module(ToolTemplate):
             help="Rescan domains that have already been brute forced",
             action="store_true",
         )
-        self.options.set_defaults(timeout=600)  # Kick the default timeout to 10 minutes
+        self.options.set_defaults(timeout=0)  # Disable the default timeout.
 
     def get_targets(self, args):
         targets = []
@@ -100,7 +105,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " -k "
+        cmd = self.binary
         cmd += " -o {output} -u {target}/FUZZ "
 
         if args.tool_args:
