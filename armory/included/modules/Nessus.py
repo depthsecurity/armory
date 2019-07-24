@@ -430,11 +430,16 @@ class Module(ModuleTemplate):
                 for cve in cves:
                     if not self.CVE.find(name=cve):
                         try:
-                            res = json.loads(
-                                requests.get(
-                                    "http://cve.circl.lu/api/cve/%s" % cve
-                                ).text
-                            )
+                            url = 'https://nvd.nist.gov/vuln/detail//{}'
+                            res = requests.get(url.format(cve)).text
+
+                            cveDescription = res.split('<p data-testid="vuln-description">')[1].split('</p>')[0]
+                            if 'vuln-cvssv3-base-score' in res:
+                                cvss = float(res.split('<span data-testid="vuln-cvssv3-base-score">')[1].split('</span>')[0].strip()) 
+                            else:
+                                cvss = float(res.split('<span data-testid="vuln-cvssv2-base-score">')[1].split('</span>')[0].strip()) 
+
+                        
                             cveDescription = res["summary"]
                             cvss = float(res["cvss"])
 
