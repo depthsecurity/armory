@@ -10,7 +10,6 @@ from netaddr import IPNetwork, IPAddress, iprange_to_cidrs
 from ..ModuleTemplate import ModuleTemplate
 from ..utilities.color_display import display, display_new, display_error
 import dns.resolver
-import six
 import string
 
 
