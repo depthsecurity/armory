@@ -15,6 +15,7 @@ verify_ssl = true
   mock = {version = "*", markers="python_version < '3.4'"}
 
 [packages]
+  exceptions = "*"
   configparser = "*"
   sqlalchemy = "*"
   sqlalchemy_mixins = "*"
