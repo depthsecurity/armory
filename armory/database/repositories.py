@@ -10,6 +10,7 @@ import warnings
 import dns.resolver
 from ..included.utilities.color_display import display, display_warning, display_new, display_error
 import sys
+from ..included.utilities.get_domain_ip import run as get_ip
 if sys.version[0] == '3':
     raw_input = input
 
@@ -213,16 +214,10 @@ class DomainRepository(BaseRepository):
             d.base_domain = bd
 
             # Get all IPs that this domain resolves to.
-
+            
+            #use utility....
             ips = []
-            try:
-                answers = dns.resolver.query(d.domain, "A")
-                for a in answers:
-                    ips.append(a.address)
-
-            except Exception:
-                # If something goes wrong with DNS, we end up here
-                pass
+            ips = get_ip(d.domain)
 
             if not ips:
                 display_warning("No IPs discovered for %s" % d.domain)

@@ -1,5 +1,5 @@
 import dns.resolver
-
+import socket
 
 def run(domain):
     ips = []
@@ -9,4 +9,11 @@ def run(domain):
             ips.append(a.address)
         return ips
     except Exception:
-        return []
+        print("Regular DNS Not Resolved\n")
+        pass
+    try:
+       ips = [ str(i[4][0]) for i in socket.getaddrinfo(domain, 443) ] 
+       return ips
+    except Exception:
+       print("Unable to Resolve\n")
+       return ips
