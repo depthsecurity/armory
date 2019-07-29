@@ -1,0 +1,1 @@
+armory="docker run -v '/home/danny/src/docker/armory_config:/root/.armory' -v '/home/danny/src/docker/armory:/root/current' -v '/home/danny/src/docker/:/opt/data' --rm -it armory armory "
