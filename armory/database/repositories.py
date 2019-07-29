@@ -214,20 +214,11 @@ class DomainRepository(BaseRepository):
             d.base_domain = bd
 
             # Get all IPs that this domain resolves to.
+            
             #use utility....
-            
             ips = []
-            
-            try:
-                answers = dns.resolver.query(d.domain, "A")
-                for a in answers:
-                    ips.append(a.address)
-
-            except Exception:
-                # If something goes wrong with DNS, we end up here
-                pass
-            print("trying the new funciton...\n")
             ips = get_ip(d.domain)
+
             if not ips:
                 display_warning("No IPs discovered for %s" % d.domain)
 

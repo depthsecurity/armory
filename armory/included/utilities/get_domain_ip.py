@@ -3,7 +3,6 @@ import socket
 
 def run(domain):
     ips = []
-    print("yay we're here\n")
     try:
         answers = dns.resolver.query(domain, "A")
         for a in answers:
@@ -16,5 +15,5 @@ def run(domain):
        ips = [ str(i[4][0]) for i in socket.getaddrinfo(domain, 443) ] 
        return ips
     except Exception:
-       print("No host resolved!\n")
+       print("Unable to Resolve\n")
        return ips
