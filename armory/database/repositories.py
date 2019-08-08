@@ -229,32 +229,33 @@ class DomainRepository(BaseRepository):
 
             for i in ips:
                 IPAddresses = IPRepository(self.db, "")
-                display("Processing IP address %s" % i)
+                    if ':' not in i:
+                        display("Processing IP address %s" % i)
 
-                created, ip = IPAddresses.find_or_create(
-                    only_tool,
-                    in_scope=d.in_scope,
-                    passive_scope=d.passive_scope,
-                    ip_address=i,
-                )
+                        created, ip = IPAddresses.find_or_create(
+                            only_tool,
+                            in_scope=d.in_scope,
+                            passive_scope=d.passive_scope,
+                            ip_address=i,
+                        )
 
-                # If the IP is in scope, then the domain should be
-                if ip.in_scope:
-                    d.in_scope = ip.in_scope
-                    ip.passive_scope = True
-                    d.passive_scope = True
+                        # If the IP is in scope, then the domain should be
+                        if ip.in_scope:
+                            d.in_scope = ip.in_scope
+                            ip.passive_scope = True
+                            d.passive_scope = True
 
-                    # display("%s marked active scope due to IP being marked active." % d.domain)
+                            # display("%s marked active scope due to IP being marked active." % d.domain)
 
-                elif ip.passive_scope:
-                    d.passive_scope = ip.passive_scope
+                        elif ip.passive_scope:
+                            d.passive_scope = ip.passive_scope
 
-                d.ip_addresses.append(ip)
+                        d.ip_addresses.append(ip)
 
-                display_new(
-                    "%s is being added to the database. Active Scope: %s Passive Scope: %s"
-                    % (d.domain, d.in_scope, d.passive_scope)
-                )
+                        display_new(
+                            "%s is being added to the database. Active Scope: %s Passive Scope: %s"
+                            % (d.domain, d.in_scope, d.passive_scope)
+                        )
 
             # Final sanity check - if a domain is active scoped, it should also be passively scoped.
             if d.in_scope:
@@ -321,14 +322,14 @@ class IPRepository(BaseRepository):
                         break
                     else:
                         display_warning(
-                            "The networks didn't populate from whois. Usually retrying after a couple of seconds resolves this. Sleeping for 5 seconds and trying again."
+                            "The networks didn't populate from whois. Defaulting to a /24."
                         )
-                        again = raw_input("Would you like to try again? [Y/n]").lower()
-                        if again == 'y':
-                            time.sleep(5)
-                        else:
-                            res = {'nets': [{'cidr': '0.0.0.0/0', 'description': 'Whois failed to resolve.'}]}
-                            break
+                        # again = raw_input("Would you like to try again? [Y/n]").lower()
+                        # if again == 'y':
+                        #     time.sleep(5)
+                        # else:
+                        res = {'nets': [{'cidr': '{}.0/24'.format('.'.join(ip_str.split('.')[:3])), 'description': 'Whois failed to resolve.'}]}
+                        break
 
                 cidr_data = []
 
