@@ -340,36 +340,36 @@ class IPRepository(BaseRepository):
                     for cidr_d in cidr_data
                     if IPAddress(ip_str) in IPNetwork(cidr_d[0])
                 ]
+            if cidr_data:
+                try:
+                    cidr_len = len(IPNetwork(cidr_data[0][0]))
+                except Exception:
+                    pdb.set_trace()
+                matching_cidr = cidr_data[0]
+                for c in cidr_data:
+                    if len(IPNetwork(c[0])) < cidr_len:
+                        matching_cidr = c
 
-            try:
-                cidr_len = len(IPNetwork(cidr_data[0][0]))
-            except Exception:
-                pdb.set_trace()
-            matching_cidr = cidr_data[0]
-            for c in cidr_data:
-                if len(IPNetwork(c[0])) < cidr_len:
-                    matching_cidr = c
+                display(
+                    "Processing CIDR from whois: %s - %s"
+                    % (matching_cidr[1], matching_cidr[0])
+                )
+                CIDR = CIDRRepository(self.db, "")
 
-            display(
-                "Processing CIDR from whois: %s - %s"
-                % (matching_cidr[1], matching_cidr[0])
-            )
-            CIDR = CIDRRepository(self.db, "")
+                created, cidr = CIDR.find_or_create(only_tool=True, cidr=matching_cidr[0])
+                if created:
+                    display_new("CIDR %s added to database" % cidr.cidr)
+                    cidr.org_name = matching_cidr[1]
+                    cidr.update()
 
-            created, cidr = CIDR.find_or_create(only_tool=True, cidr=matching_cidr[0])
-            if created:
-                display_new("CIDR %s added to database" % cidr.cidr)
-                cidr.org_name = matching_cidr[1]
-                cidr.update()
+                ip.cidr = cidr
 
-            ip.cidr = cidr
+                ip.update()
 
-            ip.update()
-
-            display_new(
-                "IP address %s added to database. Active Scope: %s Passive Scope: %s"
-                % (ip.ip_address, ip.in_scope, ip.passive_scope)
-            )
+                display_new(
+                    "IP address %s added to database. Active Scope: %s Passive Scope: %s"
+                    % (ip.ip_address, ip.in_scope, ip.passive_scope)
+                )
 
         return created, ip
 
