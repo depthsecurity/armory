@@ -10,7 +10,6 @@ from netaddr import IPNetwork, IPAddress, iprange_to_cidrs
 from ..ModuleTemplate import ModuleTemplate
 from ..utilities.color_display import display, display_new, display_error
 import dns.resolver
-import six
 import string
 
 
@@ -231,9 +230,7 @@ class Module(ModuleTemplate):
         if bd.meta.get("whois", False):
             display_new("Whois data found for {}".format(bd.domain))
             print(bd.meta["whois"])
-            res = six.input(
-                "Should this domain be scoped (A)ctive, (P)assive, or (N)ot? [a/p/N] "
-            )
+            res = input("Should this domain be scoped (A)ctive, (P)assive, or (N)ot? [a/p/N] ")
             if res.lower() == "a":
                 bd.in_scope = True
                 bd.passive_scope = True
