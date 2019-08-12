@@ -300,7 +300,13 @@ class IPRepository(BaseRepository):
 
                 if IPAddress(ip_str) in cidr:
                     res = ([str(cidr), "Non-Public Subnet"],)
-
+            if not res:
+                for cidr in CIDRRepository(self.db, "").all():
+                    if IPAddress(ip_str) in IPNetwork(cidr.cidr):
+                        res = ([str(cidr.cidr), cidr.org_name],)
+                        display(
+                            "Subnet already in database, not rechecking whois.")
+            
             if res:
                 cidr_data = res
             else:
