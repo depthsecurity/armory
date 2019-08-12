@@ -27,6 +27,8 @@ RUN go get github.com/OJ/gobuster
 RUN ln -s /root/go/bin/gobuster /usr/local/bin/gobuster
 RUN go get github.com/sensepost/gowitness
 RUN ln -s /root/go/bin/gowitness /usr/local/bin/gowitness
+RUN go get github.com/subfinder/subfinder
+RUN ln -s /root/go/bin/subfinder /usr/local/bin/subfinder
 WORKDIR /opt/src/jexboss
 RUN pip install -r requires.txt
 RUN ln -s /opt/src/jexboss/jexboss.py /usr/local/bin/jexboss.py
@@ -47,10 +49,6 @@ WORKDIR /opt/src/sslscan
 RUN apt-get build-dep openssl -y
 RUN make static
 RUN ln -s /opt/src/sslscan/sslscan /usr/local/bin/sslscan
-WORKDIR /opt/src/subfinder
-RUN wget https://github.com/subfinder/subfinder/releases/download/1.0/subfinder_linux_amd64_1.0.zip
-RUN unzip subfinder_linux_amd64_1.0.zip
-RUN ln -s /opt/src/subfinder/subfinder /usr/local/bin/subfinder
 WORKDIR /opt/src/Sublist3r
 RUN pip install -r requirements.txt
 RUN ln -s /opt/src/Sublist3r/sublist3r.py /usr/local/bin/sublist3r

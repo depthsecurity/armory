@@ -10,7 +10,7 @@ class IPAddress(BaseModel):
     id = Column(Integer, primary_key=True)
     ip_address = Column(String(15), unique=True)
     cidr_id = Column(Integer, ForeignKey("cidr.id"))
-    OS = Column(String(64))
+    OS = Column(String(512))
     whois = Column(String(512))
     ports = relationship("Port", backref="ip_address")
 

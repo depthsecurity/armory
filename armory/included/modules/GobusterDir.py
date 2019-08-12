@@ -19,7 +19,7 @@ class Module(ToolTemplate):
 
     https://github.com/OJ/gobuster
     '''
-    
+
     name = "GobusterDir"
     binary_name = "gobuster"
 
