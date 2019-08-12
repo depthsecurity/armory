@@ -8,9 +8,9 @@ from netaddr import IPNetwork, IPAddress
 from ipwhois import IPWhois
 import warnings
 import dns.resolver
-from ..included.utilities.color_display import display, display_warning, display_new, display_error
+from armory.included.utilities.color_display import display, display_warning, display_new, display_error
 import sys
-from ..included.utilities.get_domain_ip import run as get_ip
+from armory.included.utilities.get_domain_ip import run as get_ip
 if sys.version[0] == '3':
     raw_input = input
 
@@ -216,7 +216,7 @@ class DomainRepository(BaseRepository):
             # Get all IPs that this domain resolves to.
             
             #use utility....
-            ips = []
+            
             ips = get_ip(d.domain)
 
             if not ips:
