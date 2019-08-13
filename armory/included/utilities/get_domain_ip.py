@@ -7,7 +7,7 @@ def run(domain):
     resolver.lifetime = resolver.timeout = 5.0
 
     try:
-      answers = resolver.query(domain, "A")
+        answers = resolver.query(domain, "A")
         for a in answers:
             ips.append(a.address)
         return ips
