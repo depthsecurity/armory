@@ -4,7 +4,7 @@ MAINTAINER dlawson@depthsecurity.com
 RUN echo "deb-src http://deb.debian.org/debian buster main" >> /etc/apt/sources.list
 RUN apt update
 CMD ["echo", "Installing Debian packages needed."]
-RUN apt install -y python2 python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang
+RUN apt install -y python2 python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium
 WORKDIR /opt/src
 CMD ["echo", "Cloning various repos"]
 RUN git clone https://github.com/joaomatosf/jexboss.git
@@ -53,8 +53,10 @@ RUN ln -s /root/go/bin/tko-subs /usr/local/bin/tko-subs
 WORKDIR /opt/src/xsscrapy
 RUN pip install -r requirements.txt
 WORKDIR /opt/src
+RUN touch /tmp/test
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
 CMD ["echo", "Installing Armory"]
 RUN python3 setup.py install
+RUN pip3 install jinja2
 WORKDIR /root/current

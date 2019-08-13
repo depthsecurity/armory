@@ -91,6 +91,8 @@ class Module(ToolTemplate):
         if args.tool_args:
             cmd += args.tool_args
         # Add that data parameter in there
+        if not args.data:
+            args.data = os.path.join(os.path.dirname(self.binary), 'providers_data.csv')
 
         cmd += " -data " + args.data
         return cmd
