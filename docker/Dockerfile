@@ -50,6 +50,7 @@ RUN pip install -r requirements.txt
 RUN ln -s /opt/src/Sublist3r/sublist3r.py /usr/local/bin/sublist3r
 RUN go get github.com/anshumanbh/tko-subs
 RUN ln -s /root/go/bin/tko-subs /usr/local/bin/tko-subs
+RUN ln -s /root/go/src/github.com/anshumanbh/tko-subs/providers-data.csv /usr/local/bin/providers-data.csv
 WORKDIR /opt/src/xsscrapy
 RUN pip install -r requirements.txt
 WORKDIR /opt/src
