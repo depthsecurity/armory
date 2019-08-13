@@ -3,8 +3,11 @@ import socket
 
 def run(domain):
     ips = []
+    resolver = dns.resolver.Resolver()
+    resolver.lifetime = resolver.timeout = 5.0
+
     try:
-        answers = dns.resolver.query(domain, "A")
+      answers = resolver.query(domain, "A")
         for a in answers:
             ips.append(a.address)
         return ips
