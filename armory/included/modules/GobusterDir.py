@@ -104,7 +104,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " -k -m dir "
+        cmd = self.binary + " dir -k "
         cmd += " -o {output} -u {target} "
 
         if args.tool_args:
