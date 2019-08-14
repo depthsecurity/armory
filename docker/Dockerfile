@@ -53,6 +53,9 @@ RUN ln -s /root/go/bin/tko-subs /usr/local/bin/tko-subs
 RUN ln -s /root/go/src/github.com/anshumanbh/tko-subs/providers-data.csv /usr/local/bin/providers-data.csv
 WORKDIR /opt/src/xsscrapy
 RUN pip install -r requirements.txt
+ENV PATH="${PATH}:/opt/src/xsscrapy"
+RUN chmod +x /opt/src/xsscrapy/xsscrapy.py
+RUN export PATH=$PATH:/opt/src/xsscrapy
 WORKDIR /opt/src
 RUN touch /tmp/test
 RUN git clone https://github.com/depthsecurity/armory.git
