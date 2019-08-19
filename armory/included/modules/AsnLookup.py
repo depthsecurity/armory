@@ -37,6 +37,8 @@ class Module(ModuleTemplate):
             help="Path which will contain program output (relative to base_path in config",
             default=self.name,
         )
+        
+
     def run(self, args):
         
         if not args.keyword:

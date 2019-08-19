@@ -17,6 +17,7 @@ RUN git clone https://github.com/aboul3la/Sublist3r.git
 RUN git clone https://github.com/anshumanbh/tko-subs.git
 RUN git clone https://github.com/DanMcInerney/xsscrapy.git
 RUN git clone https://github.com/fang0654/Asnlookup.git
+RUN git clone https://github.com/vysec/DomLink.git
 RUN go get github.com/ffuf/ffuf
 RUN ln -s /root/go/bin/ffuf /usr/local/bin/ffuf
 RUN gem install aquatone
@@ -58,8 +59,11 @@ ENV PATH="${PATH}:/opt/src/xsscrapy"
 RUN chmod +x /opt/src/xsscrapy/xsscrapy.py
 RUN export PATH=$PATH:/opt/src/xsscrapy
 RUN ln -s /opt/src/Asnlookup/asnlookup.py /usr/local/bin/asnlookup.py
+RUN chmod +x /usr/local/bin/asnlookup.py
+RUN ln -s /opt/src/DomLink/domLink.py /usr/local/bin/domLink.py
+RUN chmod +x /usr/local/bin/domLink.py
 WORKDIR /opt/src
-
+RUN touch /tmp/test
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
 CMD ["echo", "Installing Armory"]
