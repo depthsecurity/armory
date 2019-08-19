@@ -103,4 +103,4 @@ class Module(ModuleTemplate):
                     if created:
                         display_new("New CIDR added to ScopeCIDRS: {}".format(r))
 
-
+        self.ScopeCIDRs.commit()
