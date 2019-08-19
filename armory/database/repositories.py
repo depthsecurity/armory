@@ -13,6 +13,7 @@ import sys
 from armory.included.utilities.get_domain_ip import run as get_ip
 if sys.version[0] == '3':
     raw_input = input
+import socket
 
 # Shut up whois warnings.
 
@@ -265,6 +266,7 @@ class IPRepository(BaseRepository):
     def find_or_create(
         self, only_tool=False, in_scope=False, passive_scope=True, **kwargs
     ):
+
 
         created, ip = super(IPRepository, self).find_or_create(only_tool, **kwargs)
         if created:
