@@ -36,3 +36,4 @@ verify_ssl = true
   ipaddr = "*"
   mysqlclient = "*"
   lxml = "*"
+  termcolor = "*"
