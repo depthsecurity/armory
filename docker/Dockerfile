@@ -63,7 +63,7 @@ RUN chmod +x /usr/local/bin/asnlookup.py
 RUN ln -s /opt/src/DomLink/domLink.py /usr/local/bin/domLink.py
 RUN chmod +x /usr/local/bin/domLink.py
 WORKDIR /opt/src
-RUN touch /tmp/test
+RUN touch /tmp/test2
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
 CMD ["echo", "Installing Armory"]

@@ -259,6 +259,23 @@ class DomainRepository(BaseRepository):
 
         return created, d
 
+class ScopeCIDRRepository(BaseRepository):
+    model = Models.ScopeCIDR
+
+    def find_or_create(
+        self, only_tool=False, label=None, **kwargs
+    ):
+        
+        created, scidr = super(ScopeCIDRRepository, self).find_or_create(only_tool, **kwargs)
+        if created:
+            CIDRs = CIDRRepository(self.db, "")
+
+            if label:
+                created, rcidr = CIDRs.find_or_create(ip_str=scidr.cidr.split('/')[0], label=label, force_cidr=scidr.cidr)
+            else:
+                created, rcidr = CIDRs.find_or_create(ip_str=scidr.cidr.split('/')[0])
+
+        return created, scidr
 
 class IPRepository(BaseRepository):
     model = Models.IPAddress
@@ -296,88 +313,18 @@ class IPRepository(BaseRepository):
             ip.update()
 
             # Build CIDR info - mainly for reporting
-            res = False
+            CIDR = CIDRRepository(self.db, "")
 
-            for cidr in private_subnets:
+            created, cidr = CIDR.find_or_create(only_tool=True, ip_str=ip.ip_address)
+        
+            ip.cidr = cidr
 
-                if IPAddress(ip_str) in cidr:
-                    res = ([str(cidr), "Non-Public Subnet"],)
-            if not res:
-                for cidr in CIDRRepository(self.db, "").all():
-                    if IPAddress(ip_str) in IPNetwork(cidr.cidr):
-                        res = ([str(cidr.cidr), cidr.org_name],)
-                        display(
-                            "Subnet already in database, not rechecking whois.")
-            
-            if res:
-                cidr_data = res
-            else:
-                while True:
-                    try:
-                        res = IPWhois(ip_str).lookup_whois(get_referral=True)
-                    except Exception:
-                        try:
-                            res = IPWhois(ip_str).lookup_whois()
-                        except Exception as e:
-                            display_error("Error trying to resolve whois: {}".format(e))
-                            res = {}
-                    if "nets" in res.keys():
-                        break
-                    else:
-                        display_warning(
-                            "The networks didn't populate from whois. Defaulting to a /24."
-                        )
-                        # again = raw_input("Would you like to try again? [Y/n]").lower()
-                        # if again == 'y':
-                        #     time.sleep(5)
-                        # else:
-                        res = {'nets': [{'cidr': '{}.0/24'.format('.'.join(ip_str.split('.')[:3])), 'description': 'Whois failed to resolve.'}]}
-                        break
+            ip.update()
 
-                cidr_data = []
-
-                for n in res["nets"]:
-                    if "," in n["cidr"]:
-                        for cidr_str in n["cidr"].split(", "):
-                            cidr_data.append([cidr_str, n["description"]])
-                    else:
-                        cidr_data.append([n["cidr"], n["description"]])
-
-                cidr_data = [
-                    cidr_d
-                    for cidr_d in cidr_data
-                    if IPAddress(ip_str) in IPNetwork(cidr_d[0])
-                ]
-            if cidr_data:
-                try:
-                    cidr_len = len(IPNetwork(cidr_data[0][0]))
-                except Exception:
-                    pdb.set_trace()
-                matching_cidr = cidr_data[0]
-                for c in cidr_data:
-                    if len(IPNetwork(c[0])) < cidr_len:
-                        matching_cidr = c
-
-                display(
-                    "Processing CIDR from whois: %s - %s"
-                    % (matching_cidr[1], matching_cidr[0])
-                )
-                CIDR = CIDRRepository(self.db, "")
-
-                created, cidr = CIDR.find_or_create(only_tool=True, cidr=matching_cidr[0])
-                if created:
-                    display_new("CIDR %s added to database" % cidr.cidr)
-                    cidr.org_name = matching_cidr[1]
-                    cidr.update()
-
-                ip.cidr = cidr
-
-                ip.update()
-
-                display_new(
-                    "IP address %s added to database. Active Scope: %s Passive Scope: %s"
-                    % (ip.ip_address, ip.in_scope, ip.passive_scope)
-                )
+            display_new(
+                "IP address %s added to database. Active Scope: %s Passive Scope: %s"
+                % (ip.ip_address, ip.in_scope, ip.passive_scope)
+            )
 
         return created, ip
 
@@ -385,6 +332,90 @@ class IPRepository(BaseRepository):
 class CIDRRepository(BaseRepository):
     model = Models.CIDR
 
+    def find_or_create(
+        self, ip_str, only_tool=False, in_scope=False, passive_scope=True, label=None, force_cidr=None, **kwargs
+    ):
+        res = False
+        if label and force_cidr:
+            res = ([force_cidr, label],)
+        for cidr in private_subnets:
+
+            if IPAddress(ip_str) in cidr:
+                res = ([str(cidr), "Non-Public Subnet"],)
+        
+        
+        for cidr in CIDRRepository(self.db, "").all():
+            if IPAddress(ip_str) in IPNetwork(cidr.cidr):
+                res = ([str(cidr.cidr), cidr.org_name],)
+                display(
+                    "Subnet already in database, not rechecking whois.")
+    
+        if res:
+            cidr_data = res
+        else:
+            while True:
+                try:
+                    res = IPWhois(ip_str).lookup_whois(get_referral=True)
+                except Exception:
+                    try:
+                        res = IPWhois(ip_str).lookup_whois()
+                    except Exception as e:
+                        display_error("Error trying to resolve whois: {}".format(e))
+                        res = {}
+                if "nets" in res.keys():
+                    break
+                else:
+                    display_warning(
+                        "The networks didn't populate from whois. Defaulting to a /24."
+                    )
+                    # again = raw_input("Would you like to try again? [Y/n]").lower()
+                    # if again == 'y':
+                    #     time.sleep(5)
+                    # else:
+                    res = {'nets': [{'cidr': '{}.0/24'.format('.'.join(ip_str.split('.')[:3])), 'description': 'Whois failed to resolve.'}]}
+                    break
+
+            cidr_data = []
+
+            for n in res["nets"]:
+                if "," in n["cidr"]:
+                    for cidr_str in n["cidr"].split(", "):
+                        cidr_data.append([cidr_str, n["description"]])
+                else:
+                    cidr_data.append([n["cidr"], n["description"]])
+
+            cidr_data = [
+                cidr_d
+                for cidr_d in cidr_data
+                if IPAddress(ip_str) in IPNetwork(cidr_d[0])
+            ]
+        if cidr_data:
+            try:
+                cidr_len = len(IPNetwork(cidr_data[0][0]))
+            except Exception:
+                pdb.set_trace()
+            matching_cidr = cidr_data[0]
+            for c in cidr_data:
+                if len(IPNetwork(c[0])) < cidr_len:
+                    matching_cidr = c
+
+            
+            display(
+            "Processing CIDR from whois: %s - %s"
+            % (str(matching_cidr[1]).split('\n')[0], matching_cidr[0])
+            )
+        
+            created, cidr = super(CIDRRepository, self).find_or_create(only_tool, cidr=matching_cidr[0])
+
+            if created:
+                display_new("CIDR %s added to database" % cidr.cidr)
+                cidr.org_name = str(matching_cidr[1]).split('\n')[0]
+                cidr.update()
+
+            return created, cidr
+
+                
+            
 
 class BaseDomainRepository(BaseRepository):
     model = Models.BaseDomain
@@ -439,10 +470,6 @@ class PortRepository(BaseRepository):
 
 class UrlRepository(BaseRepository):
     model = Models.Url
-
-
-class ScopeCIDRRepository(BaseRepository):
-    model = Models.ScopeCIDR
 
 
 class CVERepository(BaseRepository):

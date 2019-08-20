@@ -87,6 +87,9 @@ class Module(ModuleTemplate):
             help="Force processing again, even if already processed",
             action="store_true",
         )
+        self.options.add_argument(
+            "--label",
+            help="Organizational Label for Scoped CIDRs (disables whois")
 
     def run(self, args):
 
@@ -111,7 +114,7 @@ class Module(ModuleTemplate):
 
                     if line.strip():
                         if "/" in line or "-" in line:
-                            self.process_cidr(line)
+                            self.process_cidr(line, args.label)
 
                         else:
                             self.process_ip(line.strip(), force_scope=True)
@@ -119,7 +122,7 @@ class Module(ModuleTemplate):
             except IOError:
 
                 if "/" in args.import_ips or "-" in args.import_ips:
-                    self.process_cidr(args.import_ips)
+                    self.process_cidr(args.import_ips, args.label)
 
                 else:
                     self.process_ip(args.import_ips.strip(), force_scope=True)
@@ -202,10 +205,10 @@ class Module(ModuleTemplate):
                 ip.update()
         return ip
 
-    def process_cidr(self, line):
+    def process_cidr(self, line, label):
         display("Processing %s" % line)
         if "/" in line:
-            created, cidr = self.ScopeCIDR.find_or_create(cidr=line.strip())
+            created, cidr = self.ScopeCIDR.find_or_create(cidr=line.strip(), label=label)
             if created:
                 display_new("Adding %s to scoped CIDRs in database" % line.strip())
                 cidr.in_scope = True
