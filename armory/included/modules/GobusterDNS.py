@@ -112,4 +112,6 @@ class Module(ToolTemplate):
             else:
                 display_error("{} not found.".format(output_path))
 
+            created, bd = self.BaseDomain.find_or_create(domain=c['target'])
+            bd.set_tool(self.name)
         self.Domain.commit()

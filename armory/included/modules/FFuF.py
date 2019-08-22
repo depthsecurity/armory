@@ -115,6 +115,35 @@ class Module(ToolTemplate):
 
     def process_output(self, cmds):
 
-        display_warning(
-            "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
-        )
+        for cmd in cmds:
+            
+            target = cmd['target']
+            proto = target.split('/')[0]
+            url = target.split('/')[2]
+
+            if ':' in url:
+                port_num = url.split(':')[1]
+                url = url.split(':')[0]
+            elif proto == 'http':
+                port_num = "80"
+            elif proto == 'https':
+                port_num = "443"
+            else:
+                port_num = "0"
+
+            try:
+                [int(i) for i in url.split('.')]
+                created, ip = self.IPAddress.find_or_create(ip_address=url)
+                port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
+                port.set_tool(self.name)
+            except:
+                created, domain = self.Domain.find_or_create(domain=url)
+                for ip in self.ip_addresses:
+                    port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
+                    port.set_tool(self.name) 
+
+            
+            
+
+        self.Port.commit()
+        
