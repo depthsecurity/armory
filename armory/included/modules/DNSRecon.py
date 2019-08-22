@@ -136,7 +136,7 @@ class Module(ToolTemplate):
                 res = json.loads(open(output_path).read())
             except IOError:
                 display_error("DnsRecon failed for {}".format(target))
-
+                next
             if " -d " in res[0]["arguments"]:
                 created, dbrec = self.Domain.find_or_create(domain=target)
                 dbrec.dns = res
