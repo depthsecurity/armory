@@ -12,19 +12,27 @@ class bcolors:
     UNDERLINE = "\033[4m"
 
 
-def display(txt):
-    print("[ ] " + txt)
+def display(txt, color=None, code="[ ] "):
+    if color:
+        txt = color + code + txt + bcolors.ENDC
+    else:
+        txt = code + txt
+    try:
+        print(txt)
+    except:
+        # Sometimes blocking errors occur. Don't know why. Just catching them here so the whole thing doesn't crash
+        pass
 
 
 def display_new(txt):
     txt = txt.replace("True", bcolors.BLUE + "True" + bcolors.GREEN)
     txt = txt.replace("False", bcolors.FAIL + "False" + bcolors.GREEN)
-    print(bcolors.GREEN + "[+] " + txt + bcolors.ENDC)
+    display(txt, colors.GREEN, "[+] ")
 
 
 def display_warning(txt):
-    print(bcolors.WARNING + "[-] " + txt + bcolors.ENDC)
+    display(txt, colors.WARNING, "[-] ")
 
 
 def display_error(txt):
-    print(bcolors.FAIL + "[!] " + txt + bcolors.ENDC)
+    display(txt, bcolors.FAIL, "[!] ")
