@@ -158,9 +158,14 @@ class ToolTemplate(ModuleTemplate):
                 self.pre_run(args)
                 pool = ThreadPool(int(args.threads))
 
-                pool.map(run_cmd, cmds)
+                total_commands = len(cmds)
+                done = 1
+                for i in pool.imap_unordered(run_cmd, cmds):
+                    display("Processing results from command {} of {}.".format(done, total_commands))
+                    done += 1
+                    self.process_output([targets[cmds.index(i)]])
                 self.post_run(args)
-            if targets:
+            if targets and args.no_binary:
                 self.process_output(targets)
 
     def get_targets(self, args):
@@ -219,3 +224,5 @@ def run_cmd(cmd):
 
     else:
         Popen(c).wait()
+
+    return cmd
