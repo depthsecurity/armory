@@ -165,6 +165,9 @@ class Module(ToolTemplate):
                         domain_obj.ip_addresses.append(ip_obj)
                         domain_obj.save()
 
-            created, bd = self.BaseDomain.find_or_create(domain=target)
+            if '/' in target:
+                created, bd = self.ScopeCIDR.find_or_create(cidr=target)
+            else:
+                created, bd = self.BaseDomain.find_or_create(domain=target)
             bd.set_tool(self.name)
         self.Domain.commit()
