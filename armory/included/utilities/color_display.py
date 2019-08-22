@@ -27,12 +27,15 @@ def display(txt, color=None, code="[ ] "):
 def display_new(txt):
     txt = txt.replace("True", bcolors.BLUE + "True" + bcolors.GREEN)
     txt = txt.replace("False", bcolors.FAIL + "False" + bcolors.GREEN)
-    display(txt, colors.GREEN, "[+] ")
+    display(txt, bcolors.GREEN, "[+] ")
 
 
 def display_warning(txt):
-    display(txt, colors.WARNING, "[-] ")
+    display(txt, bcolors.WARNING, "[-] ")
 
 
 def display_error(txt):
     display(txt, bcolors.FAIL, "[!] ")
+
+def display_purple(txt):
+    display(txt, bcolors.PURPLE, "[*] ")

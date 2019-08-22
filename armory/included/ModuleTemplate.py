@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from multiprocessing import Pool as ThreadPool
-from armory.included.utilities.color_display import display, display_error
+from armory.included.utilities.color_display import display, display_error, display_purple
 from armory.included.utilities import which
 import shlex
 import os
@@ -161,10 +161,10 @@ class ToolTemplate(ModuleTemplate):
                 total_commands = len(cmds)
                 done = 1
                 for i in pool.imap_unordered(run_cmd, cmds):
-                    display("Processing results from command {} of {}.".format(done, total_commands))
+                    display_purple("Processing results from command {} of {}.".format(done, total_commands))
                     done += 1
-                    display("DEBUG: i: {}".format(i))
-                    display("DEBUG: target: {}".format(targets[cmds.index(i)]))
+                    # display("DEBUG: i: {}".format(i))
+                    # display("DEBUG: target: {}".format(targets[cmds.index(i)]))
                     self.process_output([targets[cmds.index(i)]])
                 self.post_run(args)
             if targets and args.no_binary:
