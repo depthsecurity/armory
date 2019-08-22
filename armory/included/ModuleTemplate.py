@@ -163,6 +163,8 @@ class ToolTemplate(ModuleTemplate):
                 for i in pool.imap_unordered(run_cmd, cmds):
                     display("Processing results from command {} of {}.".format(done, total_commands))
                     done += 1
+                    display("DEBUG: i: {}".format(i))
+                    display("DEBUG: target: {}".format(targets[cmds.index(i)]))
                     self.process_output([targets[cmds.index(i)]])
                 self.post_run(args)
             if targets and args.no_binary:
