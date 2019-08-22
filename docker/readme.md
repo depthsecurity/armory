@@ -32,7 +32,7 @@ Breaking this monstrosity down:
  * --rm -it armory - Run the Armory container
  * armory - actual command being run
 
- To make this far easier to type, I create bash aliases. In my .zshrc I have the following:
+ To make this far easier to type, I create bash (well.. zsh) aliases. In my .zshrc I have the following:
 
  ```
  alias armory=`docker run -v "/home/dlawson/armory_config:/root/.armory" -v "$PWD:/root/current" -v "/home/dlawson/client_data:/home/dlawson/client_data" -v "/home/dlawson/src:/home/dlawson/src" -e ARMORY_CONFIG -e DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --rm -it armory armory `
