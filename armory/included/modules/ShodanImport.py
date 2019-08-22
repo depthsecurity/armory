@@ -3,15 +3,20 @@ from armory.database.repositories import (
     PortRepository,
     IPRepository,
     ScopeCIDRRepository,
+    DomainRepository,
 )
 from netaddr import IPNetwork
-from ..ModuleTemplate import ModuleTemplate
-from ..utilities.color_display import display, display_error, display_warning
+from armory.included.ModuleTemplate import ModuleTemplate
+from armory.included.utilities.color_display import display, display_error, display_warning
 import json
 import pdb
 import requests
 import time
+import re
 
+def get_domains_from_data(txt):
+    return [match.replace('\\r', '').replace('\\n', '') for match in re.split("(\\\\x\w\w)", txt) if len(match) > 4 and "." in match and "*" not in match]
+    
 
 class Module(ModuleTemplate):
     """
@@ -28,6 +33,7 @@ class Module(ModuleTemplate):
         self.Port = PortRepository(db, self.name)
         self.IPAddress = IPRepository(db, self.name)
         self.ScopeCidr = ScopeCIDRRepository(db, self.name)
+        self.Domain = DomainRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -55,6 +61,10 @@ class Module(ModuleTemplate):
             help="Import only CIDRs from database (not individual IPs)",
             action="store_true",
         )
+
+        self.options.add_argument(
+            "--target", "-t",
+            help="Scan a specific CIDR/IP")
 
     def run(self, args):
 
@@ -95,11 +105,23 @@ class Module(ModuleTemplate):
                         "{}".format(i.ip_address)
                         for i in self.IPAddress.all(scope_type="active", tool=self.name)
                     ]
+        if args.target:
+            ranges = []
+            if '/' not in args.target:
+                ranges = [args.target]
+            elif args.fast:
+                ranges = ["net:{}".format(args.target)]
+            else:
+                ranges = [str(i) for i in IPNetwork(args.target)]
+
 
         api_host_url = "https://api.shodan.io/shodan/host/{}?key={}"
         api_search_url = (
             "https://api.shodan.io/shodan/host/search?key={}&query={}&page={}"
         )
+        display("Doing a total of {} queries. Estimated time: {} days, {} hours, {} minutes and {} seconds.".format(len(ranges), int(len(ranges)/24.0/60.0/60.0), int(len(ranges)/60.0/60.0)%60, int(len(ranges)/60.0)%60, len(ranges)%60))
+        
+
         for r in ranges:
 
             time.sleep(1)
@@ -151,6 +173,7 @@ class Module(ModuleTemplate):
                         display_error("Something went wrong: {}".format(e))
                         total = 0
                         pdb.set_trace()
+                domains = []
 
                 for res in matches:
                     ip_str = res["ip_str"]
@@ -184,8 +207,25 @@ class Module(ModuleTemplate):
                     port.status = "open"
                     port.meta["shodan_data"] = res
                     port.save()
-            else:
+                    
 
+                    if res.get("ssl", {}).get('cert', {}).get('extensions'):
+                        for d in res['ssl']['cert']['extensions']:
+                            if d['name'] == 'subjectAltName':
+                                domains += get_domains_from_data(d['name'])
+
+                    if res.get("ssl", {}).get('cert', {}).get('subject', {}).get('CN') and '*' not in res['ssl']['cert']['subject']['CN']:
+                        domains.append(res['ssl']['cert']['subject']['CN'])
+
+                    if res.get('hostnames'):
+                        domains += res['hostnames']
+
+                for d in list(set(domains)):
+                    display("Adding discovered domain {}".format(d))
+                    created, domain = self.Domain.find_or_create(domain=d)
+
+            else:
+                display("Searching for {}".format(r))
                 try:
                     results = json.loads(
                         requests.get(api_host_url.format(r, args.api_key)).text
@@ -197,7 +237,7 @@ class Module(ModuleTemplate):
                 if results.get("data", False):
 
                     display("{} results found for: {}".format(len(results["data"]), r))
-
+                    domains = []
                     for res in results["data"]:
                         ip_str = res["ip_str"]
                         port_str = res["port"]
@@ -229,5 +269,23 @@ class Module(ModuleTemplate):
                         port.status = "open"
                         port.meta["shodan_data"] = res
                         port.save()
+                        
+
+                        if res.get("ssl", {}).get('cert', {}).get('extensions'):
+                            for d in res['ssl']['cert']['extensions']:
+                                if d['name'] == 'subjectAltName':
+                                    
+                                    domains += get_domains_from_data(d['data'])
+                                    display("Domains discovered in subjectAltName: {}".format(", ".join(get_domains_from_data(d['data']))))
+                                    
+                        if res.get("ssl", {}).get('cert', {}).get('subject', {}).get('CN') and '*' not in res['ssl']['cert']['subject']['CN']:
+                            domains.append(res['ssl']['cert']['subject']['CN'])
+
+                        if res.get('hostnames'):
+                            domains += res['hostnames']
+
+                    for d in list(set(domains)):
+                        display("Adding discovered domain {}".format(d))
+                        created, domain = self.Domain.find_or_create(domain=d)
 
         self.IPAddress.commit()
