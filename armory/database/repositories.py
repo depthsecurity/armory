@@ -151,28 +151,29 @@ class BaseRepository(object):
             )
         else:
             obj = self.db.db_session.query(self.model).filter_by(**kwargs).all()
-        if not tool:
+        # if not tool:
 
-            return obj
+        return obj
 
-        else:
-            objects = []
-            for o in obj:
-                if (
-                    o.meta
-                    and o.meta.get(tool, False)  # noqa: W503
-                    and o.meta[tool].get("created", False)  # noqa: W503
-                ):
-                    pass
-                else:
-                    objects.append(o)
-            for o in objects:
-                if not o.meta.get(tool, False):
-                    o.meta[tool] = {}
+        # else:
+        #     objects = []
+        #     for o in obj:
+        #         if (
+        #             o.meta
+        #             and o.meta.get(tool, False)  # noqa: W503
+        #             and o.meta[tool].get("created", False)  # noqa: W503
+        #         ):
+        #             pass
+        #         else:
+        #             objects.append(o)
+        #     for o in objects:
+        #         if not o.meta.get(tool, False):
+        #             o.meta[tool] = {}
 
-                o.meta[tool]["created"] = str(datetime.datetime.now())
-            return objects
-
+        #         o.meta[tool]["created"] = str(datetime.datetime.now())
+        #     return objects
+    
+        
     def commit(self):
         return self.db.db_session.commit()
 
