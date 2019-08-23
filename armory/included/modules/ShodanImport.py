@@ -14,8 +14,17 @@ import requests
 import time
 import re
 
+def only_valid(txt):
+    res = ''
+
+    for t in txt:
+        if t.lower() in 'abcdefghijklmnopqrstuvwxyz0123456789-.':
+            res += t
+    # print("Received: {} Returned: {}".format(txt, res))
+    return res
+
 def get_domains_from_data(txt):
-    return [match.replace('\\r', '').replace('\\n', '') for match in re.split("(\\\\x\w\w)", txt) if len(match) > 4 and "." in match and "*" not in match]
+    return [match for match in re.split("(\\\\x\w\w)", txt) if len(match) > 4 and "." in match and "*" not in match]
     
 
 
@@ -83,7 +92,7 @@ class Module(ModuleTemplate):
         if args.import_db:
             if args.rescan:
                 if args.fast:
-                    cidrs += ["net:{}".format(c.cidr) for c in self.ScopeCidr.all()]
+                    search += ["net:{}".format(c.cidr) for c in self.ScopeCidr.all()]
                 else:
                     cidrs += [c.cidr for c in self.ScopeCidr.all()]
                     
@@ -94,7 +103,7 @@ class Module(ModuleTemplate):
                     ]
             else:
                 if args.fast:
-                    cidrs += [
+                    search += [
                         "net:{}".format(c.cidr)
                         for c in self.ScopeCidr.all(tool=self.name)
                     ]
@@ -124,6 +133,7 @@ class Module(ModuleTemplate):
             ranges += [str(i) for i in IPNetwork(c)]
 
         ranges += ips
+        ranges += search
         
 
         display("Doing a total of {} queries. Estimated time: {} days, {} hours, {} minutes and {} seconds.".format(len(ranges), int(len(ranges)/24.0/60.0/60.0), int(len(ranges)/60.0/60.0)%60, int(len(ranges)/60.0)%60, len(ranges)%60))
@@ -155,6 +165,14 @@ class Module(ModuleTemplate):
         for s in search:
             self.get_shodan(s, args)
 
+            if s[:4] == "net:":
+                created, cd = self.ScopeCidr.find_or_create(cidr=s[4:])
+                if created:
+                    cd.delete()
+                else:
+                    cd.set_tool(self.name)
+                self.ScopeCidr.commit()
+
     def get_shodan(self, r, args):
 
         api_host_url = "https://api.shodan.io/shodan/host/{}?key={}"
@@ -182,6 +200,7 @@ class Module(ModuleTemplate):
             total = len(results["matches"])
             matches = []
             i = 1
+            # pdb.set_trace()
             while total > 0:
                 display("Adding {} results from page {}".format(total, i))
                 matches += results["matches"]
@@ -258,8 +277,8 @@ class Module(ModuleTemplate):
                     domains += res['hostnames']
 
             for d in list(set(domains)):
-                display("Adding discovered domain {}".format(d))
-                created, domain = self.Domain.find_or_create(domain=d)
+                display("Adding discovered domain {}".format(only_valid(d)))
+                created, domain = self.Domain.find_or_create(domain=only_valid(d))
 
         else:
             display("Searching for {}".format(r))
