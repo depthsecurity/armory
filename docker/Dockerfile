@@ -4,7 +4,7 @@ MAINTAINER dlawson@depthsecurity.com
 RUN echo "deb-src http://deb.debian.org/debian buster main" >> /etc/apt/sources.list
 RUN apt update
 CMD ["echo", "Installing Debian packages needed."]
-RUN apt install -y python2 python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium
+RUN apt install -y python2 python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium xclip
 WORKDIR /opt/src
 CMD ["echo", "Cloning various repos"]
 RUN git clone https://github.com/joaomatosf/jexboss.git
@@ -18,7 +18,11 @@ RUN git clone https://github.com/anshumanbh/tko-subs.git
 RUN git clone https://github.com/DanMcInerney/xsscrapy.git
 RUN git clone https://github.com/fang0654/Asnlookup.git
 RUN git clone https://github.com/vysec/DomLink.git
-RUN go get github.com/ffuf/ffuf
+# RUN go get github.com/ffuf/ffuf
+
+# Next couple of lines are to use custom version of ffuf until it gets updated
+RUN go get github.com/fang0654/ffuf
+
 RUN ln -s /root/go/bin/ffuf /usr/local/bin/ffuf
 RUN gem install aquatone
 RUN go get github.com/OJ/gobuster
@@ -42,7 +46,7 @@ WORKDIR /opt/src/pymeta
 RUN chmod +x setup.sh
 RUN ./setup.sh
 RUN chmod +x pymeta.py
-RUN ln -s /opt/src/pymeta/pymeta.py /usr/local/bin/pymeta.py
+RUN ln -s /opt/src/pymeta/pymeta.py /usr/local/bin/pymeta
 WORKDIR /opt/src/sslscan
 RUN apt-get build-dep openssl -y
 RUN make static
@@ -69,5 +73,5 @@ RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
 CMD ["echo", "Installing Armory"]
 RUN python3 setup.py install
-RUN pip3 install jinja2
+RUN pip3 install jinja2 xlsxwriter
 WORKDIR /root/current
