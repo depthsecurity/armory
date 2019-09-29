@@ -8,7 +8,7 @@ from armory.database.repositories import (
 )
 from armory.included.ModuleTemplate import ToolTemplate
 from armory.included.utilities import get_urls
-from armory.included.utilities.color_display import display_warning
+from armory.included.utilities.color_display import display_warning, display
 import os
 import time
 
@@ -137,11 +137,14 @@ class Module(ToolTemplate):
                 port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
                 port.set_tool(self.name)
             except:
+                display("Domain found: {}".format(url))
                 created, domain = self.Domain.find_or_create(domain=url)
                 for ip in domain.ip_addresses:
-                    port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
-                    port.set_tool(self.name) 
-
+                    try:
+                        port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
+                        port.set_tool(self.name) 
+                    except Exception as e:
+                        print("Error getting ports: {}".format(e))
             
             
 
