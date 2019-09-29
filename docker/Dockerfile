@@ -1,7 +1,7 @@
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 MAINTAINER dlawson@depthsecurity.com
 
-RUN echo "deb-src http://deb.debian.org/debian buster main" >> /etc/apt/sources.list
+RUN echo "deb-src http://deb.debian.org/debian bullseye main" >> /etc/apt/sources.list
 RUN apt update
 CMD ["echo", "Installing Debian packages needed."]
 RUN apt install -y python2 python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium xclip

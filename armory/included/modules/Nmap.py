@@ -17,6 +17,7 @@ import tempfile
 import requests
 import sys
 import xml.etree.ElementTree as ET
+import pdb
 
 if sys.version_info[0] >= 3:
     raw_input = input
@@ -201,13 +202,14 @@ class Module(ToolTemplate):
         self, filename
     ):  # domains={}, ips={}, rejects=[] == temp while no db
         nFile = filename
-
+        # pdb.set_trace()
         try:
             tree = ET.parse(nFile)
             root = tree.getroot()
             hosts = root.findall("host")
 
-        except Exception:
+        except Exception as e:
+            print("Error: {}" % e)
             print(nFile + " doesn't exist somehow...skipping")
             return
 

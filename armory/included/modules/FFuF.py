@@ -138,7 +138,7 @@ class Module(ToolTemplate):
                 port.set_tool(self.name)
             except:
                 created, domain = self.Domain.find_or_create(domain=url)
-                for ip in self.ip_addresses:
+                for ip in domain.ip_addresses:
                     port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
                     port.set_tool(self.name) 
 
