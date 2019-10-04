@@ -108,6 +108,7 @@ class Module(ToolTemplate):
                         .replace("&", "_")
                         + "-dir.txt",  # noqa: W503
                     ),
+                    "wordlist": wordlist,
                 }
             )
 
