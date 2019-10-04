@@ -26,12 +26,6 @@ class Module(ToolTemplate):
         self.options.add_argument("-d", "--domain", help="Domain to brute force")
         self.options.add_argument("-f", "--file", help="Import domains from file")
         self.options.add_argument(
-            "-w", 
-            "--wordlist", 
-            required=True,
-            help="Path to wordlist"
-        )
-        self.options.add_argument(
             "-i",
             "--import_database",
             help="Import domains from database",
@@ -57,11 +51,6 @@ class Module(ToolTemplate):
             for d in domains:
                 if d:
                     targets.append(d)
-
-        if os.path.exists(args.wordlist):
-            wordlist = args.wordlist
-        else:
-            display_error("{} not found.".format(args.wordlist))
 
         if args.import_database:
             if args.rescan:
@@ -91,9 +80,8 @@ class Module(ToolTemplate):
                 {
                     "target": t,
                     "output": os.path.join(
-                        output_path, t.replace("/", "_") + "-dns.txt",
+                        output_path, t.replace("/", "_") + "-dns.txt"
                     ),
-                    "wordlist": wordlist,
                 }
             )
 
@@ -102,7 +90,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = self.binary + " dns "
-        cmd += " -o {output} -d {target} -w {wordlist}"
+        cmd += " -o {output} -d {target} "
 
         if args.tool_args:
             cmd += args.tool_args
