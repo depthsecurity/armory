@@ -12,10 +12,9 @@ verify_ssl = true
   cmarkgfm = "*"
   readme_renderer = "*"
   flake8 = "*"
-  mock = {version = "*", markers="python_version < '3.4'"}
+  mock = {version = "*",markers = "python_version < '3.4'"}
 
 [packages]
-  exceptions = "*"
   configparser = "*"
   sqlalchemy = "*"
   sqlalchemy_mixins = "*"
@@ -32,8 +31,9 @@ verify_ssl = true
   thready = "*"
   argcomplete = "*"
   tldextract = "*"
-  subprocess32 = {version = "*", markers = "python_version < '3.3'"}
+  subprocess32 = {version = "*",markers = "python_version < '3.3'"}
   ipaddr = "*"
   mysqlclient = "*"
   lxml = "*"
   termcolor = "*"
+colorama = "*"
