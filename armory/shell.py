@@ -35,11 +35,19 @@ def main():
     print(" CIDRs, Users, Creds, Vulns, Ports, Urls, ScopeCIDRs")
     print()
     print("Additional functions:")
-    print("   get_domains(ip_address)                      # Get all domain names for an IP")
-    print("   get_ips(domain)                              # Get all IP addresses for a domain")
-    print("   unscope_base_and_children(BaseDomains list)  # Unscope all basedomains, child domains, and child ip addresses in list of BaseDomain objects")
+    print(
+        "   get_domains(ip_address)                      # Get all domain names for an IP"
+    )
+    print(
+        "   get_ips(domain)                              # Get all IP addresses for a domain"
+    )
+    print(
+        "   unscope_base_and_children(BaseDomains list)  # Unscope all basedomains, child domains, and child ip addresses in list of BaseDomain objects"
+    )
     print()
-    print("Additional ORM commands available on wiki at https://github.com/depthsecurity/armory/wiki/armory-shell")
+    print(
+        "Additional ORM commands available on wiki at https://github.com/depthsecurity/armory/wiki/armory-shell"
+    )
     print()
     embed(using=False)
 
@@ -67,14 +75,15 @@ def get_ips(domain):
     ips = [i.ip_address for i in d[0].ip_addresses]
     return ips
 
+
 def rescope_base_and_children(bds, active=False, passive=False):
-    '''
+    """
     Takes a list of BaseDomains. Iterates through and rescopes
     BaseDomain, subdomains, and ip addresses. Example:
 
     rescope_base_and_children(basedomains, active=False, passive=True)
 
-    '''
+    """
 
     for bd in bds:
         bd.in_scope = active
@@ -90,8 +99,9 @@ def rescope_base_and_children(bds, active=False, passive=False):
         bd.save()
     BaseDomains.commit()
 
+
 def rescope_cidr_and_children(cidrs, active=False, passive=False):
-    '''
+    """
     Takes a list of CIDRs. Iterates through and rescopes
     IP Address and associated domains. Useful for culling out 
     unconfigured landing pages (ie Godaddy), etc.
@@ -99,7 +109,7 @@ def rescope_cidr_and_children(cidrs, active=False, passive=False):
     Example:
     rescope_cidr_and_children(cidrs, active=False, passive=True)
 
-    '''
+    """
 
     for cidr in cidrs:
         for ip in cidr.ip_addresses:
@@ -112,6 +122,3 @@ def rescope_cidr_and_children(cidrs, active=False, passive=False):
                 domain.save()
 
     CIDRs.commit()
-    
-
-
