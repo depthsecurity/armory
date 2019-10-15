@@ -45,6 +45,7 @@ setup(
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     install_requires=[
+        "colorama",
         "configparser",
         "sqlalchemy",
         "sqlalchemy_mixins",
@@ -67,7 +68,7 @@ setup(
         "lxml",
         "IPython > 5.0,< 6.0; python_version < '3.1'",
         "IPython; python_version > '3.1'",
-	    "python-docx",
+        "python-docx",
         "termcolor",
     ],
     test_suite="nose.collector",

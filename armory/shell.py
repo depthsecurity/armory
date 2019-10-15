@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from colorama import Fore, Style, init
 from IPython import embed
 from .armory import initialize_database
 from .armory import get_config_options
@@ -15,6 +16,23 @@ from .database.repositories import (
     ScopeCIDRRepository,
 )
 
+BANNER = """{0}
+Available database modules: {1}Domains, BaseDomains, IPAddresses,
+    CIDRs, Users, Creds, Vulns, Ports, Urls, ScopeCIDRs{0}
+Additional functions:{1}
+    get_domains(ip_address)                       {0}# Get all domain names for an IP{1}
+
+    get_ips(domain)                               {0}# Get all IP addresses for a domain{1}
+    unscope_base_and_children(BaseDomains list)   {0}# Unscope all basedomains, child domains, and child ip addresses in list of BaseDomain objects{1}
+{0}
+Additional ORM commands available on wiki at https://github.com/depthsecurity/armory/wiki/armory-shell"
+{2}
+""".format(
+    Fore.GREEN, Fore.CYAN, Style.RESET_ALL
+)
+
+init()
+
 
 def main():
     global Domains, IPAddresses, CIDRs, Users, Creds, Vulns, Ports, Urls, ScopeCIDRs, BaseDomains
@@ -30,25 +48,7 @@ def main():
     Ports = PortRepository(db, "Shell Client")
     Urls = UrlRepository(db, "Shell Client")
     ScopeCIDRs = ScopeCIDRRepository(db, "Shell Client")
-    print()
-    print("Available database modules: Domains, BaseDomains, IPAddresses,")
-    print(" CIDRs, Users, Creds, Vulns, Ports, Urls, ScopeCIDRs")
-    print()
-    print("Additional functions:")
-    print(
-        "   get_domains(ip_address)                      # Get all domain names for an IP"
-    )
-    print(
-        "   get_ips(domain)                              # Get all IP addresses for a domain"
-    )
-    print(
-        "   unscope_base_and_children(BaseDomains list)  # Unscope all basedomains, child domains, and child ip addresses in list of BaseDomain objects"
-    )
-    print()
-    print(
-        "Additional ORM commands available on wiki at https://github.com/depthsecurity/armory/wiki/armory-shell"
-    )
-    print()
+    print(BANNER)
     embed(using=False)
 
 
