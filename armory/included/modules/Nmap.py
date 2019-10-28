@@ -72,13 +72,25 @@ class Module(ToolTemplate):
             "--filename",
             help="Output filename. By default will use the current timestamp.",
         )
+        self.options.add_argument(
+            "--ssl_cert_mode",
+            help="Scan only SSL enabled hosts to collect SSL certs (and domain names)",
+            action="store_true",
+        )
+        self.options.add_argument(
+            "--filter_ports",
+            help="Comma separated list of protoPort to filter out of results. Useful if firewall returns specific ports open on every host. Ex: t80,u5060"
+        )
+
         self.options.set_defaults(timeout=None)
         self.options.add_argument(
             "--import_file", help="Import results from an Nmap XML file."
         )
 
+
     def get_targets(self, args):
 
+        self.args = args
         if args.import_file:
             args.no_binary = True
             return [{"target": "", "output": args.import_file}]
@@ -123,11 +135,21 @@ class Module(ToolTemplate):
                     created, domain = self.Domain.find_or_create(domain=h)
                     targets += [i.ip_address for i in domain.ip_addresses]
 
-        # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
         data = []
-        for t in targets:
-            ips = [str(i) for i in list(IPNetwork(t))]
-            data += ips
+        if args.ssl_cert_mode:
+            ports = self.Port.all(service_name='https')
+
+            data = list(set([i.ip_address.ip_address for i in ports]))
+            
+            port_numbers = list(set([str(i.port_number) for i in ports]))
+            args.tool_args += " -sV -p {} --script ssl-cert ".format(','.join(port_numbers))
+
+        else:
+
+            # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
+            for t in targets:
+                ips = [str(i) for i in list(IPNetwork(t))]
+                data += ips
 
         _, file_name = tempfile.mkstemp()
         open(file_name, "w").write("\n".join(list(set(data))))
@@ -238,70 +260,71 @@ class Module(ToolTemplate):
                     portState = port.find("state").get("state")
                     hostPort = port.get("portid")
                     portProto = port.get("protocol")
+                    # pdb.set_trace()
+                    if not self.args.filter_ports or int(hostPort) not in [int(p) for p in self.args.filter_ports.split(',')]:
+                        created, db_port = self.Port.find_or_create(
+                            port_number=hostPort,
+                            status=portState,
+                            proto=portProto,
+                            ip_address=ip,
+                        )
 
-                    created, db_port = self.Port.find_or_create(
-                        port_number=hostPort,
-                        status=portState,
-                        proto=portProto,
-                        ip_address=ip,
-                    )
+                        if port.find("service") is not None:
+                            portName = port.find("service").get("name")
+                            if portName == "http" and hostPort == "443":
+                                portName = "https"
+                        else:
+                            portName = "Unknown"
 
-                    if port.find("service") is not None:
-                        portName = port.find("service").get("name")
-                        if portName == "http" and hostPort == "443":
-                            portName = "https"
-                    else:
-                        portName = "Unknown"
+                        if created:
+                            db_port.service_name = portName
+                        info = db_port.info
+                        if not info:
+                            info = {}
 
-                    if created:
-                        db_port.service_name = portName
-                    info = db_port.info
-                    if not info:
-                        info = {}
-
-                    for script in port.findall(
-                        "script"
-                    ):  # just getting commonName from cert
-                        if script.get("id") == "ssl-cert":
-                            db_port.cert = script.get("output")
-                            cert_domains = self.get_domains_from_cert(
-                                script.get("output")
-                            )
-
-                            for hostname in cert_domains:
-                                hostname = hostname.lower().replace("www.", "")
-                                created, domain = self.Domain.find_or_create(
-                                    domain=hostname
+                        for script in port.findall(
+                            "script"
+                        ):  # just getting commonName from cert
+                            if script.get("id") == "ssl-cert":
+                                db_port.cert = script.get("output")
+                                cert_domains = self.get_domains_from_cert(
+                                    script.get("output")
                                 )
-                                if created:
-                                    print("New domain found: %s" % hostname)
 
-                        elif script.get("id") == "vulners":
-                            print(
-                                "Gathering vuln info for {} : {}/{}\n".format(
-                                    hostIP, portProto, hostPort
+                                for hostname in cert_domains:
+                                    hostname = hostname.lower().replace("www.", "")
+                                    created, domain = self.Domain.find_or_create(
+                                        domain=hostname
+                                    )
+                                    if created:
+                                        print("New domain found: %s" % hostname)
+
+                            elif script.get("id") == "vulners":
+                                print(
+                                    "Gathering vuln info for {} : {}/{}\n".format(
+                                        hostIP, portProto, hostPort
+                                    )
                                 )
-                            )
-                            self.parseVulners(script.get("output"), db_port)
+                                self.parseVulners(script.get("output"), db_port)
 
-                        elif script.get("id") == "banner":
-                            info["banner"] = script.get("output")
+                            elif script.get("id") == "banner":
+                                info["banner"] = script.get("output")
 
-                        elif script.get("id") == "http-headers":
+                            elif script.get("id") == "http-headers":
 
-                            httpHeaders = script.get("output")
-                            httpHeaders = httpHeaders.strip().split("\n")
-                            keepHeaders = self.parseHeaders(httpHeaders)
-                            info["http-headers"] = keepHeaders
+                                httpHeaders = script.get("output")
+                                httpHeaders = httpHeaders.strip().split("\n")
+                                keepHeaders = self.parseHeaders(httpHeaders)
+                                info["http-headers"] = keepHeaders
 
-                        elif script.get("id") == "http-auth":
-                            info["http-auth"] = script.get("output")
+                            elif script.get("id") == "http-auth":
+                                info["http-auth"] = script.get("output")
 
-                        elif script.get("id") == "http-title":
-                            info["http-title"] = script.get("output")
+                            elif script.get("id") == "http-title":
+                                info["http-title"] = script.get("output")
 
-                    db_port.info = info
-                    db_port.save()
+                        db_port.info = info
+                        db_port.save()
 
             self.IPAddress.commit()
 
