@@ -20,13 +20,18 @@ def run(db, tool=None, scope_type=None):
             or not scope_type  # noqa: W503
         ):
 
-            domain_list = [d.domain for d in p.ip_address.domains]
+            
 
             results.append(
                 "%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number)
             )
-            for d in domain_list:
-                results.append("%s://%s:%s" % (p.service_name, d, p.port_number))
+        domain_list = [d for d in p.ip_address.domains]
+
+        for d in domain_list:
+            if ( scope_type == "active" and d.in_scope)  # noqa: W503
+            or ( scope_type == "passive" and d.passive_scope)  # noqa: W503
+            or not scope_type:
+                results.append("%s://%s:%s" % (p.service_name, d.domain, p.port_number))
 
     return sort_by_url(results)
 
