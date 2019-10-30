@@ -27,9 +27,12 @@ Additionally, it is meant to be easily extendable. Don't see a module for your f
 
 ## Prerequisites
 
-First, set up some kind of virtual environment. I like virtualenvwrapper:
+First, you will require the MySQL db header files for `mysqlclient` which can be installed with the
+following commands on the respective hosts:
+* Kali: `sudo pt install libmariadb-dev`
+* Arch: `sudo pacman -S mariadb-libs`
 
-http://virtualenvwrapper.readthedocs.io/en/latest/install.html
+Afterwards, set up some kind of virtual environment. I like [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/install.html).
 
 ## Actually installing
 
