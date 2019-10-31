@@ -1,0 +1,19 @@
+<div class="card">
+  <div class="card-header">
+    <h4>Nessus Findings</h4>
+  </div>
+  <div class="card-body">
+    {% for vuln_name, vuln in vulns.items() %}
+    <div class="row ">
+      <div class="col-md-12">
+        <button type="button" class="btn btn-info btn-sm btn-block" data-toggle="collapse" data-target="#http-{{ ip_address | replace('.', '_')}}-{{ port }}-{{ vuln_name | replace(' ', '_') | replace('(', '_') | replace(')', '_') | replace('.', '_') | replace('/', '_')}}">{{ vuln.sev }} - {{ vuln_name }}</button>
+      </div>
+      <div class="col-md-12 collapse" id="http-{{ ip_address | replace('.', '_')}}-{{ port }}-{{ vuln_name | replace(' ', '_') | replace('(', '_') | replace(')', '_') | replace('.', '_') | replace('/', '_')}}">
+      {% for output in vuln.output %}
+         <pre>{{ output|e }}</pre>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>

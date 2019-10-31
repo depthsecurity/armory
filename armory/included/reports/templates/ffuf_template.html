@@ -1,0 +1,64 @@
+<div class="card">
+  <div class="card-header">
+    <h4>FFuF Findings</h4>
+  </div>
+  
+  <div class="row">
+  {% for host, host_data in ffuf_data.items() %}
+  
+    <div class="col-md-6">
+
+      {% for url, data in host_data.items() %}
+      {% if data['status'] %}
+      <div class="card">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <p>URL</p>
+            </div>
+            <div class="col-md-8">
+              <p>{{ url }} </p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">Wordlist</div>
+            <div class="col-md-8">{{ data['wordlist'] }}</div>
+          </div>
+
+          {% for status_code, status_info in data['status'].items() %}
+          
+          <div class="row">
+            <div class="col-md-8">
+              Status Code - {{ status_code }}
+            </div>
+            <div class="col-md-4">
+              Size
+            </div>
+          </div>
+
+           {% for dir, length in status_info.items() %}
+          <div class="row">
+            <div class="col-md-8">
+              <a href="{{ url[:-4] }}{{ dir| e }}">{{ dir|e }}</a>
+            </div>
+            <div class="col-md-4">
+              {{ length| e }}
+            </div>
+          </div>
+
+          {% endfor %}
+          
+      
+        {% endfor %}
+        </div>
+      </div>
+
+      {% endif %}
+      
+      {% endfor %}
+    </div>
+     
+    <br />
+  {% endfor %}
+  </div>   
+</div>
