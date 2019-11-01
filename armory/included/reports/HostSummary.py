@@ -21,7 +21,7 @@ class Report(ReportTemplate):
     This report displays the various HTTP header findings we have
     '''
 
-    name = "HeaderFindings"
+    name = "HostSummary"
 
     markdown = ['', '-', '--']
 
