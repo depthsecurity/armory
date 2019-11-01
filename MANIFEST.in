@@ -7,3 +7,7 @@ include Pipfile.lock
 recursive-include armory *.md
 recursive-include armory *.py
 recursive-include armory *.default
+recursive-include armory *.html
+recursive-include armory *.css
+recursive-include armory *.js
+recursive-include armory *.map

@@ -1,0 +1,59 @@
+
+{% for gws in gw_data %}
+
+{% for gw in gws %}
+<div class="card">
+  <div class="row">
+    <div class="col-md-4">
+      <a href="data:image/png;base64,{{ gw.image_data }}" target="_blank" rel="noopener noreferrer">
+        <img src="data:image/png;base64,{{ gw.image_data }}" class="w-100">
+      </a>
+    </div>
+
+    <div class="col-md-8">
+       <h3 >
+        <a href="{{ gw.final_url }}" target="_blank" rel="noopener noreferrer">{{ gw.url }}</a>
+        <small>{{ gw.response_code_string }}</small>
+      </h3>
+      <table class="table striped">
+        <thead>
+          <tr>
+            <td>Header</td>
+            <td>Value</td>
+          </tr>
+        </thead>
+        <tbody>
+
+          {% for header in gw['headers'] %}
+          <tr>
+            <td>{{ header.key }}</td>
+            <td style="word-wrap: break-word;min-width: 160px;max-width: 260px;">{{ header.value }}</td>
+          </tr>
+          
+          {% endfor %}
+        
+        </tbody>
+      </table>
+    
+      <p class="h6">SSL DNS Names: </p>
+      <ul>
+        {% if 'ssl_certificate' in gw %}
+        {% if 'peer_certificates' in gw.ssl_certificate and gw.ssl_certificate.peer_certificates is not none %}
+        {% for cert in gw.ssl_certificate.peer_certificates %}
+        {% if cert is not none and cert.dns_names is not none %}
+        
+        {% for name in cert.dns_names %}
+        
+        <li>
+          {{ name }}
+        </li>
+        {% endfor %}{% endif %}{% endfor %}{% endif %}{% endif %}
+      </ul>
+    </div>
+  </div>
+ </div>
+
+</div>
+<br />
+{% endfor %}
+{% endfor %}
