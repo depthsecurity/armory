@@ -36,4 +36,5 @@ verify_ssl = true
   mysqlclient = "*"
   lxml = "*"
   termcolor = "*"
+  jinja2 = "*"
 colorama = "*"
