@@ -77,7 +77,10 @@ class Report(ReportTemplate):
                                 status_count[r['status']] = 1
                             status_count[r['status']] += 1
                             if status_count[r['status']] < 11:
-                                status[r['status']][r['input']] = r['words']
+                                if type(r['input']) == dict and r['input'].get('FUZZ', 1234) != 1234:
+                                    status[r['status']][r['input']['FUZZ']] = r['words']
+                                else:
+                                    status[r['status']][r['input']] = r['words']
         
 
         if args.include_gowitness:
