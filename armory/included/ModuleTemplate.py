@@ -10,9 +10,9 @@ import argparse
 import sys
 
 if sys.version_info[0] < 3:
-    from subprocess32 import Popen
+    from subprocess32 import Popen, STDOUT
 else:
-    from subprocess import Popen
+    from subprocess import Popen, STDOUT
 
 
 class ModuleTemplate(object):
@@ -299,10 +299,10 @@ class ToolTemplateNoOutput(ToolTemplate):
                     self.process_output([targets[cmds.index(i)]])
                 self.post_run(args)
             if targets and args.no_binary:
-                print("Ran the no binary options")
+                
                 self.process_output(targets)
 
-            print("Reached end")
+            
 
 
 def run_cmd(cmd):
@@ -341,7 +341,7 @@ def run_cmd_noout(cmd_data):
     f = open(output, 'w')
     if timeout:
         
-        process = Popen(c, stdout=f)
+        process = Popen(c, stdout=f, stderr=STDOUT)
         while time.time() < current_time + timeout and process.poll() is None:
             time.sleep(5)
         if process.poll() is None:
@@ -353,6 +353,6 @@ def run_cmd_noout(cmd_data):
             process.terminate()
 
     else:
-        Popen(c, stdout=f).wait()
+        Popen(c, stdout=f, stderr=STDOUT).wait()
     f.close()
     return cmd_data
