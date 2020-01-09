@@ -24,7 +24,7 @@ RUN gem install aquatone
 RUN go get github.com/OJ/gobuster
 RUN ln -s /root/go/bin/gobuster /usr/local/bin/gobuster
 RUN go get github.com/hakluke/hakrawler
-RUN ls -s /root/go/bin/hakrawler /usr/local/bin/hakrawler
+RUN ln -s /root/go/bin/hakrawler /usr/local/bin/hakrawler
 RUN go get github.com/sensepost/gowitness
 RUN ln -s /root/go/bin/gowitness /usr/local/bin/gowitness
 RUN go get github.com/projectdiscovery/subfinder/cmd/subfinder
@@ -86,7 +86,7 @@ RUN make install
 
 WORKDIR /opt/src
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision19
+RUN touch /tmp/revision20
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
 CMD ["echo", "Installing Armory"]
