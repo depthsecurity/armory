@@ -32,17 +32,7 @@ class Module(ToolTemplate):
             action="store_true",
         )
         self.options.add_argument("-f", "--import_file", help="Import URLs from file")
-        self.options.add_argument(
-            "--group_size",
-            help="How many hosts per group (default all urls in same group)",
-            type=int,
-            default=0,
-        )
-        self.options.add_argument(
-            "--rescan",
-            help="Rerun gowitness on systems that have already been processed.",
-            action="store_true",
-        )
+
 
     def get_targets(self, args):
 
