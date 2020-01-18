@@ -47,10 +47,8 @@ RUN make install
 RUN ln -s /opt/src/nikto/program /opt/nikto
 RUN ln -s /opt/nikto/nikto.pl /usr/local/bin/nikto
 WORKDIR /opt/src/pymeta
-RUN chmod +x setup.sh
-RUN ./setup.sh
-RUN chmod +x pymeta.py
-RUN ln -s /opt/src/pymeta/pymeta.py /usr/local/bin/pymeta
+RUN python3 setup.py install
+# RUN ln -s /opt/src/pymeta/pymeta.py /usr/local/bin/pymeta
 WORKDIR /opt/src/sslscan
 RUN apt-get build-dep openssl -y
 RUN make static
