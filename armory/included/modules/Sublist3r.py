@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 from armory.database.repositories import BaseDomainRepository, DomainRepository
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_error
+from armory.included.ModuleTemplate import ToolTemplate
+from armory.included.utilities.color_display import display_error
 import os
 
 
@@ -91,12 +91,13 @@ class Module(ToolTemplate):
             if os.path.isfile(output_path):
                 data = open(output_path).read().split("\n")
                 for d in data:
-
-                    new_domain = d.split(":")[0].lower()
-                    if new_domain:
-                        created, subdomain = self.Domain.find_or_create(
-                            domain=new_domain
-                        )
+                    for ds in d.split('<BR>'):  # Sublist3r is spitting out <BR>s now...
+                        if ds:
+                            new_domain = ds.split(":")[0].lower()
+                            if new_domain:
+                                created, subdomain = self.Domain.find_or_create(
+                                    domain=new_domain
+                                )
             else:
                 display_error("{} not found.".format(output_path))
                 next
