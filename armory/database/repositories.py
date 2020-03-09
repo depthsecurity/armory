@@ -363,7 +363,7 @@ class CIDRRepository(BaseRepository):
                     except Exception as e:
                         display_error("Error trying to resolve whois: {}".format(e))
                         res = {}
-                if "nets" in res.keys():
+                if res.get('nets', []):
                     break
                 else:
                     display_warning(
