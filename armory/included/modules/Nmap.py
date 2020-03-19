@@ -79,14 +79,13 @@ class Module(ToolTemplate):
         )
         self.options.add_argument(
             "--filter_ports",
-            help="Comma separated list of protoPort to filter out of results. Useful if firewall returns specific ports open on every host. Ex: t80,u5060"
+            help="Comma separated list of protoPort to filter out of results. Useful if firewall returns specific ports open on every host. Ex: t80,u5060",
         )
 
         self.options.set_defaults(timeout=None)
         self.options.add_argument(
             "--import_file", help="Import results from an Nmap XML file."
         )
-
 
     def get_targets(self, args):
 
@@ -137,12 +136,14 @@ class Module(ToolTemplate):
 
         data = []
         if args.ssl_cert_mode:
-            ports = self.Port.all(service_name='https')
+            ports = self.Port.all(service_name="https")
 
             data = list(set([i.ip_address.ip_address for i in ports]))
-            
+
             port_numbers = list(set([str(i.port_number) for i in ports]))
-            args.tool_args += " -sV -p {} --script ssl-cert ".format(','.join(port_numbers))
+            args.tool_args += " -sV -p {} --script ssl-cert ".format(
+                ",".join(port_numbers)
+            )
 
         else:
 
@@ -231,7 +232,7 @@ class Module(ToolTemplate):
             hosts = root.findall("host")
 
         except Exception as e:
-            print("Error: {}" % e)
+            print("Error: {}".format(e))
             print(nFile + " doesn't exist somehow...skipping")
             return
 
@@ -261,7 +262,9 @@ class Module(ToolTemplate):
                     hostPort = port.get("portid")
                     portProto = port.get("protocol")
                     # pdb.set_trace()
-                    if not self.args.filter_ports or int(hostPort) not in [int(p) for p in self.args.filter_ports.split(',')]:
+                    if not self.args.filter_ports or int(hostPort) not in [
+                        int(p) for p in self.args.filter_ports.split(",")
+                    ]:
                         created, db_port = self.Port.find_or_create(
                             port_number=hostPort,
                             status=portState,
