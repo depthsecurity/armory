@@ -1,8 +1,11 @@
-FROM debian:unstable-slim
+FROM debian:testing-slim
 MAINTAINER dlawson@depthsecurity.com
 RUN echo "deb-src http://deb.debian.org/debian bullseye main" >> /etc/apt/sources.list
 CMD ["echo", "Installing Debian packages needed."]
-RUN apt update && apt install -y python2 python3 git python3-pip python-pip-whl libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium xclip libpq-dev unixodbc-dev
+RUN apt update && apt install -y python2 python3 git python-pip python3-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium xclip libpq-dev unixodbc-dev 
+#WORKDIR /tmp
+#RUN wget https://bootstrap.pypa.io/get-pip.py
+#RUN /usr/bin/python2 get-pip.py
 WORKDIR /opt/src
 CMD ["echo", "Cloning various repos"]
 RUN git clone https://github.com/joaomatosf/jexboss.git
@@ -39,7 +42,7 @@ WORKDIR /opt/src/changeme
 RUN pip install -r requirements.txt
 RUN ln -s /opt/src/changeme/changeme.py /usr/local/bin/changeme.py
 WORKDIR /opt/src/spoofcheck
-RUN pip2 install -r requirements.txt
+RUN pip install -r requirements.txt
 RUN ln -s /opt/src/spoofcheck/spoofcheck.py /usr/local/bin/spoofcheck.py
 WORKDIR /opt/src/masscan
 RUN make -j
