@@ -2,7 +2,7 @@ FROM debian:unstable-slim
 MAINTAINER dlawson@depthsecurity.com
 RUN echo "deb-src http://deb.debian.org/debian bullseye main" >> /etc/apt/sources.list
 CMD ["echo", "Installing Debian packages needed."]
-RUN apt update && apt install -y python2 python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium xclip libpq-dev unixodbc-dev
+RUN apt update && apt install -y python2 python3 git python3-pip python-pip-whl libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium xclip libpq-dev unixodbc-dev
 WORKDIR /opt/src
 CMD ["echo", "Cloning various repos"]
 RUN git clone https://github.com/joaomatosf/jexboss.git
