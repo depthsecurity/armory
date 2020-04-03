@@ -86,7 +86,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " -o {output} -d {target} -csv -f full "
+        cmd = self.binary + " -o {output} -d {target} -f full "
         if args.tool_args:
             cmd += args.tool_args
         return cmd

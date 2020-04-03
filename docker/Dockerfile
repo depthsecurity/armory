@@ -87,7 +87,7 @@ RUN make install
 
 WORKDIR /opt/src
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision21
+RUN touch /tmp/revision22
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
 CMD ["echo", "Installing Armory"]
