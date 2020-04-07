@@ -11,7 +11,7 @@ with open(path.join(here, "Readme.md"), encoding="UTF-8") as f:
 
 setup(
     name="depth-armory",
-    version="1.0.0",
+    version="2.0.0",
     description=(
         "Armory is a tool meant to take in a lot of external and discovery "
         "data from a lot of tools, add it to a database and correlate all of"
@@ -39,6 +39,8 @@ setup(
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     # Keywords that the project relates to.
     keywords="pentesting security",
@@ -69,6 +71,8 @@ setup(
         "IPython; python_version > '3.1'",
 	    "python-docx",
         "termcolor",
+        "django",
+        "django-picklefield",
     ],
     test_suite="nose.collector",
     tests_require=["nose"],
@@ -84,8 +88,8 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         "console_scripts": [
-            "armory=armory.armory:main",
-            "armory-shell=armory.shell:main",
+            "armory2=armory2.armory_cmd:main",
+            "armory2-manage=armory2.manage:main",
         ]
     },
 )

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from .tools.utilities import get_all_modules, get_all_reports, list_module_options
+from armory2.armory_main.tools.utilities import get_all_modules, get_all_reports, list_module_options
 
 
 import json

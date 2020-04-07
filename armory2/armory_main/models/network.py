@@ -4,8 +4,8 @@ from .base_model import BaseModel
 import pdb
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
-from armory_main.included.utilities.color_display import display, display_warning, display_new, display_error
-from armory_main.included.utilities.network_tools import validate_ip, get_ips, private_subnets
+from armory2.armory_main.included.utilities.color_display import display, display_warning, display_new, display_error
+from armory2.armory_main.included.utilities.network_tools import validate_ip, get_ips, private_subnets
 from netaddr import IPNetwork, IPAddress
 from ipwhois import IPWhois
 
@@ -19,7 +19,7 @@ class BaseDomain(BaseModel):
 class CIDR(BaseModel):
 
     name = models.CharField(max_length=44, unique=True)
-    org_name = models.CharField(max_length=256)
+    org_name = models.CharField(max_length=256, unique=False)
 
     def __str__(self):
         return "{}: {}".format(self.name, self.org_name)
@@ -60,6 +60,10 @@ class Port(BaseModel):
         
 # pre_save.connect(Domain.pre_save, sender=Domain)
 
+@receiver(pre_save, sender=BaseDomain)
+def pre_save_basedomain(sender, instance, *args, **kwargs):
+    if not instance.id:
+        display_new("New base domain added: {}  Active Scope: {}    Passive Scope: {}".format(instance.name, instance.active_scope, instance.passive_scope))
 
 @receiver(pre_save, sender=Domain)
 def pre_save_domain(sender, instance, *args, **kwargs):
@@ -92,17 +96,19 @@ def post_save_domain(sender, instance, created, *args, **kwargs):
         for i in ips:
             ip, created = IPAddress.objects.get_or_create(ip_address=i)
 
+            
             if ip.active_scope or instance.active_scope:
                 instance.active_scope = True
                 ip.active_scope = True
-            
+                                        
             if instance.passive_scope or ip.passive_scope:
                 instance.passive_scope = True
                 ip.passive_scope = True
 
-
+            display_new("IP and Domain {}/{} scope updated to:  Active Scope: {}     Passive Scope: {}".format(i, domain_name, ip.active_scope, ip.passive_scope))
             ip.save()
             instance.ip_addresses.add(ip)
+            instance.save()
 
 
 @receiver(pre_save, sender=IPAddress)
@@ -131,62 +137,59 @@ def pre_save_ip(sender, instance, *args, **kwargs):
         try:
             cidr = instance.cidr
         except CIDR.DoesNotExist:
-            cidr = False
-            for p in private_subnets:
-                if instance.ip_address in p:
-                    cidr, created = CIDR.objects.get_or_create(name=str(p))
-                    if created:
-                        cidr.org_name = "Non-Public Subnet"
-                        cidr.save()
-                    instance.cidr = cidr
-                    break
-
-            if not cidr:
-                # try:
-                #     res = IPWhois(instance.ip_address).lookup_whois()
-                # except Exception as e:
-                #     display_error("Error trying to resolve whois for {}: {}".format(instance.ip, e))
-
-
-                while True:
-                    try:
-                        res = IPWhois(instance.ip_address).lookup_whois(get_referral=True)
-                    except Exception:
-                        try:
-                            res = IPWhois(instance.ip_address).lookup_whois()
-                        except Exception as e:
-                            display_error("Error trying to resolve whois: {}".format(e))
-                            res = {}
-                    if res.get('nets', []):
-                        break
-                    else:
-                        display_warning(
-                            "The networks didn't populate from whois. Defaulting to a /24."
-                        )
-                        # again = raw_input("Would you like to try again? [Y/n]").lower()
-                        # if again == 'y':
-                        #     time.sleep(5)
-                        # else:
-                        res = {'nets': [{'cidr': '{}.0/24'.format('.'.join(ip_str.split('.')[:3])), 'description': 'Whois failed to resolve.'}]}
-                        break
-                cidr_data = []
-
-                for net in res['nets']:
-                    for cd in net['cidr'].split(', '):
-                        
-                        cidr_data.append([len(IPNetwork(cd)), cd, net['description']])
-
-                cidr_data.sort()
-
-                cidr, created = CIDR.objects.get_or_create(name=cidr_data[0][1])
-                if created:
-                    cidr.org_name = cidr_data[0][2]
-
-                    cidr.save()
-
-                instance.cidr = cidr
+            cidr_data, org_name = get_cidr_info(instance.ip_address)
+            cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':'org_name'})
+            instance.cidr = cidr
         display_new("New IP added: {}  Active Scope: {}    Passive Scope: {}".format(instance.ip_address, instance.active_scope, instance.passive_scope))
         
 
+@receiver(pre_save, sender=CIDR)
+def pre_save_cidr(sender, instance, *args, **kwargs):
+    if not instance.id and not instance.org_name:
+        cidr_data, org_name = get_cidr_info(instance.name.split('/')[0])
+
+        instance.org_name = org_name
     
+    if not instance.id:
+        display_new("New CIDR added: {} - {} Active Scope: {}    Passive Scope: {}".format(instance.name, instance.org_name, instance.active_scope, instance.passive_scope))
+
+def get_cidr_info(ip_address):
+    
+    for p in private_subnets:
+        if ip_address in p:
+            return str(p), 'Non-Public Subnet'
+
+
+    
+    
+    try:
+        res = IPWhois(ip_address).lookup_whois(get_referral=True)
+    except Exception:
+        try:
+            res = IPWhois(ip_address).lookup_whois()
+        except Exception as e:
+            display_error("Error trying to resolve whois: {}".format(e))
+            res = {}
+    if not res.get('nets', []):
         
+        display_warning(
+            "The networks didn't populate from whois. Defaulting to a /24."
+        )
+        # again = raw_input("Would you like to try again? [Y/n]").lower()
+        # if again == 'y':
+        #     time.sleep(5)
+        # else:
+    
+        return '{}.0/24'.format('.'.join(ip_str.split('.')[:3])), "Whois failed to resolve."
+        
+    cidr_data = []
+
+    for net in res['nets']:
+        for cd in net['cidr'].split(', '):
+            
+            cidr_data.append([len(IPNetwork(cd)), cd, net['description']])
+
+    cidr_data.sort()
+    return  cidr_data[0][1], cidr_data[0][2]
+    
+    

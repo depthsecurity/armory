@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
+import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'armory_main'
+    'armory2.armory_main'
 ]
 
 MIDDLEWARE = [
@@ -50,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'armory2.urls'
+ROOT_URLCONF = 'armory2.armory2.urls'
 
 TEMPLATES = [
     {
@@ -68,18 +69,14 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'armory2.wsgi.application'
+WSGI_APPLICATION = 'armory2.armory2.wsgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
+# DATABASE MOVED TO ARMORY settings.py
+
 
 
 # Password validation
@@ -122,6 +119,31 @@ STATIC_URL = '/static/'
 
 # Armory specific settings
 
-BASE_PATH = '/home/dlawson/recon/payzer'
-CUSTOM_MODULES = '/home/dlawson/src/armory_custom/modules'
-CUSTOM_REPORTS = '/home/dlawson/src/armory_custom/reports'
+if os.getenv("ARMORY_HOME"):
+    ARMORY_CONFIG_FOLDER = os.getenv("ARMORY_HOME")
+else:
+    ARMORY_CONFIG_FOLDER = os.path.join(os.getenv("HOME"), ".armory")
+
+if os.getenv("ARMORY_CONFIG"):
+    ARMORY_CONFIG_FILE = os.getenv("ARMORY_CONFIG")
+else:
+    ARMORY_CONFIG_FILE = "settings.py"
+
+
+if sys.version_info.major == 2:
+    import imp
+
+    module = imp.load_source(ARMORY_CONFIG_FOLDER, os.path.join(ARMORY_CONFIG_FOLDER, ARMORY_CONFIG_FILE))
+else:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        ARMORY_CONFIG_FOLDER, os.path.join(ARMORY_CONFIG_FOLDER, ARMORY_CONFIG_FILE)
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    
+DATABASES = module.DATABASES
+
+ARMORY_CONFIG = module.ARMORY_CONFIG
+

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from multiprocessing import Pool as ThreadPool
-from armory_main.included.utilities.color_display import display, display_error, display_purple
-from armory_main.included.utilities import which
+from armory2.armory_main.included.utilities.color_display import display, display_error, display_purple
+from armory2.armory_main.included.utilities import which
 import shlex
 import os
 import time

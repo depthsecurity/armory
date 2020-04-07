@@ -1,5 +1,5 @@
 
-import armory_main
+import armory2.armory_main
 from django.conf import settings
 import os
 import pkgutil
@@ -7,7 +7,7 @@ import sys
 import argcomplete, argparse
 import pdb
 
-PATH = os.path.dirname(armory_main.__file__)
+PATH = os.path.dirname(armory2.armory_main.__file__)
 
 def get_all_modules(path=False):
     '''

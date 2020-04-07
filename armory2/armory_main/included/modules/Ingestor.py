@@ -1,16 +1,13 @@
 #!/usr/bin/python
-from armory.database.repositories import (
-    DomainRepository,
-    IPRepository,
-    CIDRRepository,
-    BaseDomainRepository,
-    ScopeCIDRRepository,
-)
-from netaddr import IPNetwork, IPAddress, iprange_to_cidrs
-from ..ModuleTemplate import ModuleTemplate
-from ..utilities.color_display import display, display_new, display_error
+from armory2.armory_main.models import BaseDomain, CIDR, IPAddress, Domain
+
+from netaddr import IPNetwork, IPAddress as nIPAddress, iprange_to_cidrs
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
+from armory2.armory_main.included.utilities.color_display import display, display_new, display_error
 import dns.resolver
 import string
+
+import pdb
 
 
 def check_string(s):
@@ -30,13 +27,13 @@ class Module(ModuleTemplate):
 
     name = "Ingestor"
 
-    def __init__(self, db):
-        self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
-        self.CIDR = CIDRRepository(db, self.name)
-        self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
+    # def __init__(self, db):
+    #     self.db = db
+    #     self.BaseDomain = BaseDomainRepository(db, self.name)
+    #     self.Domain = DomainRepository(db, self.name)
+    #     self.IPAddress = IPRepository(db, self.name)
+    #     self.CIDR = CIDRRepository(db, self.name)
+    #     self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -93,7 +90,7 @@ class Module(ModuleTemplate):
 
     def run(self, args):
 
-        self.in_scope = args.active
+        self.active_scope = args.active
         self.passive_scope = args.passive
 
         if args.descope:
@@ -118,7 +115,7 @@ class Module(ModuleTemplate):
 
                         else:
                             self.process_ip(line.strip(), force_scope=True)
-                        self.Domain.commit()
+                        
             except IOError:
 
                 if "/" in args.import_ips or "-" in args.import_ips:
@@ -126,7 +123,7 @@ class Module(ModuleTemplate):
 
                 else:
                     self.process_ip(args.import_ips.strip(), force_scope=True)
-                self.Domain.commit()
+                
 
         if args.import_domains:
             try:
@@ -134,18 +131,18 @@ class Module(ModuleTemplate):
                 for line in domains:
                     if line.strip():
                         self.process_domain(line.strip())
-                        self.Domain.commit()
+                
             except IOError:
                 self.process_domain(args.import_domains.strip())
-                self.Domain.commit()
+                
 
         if args.scope_base_domains:
-            base_domains = self.BaseDomain.all(in_scope=False, passive_scope=False)
+            base_domains = self.BaseDomain.all(active_scope=False, passive_scope=False)
 
             for bd in base_domains:
                 self.reclassify_domain(bd)
 
-            self.BaseDomain.commit()
+            
 
     def get_domain_ips(self, domain):
         ips = []
@@ -159,61 +156,55 @@ class Module(ModuleTemplate):
 
     def process_domain(self, domain_str):
 
-        created, domain = self.Domain.find_or_create(
-            only_tool=True,
-            domain=domain_str,
-            in_scope=self.in_scope,
-            passive_scope=self.passive_scope,
+        domain, created = Domain.objects.get_or_create(
+            
+            name=domain_str, defaults = {'active_scope':self.active_scope, 'passive_scope':self.passive_scope}
         )
         if not created:
             if (
-                domain.in_scope != self.in_scope
+                domain.active_scope != self.active_scope
                 or domain.passive_scope != self.passive_scope  # noqa: W503
             ):
                 display(
                     "Domain %s already exists with different scoping. Updating to Active Scope: %s Passive Scope: %s"
-                    % (domain_str, self.in_scope, self.passive_scope)
+                    % (domain_str, self.active_scope, self.passive_scope)
                 )
 
-                domain.in_scope = self.in_scope
+                domain.active_scope = self.active_scope
                 domain.passive_scope = self.passive_scope
-                domain.update()
+                domain.save()
 
-                if domain.base_domain.domain == domain.domain:
+                if domain.basedomain.name == domain.name:
                     display("Name also matches a base domain. Updating that as well.")
-                    domain.base_domain.in_scope = self.in_scope
-                    domain.base_domain.passive_scope = self.passive_scope
-                    domain.base_domain.update()
+                    domain.basedomain.active_scope = self.active_scope
+                    domain.basedomain.passive_scope = self.passive_scope
+                    domain.basedomain.save()
 
     def process_ip(self, ip_str, force_scope=True):
-
-        created, ip = self.IPAddress.find_or_create(
-            only_tool=True,
-            ip_address=ip_str,
-            in_scope=self.in_scope,
-            passive_scope=self.passive_scope,
+        ip, created = IPAddress.objects.get_or_create(
+            ip_address=ip_str, defaults={'active_scope':self.active_scope,
+                        'passive_scope':self.passive_scope}
         )
         if not created:
-            if ip.in_scope != self.in_scope or ip.passive_scope != self.passive_scope:
+            if ip.active_scope != self.active_scope or ip.passive_scope != self.passive_scope:
                 display(
                     "IP %s already exists with different scoping. Updating to Active Scope: %s Passive Scope: %s"
-                    % (ip_str, self.in_scope, self.passive_scope)
+                    % (ip_str, self.active_scope, self.passive_scope)
                 )
 
-                ip.in_scope = self.in_scope
+                ip.active_scope = self.active_scope
                 ip.passive_scope = self.passive_scope
-                ip.update()
+                ip.save()
         return ip
 
-    def process_cidr(self, line, label):
+    def process_cidr(self, line, label=None):
         display("Processing %s" % line)
         if "/" in line:
-            created, cidr = self.ScopeCIDR.find_or_create(cidr=line.strip(), label=label)
+            # pdb.set_trace()
+            cidr, created = CIDR.objects.get_or_create(name=line.strip(), defaults={'org_name':label, 'active_scope': True, 'passive_scope': True})
             if created:
-                display_new("Adding %s to scoped CIDRs in database" % line.strip())
-                cidr.in_scope = True
-                cidr.update()
-
+                display_new("Adding %s to Active CIDRs in database" % line.strip())
+                
         elif "-" in line:
             start_ip, end_ip = line.strip().replace(" ", "").split("-")
             if "." not in end_ip:
@@ -223,67 +214,64 @@ class Module(ModuleTemplate):
 
             for c in cidrs:
 
-                created, cidr = self.ScopeCIDR.find_or_create(cidr=str(c))
+                cidr, created = CIDR.objects.get_or_create(name=str(c), defaults={'active_scope': True, 'passive_scope': True})
                 if created:
-                    display_new("Adding %s to scoped CIDRs in database" % line.strip())
-                    cidr.in_scope = True
-                    cidr.update()
-
+                    display_new("Adding %s to Active CIDRs in database" % line.strip())
+                    
     def reclassify_domain(self, bd):
         if bd.meta.get("whois", False):
-            display_new("Whois data found for {}".format(bd.domain))
+            display_new("Whois data found for {}".format(bd.name))
             print(bd.meta["whois"])
             res = input("Should this domain be scoped (A)ctive, (P)assive, or (N)ot? [a/p/N] ")
             if res.lower() == "a":
-                bd.in_scope = True
+                bd.active_scope = True
                 bd.passive_scope = True
 
             elif res.lower() == "p":
-                bd.in_scope = False
+                bd.active_scope = False
                 bd.passive_scope = True
             else:
-                bd.in_scope = False
+                bd.active_scope = False
                 bd.passive_scope = False
             bd.save()
         else:
             display_error(
                 "Unfortunately, there is no whois information for {}. Please populate it using the Whois module".format(
-                    bd.domain
+                    bd.name
                 )
             )
 
     def descope_ip(self, ip):
-        ip = self.IPAddress.all(ip_address=ip)
+        ip = IPAddress.objects.get(ip_address=ip)
         if ip:
             for i in ip:
                 display("Removing IP {} from scope".format(i.ip_address))
-                i.in_scope = False
+                i.active_scope = False
                 i.passive_scope = False
-                i.update()
+                i.save()
                 for d in i.domains:
-                    in_scope_ips = [
+                    active_scope_ips = [
                         ipa
                         for ipa in d.ip_addresses
-                        if ipa.in_scope or ipa.passive_scope
+                        if ipa.active_scope or ipa.passive_scope
                     ]
-                    if not in_scope_ips:
+                    if not active_scope_ips:
                         display(
                             "Domain {} has no more scoped IPs. Removing from scope.".format(
-                                d.domain
+                                d.name
                             )
                         )
-                        d.in_scope = False
+                        d.active_scope = False
                         d.passive_scope = False
-            self.IPAddress.commit()
+            
 
     def descope_cidr(self, cidr):
-        CIDR = self.ScopeCIDR.all(cidr=cidr)
-        if CIDR:
-            for c in CIDR:
-                display("Removing {} from ScopeCIDRs".format(c.cidr))
-                c.delete()
+        c = CIDR.objects.get(name=cidr)
+        if c:
+            display("Unscoping {} from CIDRs".format(c.name))
+            c.active_scope = False
         cnet = IPNetwork(cidr)
-        for ip in self.IPAddress.all():
-            if IPAddress(ip.ip_address) in cnet:
+        for ip in IPAddress.objects.get(active_scope=True):
+            if nIPAddress(ip.ip_address) in cnet:
 
                 self.descope_ip(ip.ip_address)
