@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory_main.included.ModuleTemplate import ModuleTemplate
+from ..ModuleTemplate import ModuleTemplate
 
 
 class Module(ModuleTemplate):

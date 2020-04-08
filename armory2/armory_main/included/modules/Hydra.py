@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory.database.repositories import DomainRepository, IPRepository, PortRepository
+from armory2.armory_main.models import Domain, IP, Port
 from ..ModuleTemplate import ToolTemplate
 import os
 
@@ -11,9 +11,9 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.Domain = DomainRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
-        self.Port = PortRepository(db, self.name)
+        self.Domain = Domain(db, self.name)
+        self.IPAddress = IP(db, self.name)
+        self.Port = Port(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -117,11 +117,11 @@ class Module(ToolTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(output_path):

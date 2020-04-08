@@ -108,25 +108,26 @@ class ToolTemplate(ModuleTemplate):
         # self.options.add_argument('--profile1', help="Use first profile options")
 
     def run(self, args):
-        if args.tool_args:
-            args.tool_args = " ".join(args.tool_args)
+        self.args = args
+        if self.args.tool_args:
+            self.args.tool_args = " ".join(self.args.tool_args)
         else:
-            args.tool_args = ""
+            self.args.tool_args = ""
 
-        if args.profile1:
-            args.tool_args += " " + args.profile1_data
+        if self.args.profile1:
+            self.args.tool_args += " " + self.args.profile1_data
 
-        elif args.profile2:
-            args.tool_args += " " + args.profile2_data
-        elif args.profile3:
-            args.tool_args += " " + args.profile3_data
-        elif args.profile4:
-            args.tool_args += " " + args.profile4_data
+        elif self.args.profile2:
+            self.args.tool_args += " " + self.args.profile2_data
+        elif self.args.profile3:
+            self.args.tool_args += " " + self.args.profile3_data
+        elif self.args.profile4:
+            self.args.tool_args += " " + self.args.profile4_data
 
-        if not args.binary:
+        if not self.args.binary:
             self.binary = which.run(self.binary_name)
         else:
-            self.binary = which.run(args.binary)
+            self.binary = which.run(self.args.binary)
 
         if not self.binary:
             print(
@@ -135,28 +136,28 @@ class ToolTemplate(ModuleTemplate):
             )
 
         else:
-            if args.timeout and args.timeout != "0":
-                timeout = int(args.timeout)
+            if self.args.timeout and self.args.timeout != "0":
+                timeout = int(self.args.timeout)
             else:
                 timeout = None
             # Currently not used, therefor to please flake8 commenting out.
-            # if args.hard_timeout and args.hard_timeout != "0":
-            #    hard_timeout = int(args.hard_timeout)
+            # if self.args.hard_timeout and self.args.hard_timeout != "0":
+            #    hard_timeout = int(self.args.hard_timeout)
             # else:
             #    hard_timeout = None
 
-            targets = self.get_targets(args)
+            targets = self.get_targets(self.args)
 
-            if not args.no_binary and targets:
-                cmd = self.build_cmd(args).strip()
+            if not self.args.no_binary and targets:
+                cmd = self.build_cmd(self.args).strip()
 
                 cmds = [shlex.split(cmd.format(**t)) + [timeout] for t in targets]
 
                 # if hard_timeout:
                 #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
 
-                self.pre_run(args)
-                pool = ThreadPool(int(args.threads))
+                self.pre_run(self.args)
+                pool = ThreadPool(int(self.args.threads))
 
                 total_commands = len(cmds)
                 done = 1
@@ -166,8 +167,8 @@ class ToolTemplate(ModuleTemplate):
                     # display("DEBUG: i: {}".format(i))
                     # display("DEBUG: target: {}".format(targets[cmds.index(i)]))
                     self.process_output([targets[cmds.index(i)]])
-                self.post_run(args)
-            if targets and args.no_binary:
+                self.post_run(self.args)
+            if targets and self.args.no_binary:
                 self.process_output(targets)
 
     def get_targets(self, args):

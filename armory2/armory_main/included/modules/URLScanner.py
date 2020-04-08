@@ -76,13 +76,13 @@ class Module(ModuleTemplate):
 
         if args.output:
             f = open(
-                os.path.join(self.base_config["PROJECT"]["base_path"], args.output), "w"
+                os.path.join(self.base_config["ARMORY_BASE_PATH"], args.output), "w"
             )
 
         else:
             f = open(
                 os.path.join(
-                    self.base_config["PROJECT"]["base_path"],
+                    self.base_config["ARMORY_BASE_PATH"],
                     "UrlScanner-%s" % time.strftime("%Y%m%d-%H%M%S"),
                 ),
                 "w",

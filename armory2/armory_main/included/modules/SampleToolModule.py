@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 
 
 class Module(ToolTemplate):

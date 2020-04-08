@@ -1,16 +1,16 @@
-from armory.included.ModuleTemplate import ModuleTemplate
-from armory.database.repositories import (
-    BaseDomainRepository,
-    DomainRepository,
-    IPRepository,
-    PortRepository,
-    VulnRepository,
-    CVERepository,
-    ScopeCIDRRepository,
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
+from armory2.armory_main.models import (
+    BaseDomain,
+    Domain,
+    IP,
+    Port,
+    Vuln,
+    CVE,
+    ScopeCIDR,
 )
-from armory.included.utilities.color_display import display, display_new, display_error
-from armory.included.utilities.nessus import NessusRequest
-from armory.included.utilities.sort_ranges import merge_ranges
+from armory2.armory_main.included.utilities.color_display import display, display_new, display_error
+from armory2.armory_main.included.utilities.nessus import NessusRequest
+from armory2.armory_main.included.utilities.sort_ranges import merge_ranges
 import json
 import os
 import requests
@@ -25,13 +25,13 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
-        self.Port = PortRepository(db, self.name)
-        self.Vulnerability = VulnRepository(db, self.name)
-        self.CVE = CVERepository(db, self.name)
-        self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.Domain = Domain(db, self.name)
+        self.IPAddress = IP(db, self.name)
+        self.Port = Port(db, self.name)
+        self.Vulnerability = Vuln(db, self.name)
+        self.CVE = CVE(db, self.name)
+        self.ScopeCIDR = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -138,11 +138,11 @@ class Module(ModuleTemplate):
 
                 if args.output_path[0] == "/":
                     output_path = os.path.join(
-                        self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                        self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
                     )
                 else:
                     output_path = os.path.join(
-                        self.base_config["PROJECT"]["base_path"], args.output_path
+                        self.base_config["ARMORY_BASE_PATH"], args.output_path
                     )
 
                 if not os.path.exists(output_path):
@@ -314,7 +314,7 @@ class Module(ModuleTemplate):
             else:
                 portName = svc_name
 
-            created, db_port = self.Port.find_or_create(
+            created, db_port = self.Port.objects.get_or_create(
                 port_number=port, status="open", proto=proto, ip_address_id=ip.id
             )
 
@@ -378,7 +378,7 @@ class Module(ModuleTemplate):
             references = [c.text for c in tag.findall("see_also")]
 
             if not self.Vulnerability.find(name=findingName):
-                created, db_vuln = self.Vulnerability.find_or_create(
+                created, db_vuln = self.Vulnerability.objects.get_or_create(
                     name=findingName,
                     severity=severity,
                     description=description,
@@ -448,7 +448,7 @@ class Module(ModuleTemplate):
                             cvss = None
 
                         if not self.CVE.find(name=cve):
-                            created, db_cve = self.CVE.find_or_create(
+                            created, db_cve = self.CVE.objects.get_or_create(
                                 name=cve,
                                 description=cveDescription,
                                 temporal_score=cvss,
@@ -495,10 +495,10 @@ class Module(ModuleTemplate):
                 else:
                     display("Gathering Nessus info for {}".format(hostIP))
 
-                created, ip = self.IPAddress.find_or_create(ip_address=hostIP)
+                created, ip = self.IPAddress.objects.get_or_create(ip_address=hostIP)
 
                 if hostname:
-                    created, domain = self.Domain.find_or_create(domain=hostname)
+                    created, domain = self.Domain.objects.get_or_create(domain=hostname)
 
                     if ip not in domain.ip_addresses:
                         ip.save()

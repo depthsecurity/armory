@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-from armory.included.ModuleTemplate import ModuleTemplate
-from armory.database.repositories import DomainRepository
-from armory.included.utilities import which
-from armory.included.utilities.color_display import display, display_error, display_new
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
+from armory2.armory_main.models import Domain
+from armory2.armory_main.included.utilities import which
+from armory2.armory_main.included.utilities.color_display import display, display_error, display_new
 import os
 import pdb
 import shlex
@@ -23,7 +23,7 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.Domains = DomainRepository(db, self.name)
+        self.Domains = Domain(db, self.name)
     
     def set_options(self):
         super(Module, self).set_options()
@@ -67,11 +67,11 @@ class Module(ModuleTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], 'output', args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], 'output', args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], 'output', args.output_path
+                self.base_config["ARMORY_BASE_PATH"], 'output', args.output_path
             )
 
         if not os.path.exists(output_path):
@@ -117,11 +117,11 @@ class Module(ModuleTemplate):
                     if cur_type == "domain":
 
                         if args.scope == "active":
-                            created, d = self.Domains.find_or_create(domain=r, in_scope=True, passive_scope=True)
+                            created, d = self.Domains.objects.get_or_create(domain=r, in_scope=True, passive_scope=True)
                         elif args.scope == "passive":
-                            created, d = self.Domains.find_or_create(domain=r, in_scope=False, passive_scope=True)
+                            created, d = self.Domains.objects.get_or_create(domain=r, in_scope=False, passive_scope=True)
                         else:
-                            created, d = self.Domains.find_or_create(domain=r, in_scope=False, passive_scope=False)
+                            created, d = self.Domains.objects.get_or_create(domain=r, in_scope=False, passive_scope=False)
                 
 
         self.Domains.commit()

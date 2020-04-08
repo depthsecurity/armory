@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory.database.repositories import IPRepository
+from armory2.armory_main.models import IP
 from ..ModuleTemplate import ToolTemplate
 from ..utilities.color_display import display_error
 from ..utilities import get_urls
@@ -20,7 +20,7 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.IPAddress = IPRepository(db, self.name)
+        self.IPAddress = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -32,17 +32,7 @@ class Module(ToolTemplate):
             action="store_true",
         )
         self.options.add_argument("-f", "--import_file", help="Import URLs from file")
-        self.options.add_argument(
-            "--group_size",
-            help="How many hosts per group (default all urls in same group)",
-            type=int,
-            default=0,
-        )
-        self.options.add_argument(
-            "--rescan",
-            help="Rerun gowitness on systems that have already been processed.",
-            action="store_true",
-        )
+
 
     def get_targets(self, args):
 
@@ -60,13 +50,13 @@ class Module(ToolTemplate):
         if targets:
             if args.output_path[0] == "/":
                 self.path = os.path.join(
-                    self.base_config["PROJECT"]["base_path"],
+                    self.base_config["ARMORY_BASE_PATH"],
                     args.output_path[1:],
                     timestamp,
                 )
             else:
                 self.path = os.path.join(
-                    self.base_config["PROJECT"]["base_path"],
+                    self.base_config["ARMORY_BASE_PATH"],
                     args.output_path,
                     timestamp,
                 )

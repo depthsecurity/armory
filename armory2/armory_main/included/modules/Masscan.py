@@ -1,11 +1,11 @@
-from armory.database.repositories import (
-    BaseDomainRepository,
-    DomainRepository,
-    IPRepository,
-    PortRepository,
-    ScopeCIDRRepository,
-    VulnRepository,
-    CVERepository,
+from armory2.armory_main.models import (
+    BaseDomain,
+    Domain,
+    IP,
+    Port,
+    ScopeCIDR,
+    Vuln,
+    CVE,
 )
 from netaddr import IPNetwork
 from ..ModuleTemplate import ToolTemplate
@@ -39,14 +39,14 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
-        self.Port = PortRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.Domain = Domain(db, self.name)
+        self.IPAddress = IP(db, self.name)
+        self.Port = Port(db, self.name)
 
-        self.Vulnerability = VulnRepository(db, self.name)
-        self.CVE = CVERepository(db, self.name)
-        self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
+        self.Vulnerability = Vuln(db, self.name)
+        self.CVE = CVE(db, self.name)
+        self.ScopeCIDR = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -89,14 +89,14 @@ class Module(ToolTemplate):
                     if check_if_ip(h):
                         targets.append(h)
                     else:
-                        created, domain = self.Domain.find_or_create(domain=h)
+                        created, domain = self.Domain.objects.get_or_create(domain=h)
                         targets += [i.ip_address for i in domain.ip_addresses]
 
             else:
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.find_or_create(domain=h)
+                    created, domain = self.Domain.objects.get_or_create(domain=h)
                     targets += [i.ip_address for i in domain.ip_addresses]
 
         if args.hosts_database:
@@ -117,7 +117,7 @@ class Module(ToolTemplate):
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.find_or_create(domain=h)
+                    created, domain = self.Domain.objects.get_or_create(domain=h)
                     targets += [i.ip_address for i in domain.ip_addresses]
 
         # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
@@ -131,11 +131,11 @@ class Module(ToolTemplate):
 
         if args.output_path[0] == "/":
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(self.path):
@@ -184,7 +184,7 @@ class Module(ToolTemplate):
         for host in hosts:
             hostIP = host.find("address").get("addr")
 
-            created, ip = self.IPAddress.find_or_create(ip_address=hostIP)
+            created, ip = self.IPAddress.objects.get_or_create(ip_address=hostIP)
 
             for hostname in host.findall("hostnames/hostname"):
                 hostname = hostname.get("name")
@@ -195,7 +195,7 @@ class Module(ToolTemplate):
                 # )  # attempt to not get PTR record
                 # if not reHostname:
 
-                created, domain = self.Domain.find_or_create(domain=hostname)
+                created, domain = self.Domain.objects.get_or_create(domain=hostname)
                 if ip not in domain.ip_addresses:
                     domain.ip_addresses.append(ip)
                     domain.save()
@@ -207,7 +207,7 @@ class Module(ToolTemplate):
                     hostPort = port.get("portid")
                     portProto = port.get("protocol")
 
-                    created, db_port = self.Port.find_or_create(
+                    created, db_port = self.Port.objects.get_or_create(
                         port_number=hostPort,
                         status=portState,
                         proto=portProto,

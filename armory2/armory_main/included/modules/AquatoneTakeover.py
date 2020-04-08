@@ -1,7 +1,7 @@
 #!/usr/bin/python
-from armory.database.repositories import BaseDomainRepository, DomainRepository
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display, display_error
+from armory2.armory_main.models import BaseDomain, Domain
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display, display_error
 import json
 import os
 import pdb
@@ -14,11 +14,6 @@ class Module(ToolTemplate):
     '''
     name = "Aquatone Takeover"
     binary_name = "aquatone-takeover"
-
-    def __init__(self, db):
-        self.db = db
-        self.Domain = DomainRepository(db, self.name)
-        self.BaseDomain = BaseDomainRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -46,16 +41,16 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                all_domains = self.BaseDomain.all(scope_type="passive")
+                all_domains = BaseDomain.get_set(scope_type="passive")
             else:
-                all_domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
+                all_domains = BaseDomain.get_set(tool=self.name, args=args.tool_args, scope_type="passive")
             for d in all_domains:
                 # We need to find all of the http/https ports and create the json file.
                 output_path = os.path.join(
-                    self.base_config["PROJECT"]["base_path"],
+                    self.base_config["ARMORY_BASE_PATH"],
                     "output",
                     "aquatone",
-                    d.domain,
+                    d.name,
                 )
                 if not os.path.exists(output_path):
                     os.makedirs(output_path)
@@ -65,15 +60,15 @@ class Module(ToolTemplate):
                 open_ports = []
                 urls = []
 
-                targets.append(d.domain)
+                targets.append(d.name)
 
-                for s in d.subdomains:
-                    name = s.domain
+                for s in d.domain_set.all():
+                    name = s.name
 
-                    for ip in s.ip_addresses:
+                    for ip in s.ip_addresses.all():
                         hosts_j[name] = ip.ip_address
                         port_list = []
-                        for p in ip.ports:
+                        for p in ip.port_set.all():
 
                             if "http" in p.service_name:
                                 hosts.append("{}.{}".format(name, ip.ip_address))
@@ -129,7 +124,7 @@ class Module(ToolTemplate):
         return cmd
 
     def pre_run(self, args):
-        output_path = os.path.join(self.base_config["PROJECT"]["base_path"], "output")
+        output_path = os.path.join(self.base_config["ARMORY_BASE_PATH"], "output")
 
         self.orig_home = os.environ["HOME"]
 
@@ -142,10 +137,10 @@ class Module(ToolTemplate):
         
         for cmd in cmds:
             
-            created, domain = self.BaseDomain.find_or_create(domain=cmd['target'])
-            domain.set_tool(self.name)
+            domain, created = BaseDomain.objects.get_or_create(name=cmd['target'])
+            domain.add_tool_run(tool=self.name, args=self.args.tool_args)
 
-        self.BaseDomain.commit()
+        
 
 
     def post_run(self, args):

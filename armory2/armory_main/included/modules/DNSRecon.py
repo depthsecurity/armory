@@ -1,11 +1,11 @@
-from armory.included.ModuleTemplate import ToolTemplate
-from armory.database.repositories import (
-    BaseDomainRepository,
-    DomainRepository,
-    ScopeCIDRRepository,
-    IPRepository,
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.models import (
+    BaseDomain,
+    Domain,
+    CIDR,
+    IPAddress,
 )
-from armory.included.utilities.color_display import display_error
+from armory2.armory_main.included.utilities.color_display import display_error
 import os
 import json
 
@@ -19,13 +19,6 @@ class Module(ToolTemplate):
 
     DNSRecon can be installed from https://github.com/darkoperator/dnsrecon
     """
-
-    def __init__(self, db):
-        self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -54,47 +47,46 @@ class Module(ToolTemplate):
 
         targets = []
         if args.domain:
-            created, domain = self.BaseDomain.find_or_create(
-                domain=args.domain, passive_scope=True
+            domain, created = BaseDomain.objects.get_or_create(
+                name=args.domain, defaults={'passive_scope':True}
             )
-            targets.append(domain.domain)
+            targets.append(domain.name)
 
         elif args.file:
             domains = open(args.file).read().split("\n")
             for d in domains:
                 if d:
-                    created, domain = self.BaseDomain.find_or_create(
-                        domain=d, passive_scope=True
+                    domain, created = BaseDomain.objects.get_or_create(
+                        name=d, defaults={'passive_scope':True}
                     )
-                    targets.append(domain.domain)
-
+                    targets.append(domain.name)
         elif args.import_database:
             if args.rescan:
-                domains = self.BaseDomain.all(scope_type="passive")
+                domains = BaseDomain.get_set(scope_type="passive")
             else:
-                domains = self.BaseDomain.all(scope_type="passive", tool=self.name)
+                domains = BaseDomain.get_set(scope_type="passive", tool=self.name, args=self.tool_args)
             for domain in domains:
-                targets.append(domain.domain)
+                targets.append(domain.name)
 
         elif args.range:
             targets.append(args.range)
 
         elif args.import_range:
             if args.rescan:
-                cidrs = self.ScopeCIDR.all()
+                cidrs = CIDR.get_set(scope_type="active")
             else:
-                cidrs = self.ScopeCIDR.all(tool=self.name)
+                cidrs = CIDR.get_set(scope_type="active", tool=self.name, args=self.tool_args)
 
             for cidr in cidrs:
-                targets.append(cidr.cidr)
+                targets.append(cidr.name)
 
         if args.output_path[0] == "/":
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(self.path):
@@ -138,7 +130,7 @@ class Module(ToolTemplate):
                 display_error("DnsRecon failed for {}".format(target))
                 continue
             if " -d " in res[0]["arguments"]:
-                created, dbrec = self.Domain.find_or_create(domain=target)
+                dbrec, created = self.Domain.objects.get_or_create(name=target)
                 dbrec.dns = res
                 dbrec.save()
 
@@ -159,15 +151,15 @@ class Module(ToolTemplate):
                     domain = record.get("mname").lower().replace("www.", "")
 
                 if domain:
-                    created, domain_obj = self.Domain.find_or_create(domain=domain)
+                    domain_obj, created = Domain.objects.get_or_create(name=domain)
                     if ip:
-                        created, ip_obj = self.IPAddress.find_or_create(ip_address=ip)
+                        ip_obj, created = IPAddress.objects.get_or_create(ip_address=ip)
                         domain_obj.ip_addresses.append(ip_obj)
                         domain_obj.save()
 
             if '/' in target:
-                created, bd = self.ScopeCIDR.find_or_create(cidr=target)
+                bd, created = CIDR.objects.get_or_create(name=target, defaults={'active_scope':True})
             else:
-                created, bd = self.BaseDomain.find_or_create(domain=target)
-            bd.set_tool(self.name)
-        self.Domain.commit()
+                bd, created = BaseDomain.objects.get_or_create(name=target)
+            bd.add_tool_run(tool=self.name, args=self.args.tool_args)
+        

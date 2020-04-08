@@ -1,11 +1,11 @@
-from armory.database.repositories import (
-    BaseDomainRepository,
-    DomainRepository,
-    IPRepository,
-    PortRepository,
-    ScopeCIDRRepository,
-    VulnRepository,
-    CVERepository,
+from armory2.armory_main.models import (
+    BaseDomain,
+    Domain,
+    IP,
+    Port,
+    ScopeCIDR,
+    Vuln,
+    CVE,
 )
 from netaddr import IPNetwork
 from ..ModuleTemplate import ToolTemplate
@@ -17,6 +17,7 @@ import tempfile
 import requests
 import sys
 import xml.etree.ElementTree as ET
+import pdb
 
 if sys.version_info[0] >= 3:
     raw_input = input
@@ -41,14 +42,14 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
-        self.Port = PortRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.Domain = Domain(db, self.name)
+        self.IPAddress = IP(db, self.name)
+        self.Port = Port(db, self.name)
 
-        self.Vulnerability = VulnRepository(db, self.name)
-        self.CVE = CVERepository(db, self.name)
-        self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
+        self.Vulnerability = Vuln(db, self.name)
+        self.CVE = CVE(db, self.name)
+        self.ScopeCIDR = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -71,6 +72,16 @@ class Module(ToolTemplate):
             "--filename",
             help="Output filename. By default will use the current timestamp.",
         )
+        self.options.add_argument(
+            "--ssl_cert_mode",
+            help="Scan only SSL enabled hosts to collect SSL certs (and domain names)",
+            action="store_true",
+        )
+        self.options.add_argument(
+            "--filter_ports",
+            help="Comma separated list of protoPort to filter out of results. Useful if firewall returns specific ports open on every host. Ex: t80,u5060",
+        )
+
         self.options.set_defaults(timeout=None)
         self.options.add_argument(
             "--import_file", help="Import results from an Nmap XML file."
@@ -78,6 +89,7 @@ class Module(ToolTemplate):
 
     def get_targets(self, args):
 
+        self.args = args
         if args.import_file:
             args.no_binary = True
             return [{"target": "", "output": args.import_file}]
@@ -91,14 +103,14 @@ class Module(ToolTemplate):
                     if check_if_ip(h):
                         targets.append(h)
                     else:
-                        created, domain = self.Domain.find_or_create(domain=h)
+                        created, domain = self.Domain.objects.get_or_create(domain=h)
                         targets += [i.ip_address for i in domain.ip_addresses]
 
             else:
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.find_or_create(domain=h)
+                    created, domain = self.Domain.objects.get_or_create(domain=h)
                     targets += [i.ip_address for i in domain.ip_addresses]
 
         if args.hosts_database:
@@ -119,25 +131,37 @@ class Module(ToolTemplate):
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.find_or_create(domain=h)
+                    created, domain = self.Domain.objects.get_or_create(domain=h)
                     targets += [i.ip_address for i in domain.ip_addresses]
 
-        # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
         data = []
-        for t in targets:
-            ips = [str(i) for i in list(IPNetwork(t))]
-            data += ips
+        if args.ssl_cert_mode:
+            ports = self.Port.all(service_name="https")
+
+            data = list(set([i.ip_address.ip_address for i in ports]))
+
+            port_numbers = list(set([str(i.port_number) for i in ports]))
+            args.tool_args += " -sV -p {} --script ssl-cert ".format(
+                ",".join(port_numbers)
+            )
+
+        else:
+
+            # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
+            for t in targets:
+                ips = [str(i) for i in list(IPNetwork(t))]
+                data += ips
 
         _, file_name = tempfile.mkstemp()
         open(file_name, "w").write("\n".join(list(set(data))))
 
         if args.output_path[0] == "/":
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(self.path):
@@ -201,20 +225,21 @@ class Module(ToolTemplate):
         self, filename
     ):  # domains={}, ips={}, rejects=[] == temp while no db
         nFile = filename
-
+        # pdb.set_trace()
         try:
             tree = ET.parse(nFile)
             root = tree.getroot()
             hosts = root.findall("host")
 
-        except Exception:
+        except Exception as e:
+            print("Error: {}".format(e))
             print(nFile + " doesn't exist somehow...skipping")
             return
 
         for host in hosts:
             hostIP = host.find("address").get("addr")
 
-            created, ip = self.IPAddress.find_or_create(ip_address=hostIP)
+            created, ip = self.IPAddress.objects.get_or_create(ip_address=hostIP)
 
             for hostname in host.findall("hostnames/hostname"):
                 hostname = hostname.get("name")
@@ -225,7 +250,7 @@ class Module(ToolTemplate):
                 # )  # attempt to not get PTR record
                 # if not reHostname:
 
-                created, domain = self.Domain.find_or_create(domain=hostname)
+                created, domain = self.Domain.objects.get_or_create(domain=hostname)
                 if ip not in domain.ip_addresses:
                     domain.ip_addresses.append(ip)
                     domain.save()
@@ -236,70 +261,73 @@ class Module(ToolTemplate):
                     portState = port.find("state").get("state")
                     hostPort = port.get("portid")
                     portProto = port.get("protocol")
+                    # pdb.set_trace()
+                    if not self.args.filter_ports or int(hostPort) not in [
+                        int(p) for p in self.args.filter_ports.split(",")
+                    ]:
+                        created, db_port = self.Port.objects.get_or_create(
+                            port_number=hostPort,
+                            status=portState,
+                            proto=portProto,
+                            ip_address=ip,
+                        )
 
-                    created, db_port = self.Port.find_or_create(
-                        port_number=hostPort,
-                        status=portState,
-                        proto=portProto,
-                        ip_address=ip,
-                    )
+                        if port.find("service") is not None:
+                            portName = port.find("service").get("name")
+                            if portName == "http" and hostPort == "443":
+                                portName = "https"
+                        else:
+                            portName = "Unknown"
 
-                    if port.find("service") is not None:
-                        portName = port.find("service").get("name")
-                        if portName == "http" and hostPort == "443":
-                            portName = "https"
-                    else:
-                        portName = "Unknown"
+                        if created:
+                            db_port.service_name = portName
+                        info = db_port.info
+                        if not info:
+                            info = {}
 
-                    if created:
-                        db_port.service_name = portName
-                    info = db_port.info
-                    if not info:
-                        info = {}
-
-                    for script in port.findall(
-                        "script"
-                    ):  # just getting commonName from cert
-                        if script.get("id") == "ssl-cert":
-                            db_port.cert = script.get("output")
-                            cert_domains = self.get_domains_from_cert(
-                                script.get("output")
-                            )
-
-                            for hostname in cert_domains:
-                                hostname = hostname.lower().replace("www.", "")
-                                created, domain = self.Domain.find_or_create(
-                                    domain=hostname
+                        for script in port.findall(
+                            "script"
+                        ):  # just getting commonName from cert
+                            if script.get("id") == "ssl-cert":
+                                db_port.cert = script.get("output")
+                                cert_domains = self.get_domains_from_cert(
+                                    script.get("output")
                                 )
-                                if created:
-                                    print("New domain found: %s" % hostname)
 
-                        elif script.get("id") == "vulners":
-                            print(
-                                "Gathering vuln info for {} : {}/{}\n".format(
-                                    hostIP, portProto, hostPort
+                                for hostname in cert_domains:
+                                    hostname = hostname.lower().replace("www.", "")
+                                    created, domain = self.Domain.objects.get_or_create(
+                                        domain=hostname
+                                    )
+                                    if created:
+                                        print("New domain found: %s" % hostname)
+
+                            elif script.get("id") == "vulners":
+                                print(
+                                    "Gathering vuln info for {} : {}/{}\n".format(
+                                        hostIP, portProto, hostPort
+                                    )
                                 )
-                            )
-                            self.parseVulners(script.get("output"), db_port)
+                                self.parseVulners(script.get("output"), db_port)
 
-                        elif script.get("id") == "banner":
-                            info["banner"] = script.get("output")
+                            elif script.get("id") == "banner":
+                                info["banner"] = script.get("output")
 
-                        elif script.get("id") == "http-headers":
+                            elif script.get("id") == "http-headers":
 
-                            httpHeaders = script.get("output")
-                            httpHeaders = httpHeaders.strip().split("\n")
-                            keepHeaders = self.parseHeaders(httpHeaders)
-                            info["http-headers"] = keepHeaders
+                                httpHeaders = script.get("output")
+                                httpHeaders = httpHeaders.strip().split("\n")
+                                keepHeaders = self.parseHeaders(httpHeaders)
+                                info["http-headers"] = keepHeaders
 
-                        elif script.get("id") == "http-auth":
-                            info["http-auth"] = script.get("output")
+                            elif script.get("id") == "http-auth":
+                                info["http-auth"] = script.get("output")
 
-                        elif script.get("id") == "http-title":
-                            info["http-title"] = script.get("output")
+                            elif script.get("id") == "http-title":
+                                info["http-title"] = script.get("output")
 
-                    db_port.info = info
-                    db_port.save()
+                        db_port.info = info
+                        db_port.save()
 
             self.IPAddress.commit()
 
@@ -339,7 +367,7 @@ class Module(ToolTemplate):
 
                     if not self.Vulnerability.find(name=findingName):
                         # print "Creating", findingName
-                        created, db_vuln = self.Vulnerability.find_or_create(
+                        created, db_vuln = self.Vulnerability.objects.get_or_create(
                             name=findingName,
                             severity=severity,
                             description=cveDescription,
@@ -377,7 +405,7 @@ class Module(ToolTemplate):
                         db_vuln.save()
 
                     if not self.CVE.find(name=cve):
-                        created, db_cve = self.CVE.find_or_create(
+                        created, db_cve = self.CVE.objects.get_or_create(
                             name=cve, description=cveDescription, temporal_score=cvss
                         )
                         db_cve.vulnerabilities.append(db_vuln)

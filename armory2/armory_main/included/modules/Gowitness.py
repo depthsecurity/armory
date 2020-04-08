@@ -1,11 +1,13 @@
 #!/usr/bin/python
 
-from armory.database.repositories import IPRepository
+from armory2.armory_main.models import IP
 from ..ModuleTemplate import ToolTemplate
-from subprocess import Popen
 from ..utilities import get_urls
 import os
+import re
+import subprocess
 import tempfile
+from distutils.version import LooseVersion
 from time import time
 import sys
 
@@ -15,18 +17,19 @@ if sys.version[0] == "3":
 
 
 class Module(ToolTemplate):
-    '''
+    """
     This module uses Gowitness to take a screenshot of any discovered web servers. It can be installed from:
 
     https://github.com/sensepost/gowitness
 
-    '''
+    """
+
     name = "Gowitness"
     binary_name = "gowitness"
 
     def __init__(self, db):
         self.db = db
-        self.IPAddress = IPRepository(db, self.name)
+        self.IPAddress = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -94,14 +97,14 @@ class Module(ToolTemplate):
 
         if args.output_path[0] == "/":
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"],
+                self.base_config["ARMORY_BASE_PATH"],
                 args.output_path[1:],
                 timestamp,
                 args.output_path[1:].split("/")[1] + "_{}",
             )
         else:
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"],
+                self.base_config["ARMORY_BASE_PATH"],
                 args.output_path,
                 timestamp,
                 args.output_path.split("/")[1] + "_{}",
@@ -139,13 +142,21 @@ class Module(ToolTemplate):
         """
 
         cwd = os.getcwd()
+        ver_pat = re.compile("gowitness:\s?(?P<ver>\d+\.\d+\.\d+)")
+        version = subprocess.getoutput("gowitness version")
+        command_change = LooseVersion("1.0.8")
+        gen_command = ["report", "generate"]
+        m = ver_pat.match(version)
+        if m:
+            if LooseVersion(m.group("ver")) <= command_change:
+                gen_command = ["generate"]
         for cmd in cmds:
             output = cmd["output"]
 
-            cmd = [self.binary, "generate"]
+            cmd = [self.binary] + gen_command
             os.chdir(output)
 
-            Popen(cmd, shell=False).wait()
+            subprocess.Popen(cmd, shell=False).wait()
             os.chdir(cwd)
 
         self.IPAddress.commit()

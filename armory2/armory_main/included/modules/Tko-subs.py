@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory.database.repositories import DomainRepository
+from armory2.armory_main.models import Domain
 from ..ModuleTemplate import ToolTemplate
 from ..utilities.color_display import display_new, display_warning
 import os
@@ -15,7 +15,7 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.Domain = DomainRepository(db, self.name)
+        self.Domain = Domain(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -62,11 +62,11 @@ class Module(ToolTemplate):
         # Set the output_path base, as a junction of the base_path and the path name supplied
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         # Create the path if it doesn't already exist
@@ -116,7 +116,7 @@ class Module(ToolTemplate):
             res = list(set([d for d in data if "Domain,Cname,Provider" not in d and d]))
             if res:
                 # Load up the DB entry.
-                created, subdomain = self.Domain.find_or_create(domain=target)
+                created, subdomain = self.Domain.objects.get_or_create(domain=target)
 
                 # Process results
                 for d in res:

@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-from armory.included.ModuleTemplate import ModuleTemplate
-from armory.database.repositories import ScopeCIDRRepository
-from armory.included.utilities import which
-from armory.included.utilities.color_display import display, display_error, display_new
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
+from armory2.armory_main.models import CIDR
+from armory2.armory_main.included.utilities import which
+from armory2.armory_main.included.utilities.color_display import display, display_error, display_new
 import os
 import pdb
 import shlex
@@ -22,10 +22,7 @@ class Module(ModuleTemplate):
     name = "Asnlookup"
     binary_name = "asnlookup.py"
 
-    def __init__(self, db):
-        self.db = db
-        self.ScopeCIDRs = ScopeCIDRRepository(db, self.name)
-    
+        
     def set_options(self):
         super(Module, self).set_options()
 
@@ -58,11 +55,11 @@ class Module(ModuleTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], 'output', args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], 'output', args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], 'output', args.output_path
+                self.base_config["ARMORY_BASE_PATH"], 'output', args.output_path
             )
 
         if not os.path.exists(output_path):
@@ -92,7 +89,7 @@ class Module(ModuleTemplate):
         for r in ip_ranges:
             if r:
                 display("Processing {}".format(r))
-                current_cidrs = [c.cidr for c in self.ScopeCIDRs.all()]
+                current_cidrs = [c.name for c in CIDR.objects.all()]
 
                 new_cidr = True
 
@@ -100,9 +97,9 @@ class Module(ModuleTemplate):
                     if IPNetwork(r) in IPNetwork(nc):
                         new_cidr = False
                 if new_cidr:
-                    created, SC = self.ScopeCIDRs.find_or_create(cidr=r)
+                    SC, created = CIDR.objects.get_or_create(name=r, defaults={'active_scope': True, 'passive_scope':True})
                     
                     if created:
                         display_new("New CIDR added to ScopeCIDRS: {}".format(r))
 
-        self.ScopeCIDRs.commit()
+        

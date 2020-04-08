@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory.database.repositories import PortRepository, DomainRepository, IPRepository
+from armory2.armory_main.models import Port, Domain, IP
 from ..ModuleTemplate import ModuleTemplate
 import requests
 import sys
@@ -27,9 +27,9 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.Port = PortRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
+        self.Port = Port(db, self.name)
+        self.Domain = Domain(db, self.name)
+        self.IPAddress = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -71,13 +71,13 @@ class Module(ModuleTemplate):
                 sys.exit(1)
 
             if check_if_ip(host):
-                created, ip = self.IPAddress.find_or_create(ip_address=host)
+                created, ip = self.IPAddress.objects.get_or_create(ip_address=host)
             else:
 
-                created, domain = self.Domain.find_or_create(domain=host)
+                created, domain = self.Domain.objects.get_or_create(domain=host)
                 ip = domain.ip_addresses[0]
 
-            created, service_id = self.Port.find_or_create(
+            created, service_id = self.Port.objects.get_or_create(
                 ip_address=ip, port_number=port
             )
             service_id.service_name = service
@@ -106,13 +106,13 @@ class Module(ModuleTemplate):
                         sys.exit(1)
 
                     if check_if_ip(host):
-                        created, ip = self.IPAddress.find_or_create(ip_address=host)
+                        created, ip = self.IPAddress.objects.get_or_create(ip_address=host)
                     else:
 
-                        created, domain = self.Domain.find_or_create(domain=host)
+                        created, domain = self.Domain.objects.get_or_create(domain=host)
                         ip = domain.ip_addresses[0]
 
-                    created, service_id = self.Port.find_or_create(
+                    created, service_id = self.Port.objects.get_or_create(
                         ip_address=ip, port_number=port
                     )
                     service_id.service_name = service
@@ -148,7 +148,7 @@ class Module(ModuleTemplate):
             results = pool.map(process_urls, data)
             display_new("Adding headers to the database")
             for i, headers, cookies in results:
-                created, svc = self.Port.find_or_create(id=i)
+                created, svc = self.Port.objects.get_or_create(id=i)
 
                 svc.meta["headers"] = headers
 

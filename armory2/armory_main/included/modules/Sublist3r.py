@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from armory.database.repositories import BaseDomainRepository, DomainRepository
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_error
+from armory2.armory_main.models import BaseDomain, Domain
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display_error
 import os
 
 
@@ -13,8 +13,8 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.Domain = Domain(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -48,9 +48,9 @@ class Module(ToolTemplate):
 
         elif args.import_database:
             if args.rescan:
-                domains = self.BaseDomain.all(scope_type="passive")
+                domains = BaseDomain.all(scope_type="passive")
             else:
-                domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
+                domains = BaseDomain.all(tool=self.name, scope_type="passive")
             for d in domains:
 
                 targets.append(d.domain)
@@ -59,11 +59,11 @@ class Module(ToolTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(output_path):
@@ -91,12 +91,13 @@ class Module(ToolTemplate):
             if os.path.isfile(output_path):
                 data = open(output_path).read().split("\n")
                 for d in data:
-
-                    new_domain = d.split(":")[0].lower()
-                    if new_domain:
-                        created, subdomain = self.Domain.find_or_create(
-                            domain=new_domain
-                        )
+                    for ds in d.split('<BR>'):  # Sublist3r is spitting out <BR>s now...
+                        if ds:
+                            new_domain = ds.split(":")[0].lower()
+                            if new_domain:
+                                created, subdomain = self.Domain.objects.get_or_create(
+                                    domain=new_domain
+                                )
             else:
                 display_error("{} not found.".format(output_path))
                 next

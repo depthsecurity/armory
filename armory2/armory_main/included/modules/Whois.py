@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory.database.repositories import BaseDomainRepository, ScopeCIDRRepository
+from armory2.armory_main.models import BaseDomain, ScopeCIDR
 from ..ModuleTemplate import ToolTemplate
 from ..utilities.color_display import display
 from ..utilities.readFile import read_file
@@ -14,8 +14,8 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.ScopeCidr = ScopeCIDRRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.ScopeCidr = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -60,10 +60,10 @@ class Module(ToolTemplate):
             else:
                 scope_type = "passive"
             if args.rescan:
-                domains = self.BaseDomain.all(scope_type=scope_type)
+                domains = BaseDomain.all(scope_type=scope_type)
                 cidrs = self.ScopeCidr.all()
             else:
-                domains = self.BaseDomain.all(scope_type=scope_type, tool=self.name)
+                domains = BaseDomain.all(scope_type=scope_type, tool=self.name)
                 cidrs = self.ScopeCidr.all(tool=self.name)
 
             for domain in domains:
@@ -73,11 +73,11 @@ class Module(ToolTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(output_path):
@@ -108,15 +108,15 @@ class Module(ToolTemplate):
 
         for cmd in cmds:
             if cmd["cidr"]:
-                _, cidr = self.ScopeCidr.find_or_create(cidr=cmd["cidr"])
+                _, cidr = self.ScopeCidr.objects.get_or_create(cidr=cmd["cidr"])
                 cidr.meta["whois"] = read_file(cmd["output"])
                 display(cidr.meta["whois"])
                 cidr.update()
 
             elif cmd["domain"]:
-                _, domain = self.BaseDomain.find_or_create(domain=cmd["domain"])
+                _, domain = BaseDomain.objects.get_or_create(domain=cmd["domain"])
                 domain.meta["whois"] = read_file(cmd["output"])
                 display(domain.meta["whois"])
                 domain.update()
 
-        self.BaseDomain.commit()
+        BaseDomain.commit()

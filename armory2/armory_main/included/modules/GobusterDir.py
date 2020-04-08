@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
-from armory.database.repositories import (
-    IPRepository,
-    DomainRepository,
-    PortRepository,
-    UrlRepository,
+from armory2.armory_main.models import (
+    IP,
+    Domain,
+    Port,
+    Url,
 )
 from ..ModuleTemplate import ToolTemplate
 from ..utilities import get_urls
@@ -25,16 +25,22 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.IPAddress = IPRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.Port = PortRepository(db, self.name)
-        self.Url = UrlRepository(db, self.name)
+        self.IPAddress = IP(db, self.name)
+        self.Domain = Domain(db, self.name)
+        self.Port = Port(db, self.name)
+        self.Url = Url(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
 
         self.options.add_argument("-u", "--url", help="URL to brute force")
         self.options.add_argument("--file", help="Import URLs from file")
+        self.options.add_argument(
+            "-w", 
+            "--wordlist", 
+            required=True,
+            help="Path to wordlist"
+        )
         self.options.add_argument(
             "-i",
             "--import_database",
@@ -61,6 +67,11 @@ class Module(ToolTemplate):
                 if u:
                     targets.append(u)
 
+        if os.path.exists(args.wordlist):
+            wordlist = args.wordlist
+        else:
+            display_error("{} not found.".format(args.wordlist))
+
         if args.import_database:
             if args.rescan:
                 targets += get_urls.run(self.db, scope_type="active")
@@ -69,14 +80,14 @@ class Module(ToolTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"],
+                self.base_config["ARMORY_BASE_PATH"],
                 args.output_path[1:],
                 str(int(time.time())),
             )
 
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"],
+                self.base_config["ARMORY_BASE_PATH"],
                 args.output_path,
                 str(int(time.time())),
             )
@@ -97,6 +108,7 @@ class Module(ToolTemplate):
                         .replace("&", "_")
                         + "-dir.txt",  # noqa: W503
                     ),
+                    "wordlist": wordlist,
                 }
             )
 
@@ -105,7 +117,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = self.binary + " dir -k "
-        cmd += " -o {output} -u {target} "
+        cmd += " -o {output} -u {target} -w {wordlist} "
 
         if args.tool_args:
             cmd += args.tool_args

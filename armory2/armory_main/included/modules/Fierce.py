@@ -1,6 +1,6 @@
-from armory.included.ModuleTemplate import ToolTemplate
-from armory.database.repositories import BaseDomainRepository, DomainRepository
-from armory.included.utilities.color_display import display_error
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.models import BaseDomain, Domain
+from armory2.armory_main.included.utilities.color_display import display_error
 import os
 import re
 
@@ -17,8 +17,8 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.Domain = Domain(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -51,19 +51,19 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                domains = self.BaseDomain.all(scope_type="passive")
+                domains = BaseDomain.all(scope_type="passive")
             else:
-                domains = self.BaseDomain.all(tool=self.name, scope_type="passive")
+                domains = BaseDomain.all(tool=self.name, scope_type="passive")
             for domain in domains:
                 targets.append(domain.domain)
 
         if args.output_path[0] == "/":
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             self.path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(self.path):
@@ -144,4 +144,4 @@ class Module(ToolTemplate):
             if domains:
                 for _domain in domains:
 
-                    created, domain = self.Domain.find_or_create(domain=_domain)
+                    created, domain = self.Domain.objects.get_or_create(domain=_domain)

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-from armory.database.repositories import (
-    DomainRepository,
-    BaseDomainRepository,
-    IPRepository,
+from armory2.armory_main.models import (
+    Domain,
+    BaseDomain,
+    IP,
 )
 from ..ModuleTemplate import ToolTemplate
 from ..utilities import get_domain_ip
@@ -17,9 +17,9 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomains = BaseDomainRepository(db, self.name)
-        self.Domains = DomainRepository(db, self.name)
-        self.IPs = IPRepository(db, self.name)
+        BaseDomains = BaseDomain(db, self.name)
+        self.Domains = Domain(db, self.name)
+        self.IPs = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -47,11 +47,11 @@ class Module(ToolTemplate):
         outpath = ""
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -64,9 +64,9 @@ class Module(ToolTemplate):
 
         if args.db_domains:
             if args.rescan:
-                domains = self.BaseDomains.all(scope_type="passive")
+                domains = BaseDomains.all(scope_type="passive")
             else:
-                domains = self.BaseDomains.all(tool=self.name, scope_type="passive")
+                domains = BaseDomains.all(tool=self.name, scope_type="passive")
             for d in domains:
                 out_file = os.path.join(outpath, "{}.subfinder".format(d.domain))
                 targets.append(
@@ -106,16 +106,16 @@ class Module(ToolTemplate):
                             domain = domain[1:]
                         ips = get_domain_ip.run(domain)
                         ip_obj = None
-                        _, dom = self.Domains.find_or_create(domain=domain)
+                        _, dom = self.Domains.objects.get_or_create(domain=domain)
                         if ips:
                             for ip in ips:
-                                _, ip_obj = self.IPs.find_or_create(ip_address=ip)
+                                _, ip_obj = self.IPs.objects.get_or_create(ip_address=ip)
                                 if ip_obj:
                                     dom.ip_addresses.append(ip_obj)
                             dom.save()
             except FileNotFoundError:
                 display_error("File doesn't exist for {}".format(target["output"]))
-        self.BaseDomains.commit()
+        BaseDomains.commit()
         self.IPs.commit()
 
     def post_run(self, args):
@@ -136,9 +136,9 @@ class Module(ToolTemplate):
             else:
                 # Go through the database and grab the domains adding them to the file.
                 if args.rescan:
-                    domains = self.BaseDomains.all(passive_scope=True)
+                    domains = BaseDomains.all(passive_scope=True)
                 else:
-                    domains = self.BaseDomains.all(tool=self.name, passive_scope=True)
+                    domains = BaseDomains.all(tool=self.name, passive_scope=True)
                 if domains:
                     for domain in domains:
                         fd.write("{}\n".format(domain.domain).encode("utf-8"))

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory.database.repositories import BaseDomainRepository, UserRepository
+from armory2.armory_main.models import BaseDomain, User
 from ..ModuleTemplate import ModuleTemplate
 import csv
 import glob
@@ -23,8 +23,8 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.User = UserRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.User = User(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -54,7 +54,7 @@ class Module(ModuleTemplate):
             res += [
                 "Invoke-PowerMeta -TargetDomain %s -Download -Extract -ExtractAllToCsv %s.csv"
                 % (b.domain, b.domain)
-                for b in self.BaseDomain.all()
+                for b in BaseDomain.all()
             ]
 
             if args.powershell:
@@ -79,7 +79,7 @@ class Module(ModuleTemplate):
     def process_domain(self, csvfile, args):
         domain = csvfile.split("/")[-1].split(".csv")[0]
 
-        domain_obj = self.BaseDomain.find(domain=domain)
+        domain_obj = BaseDomain.find(domain=domain)
 
         if not domain_obj:
             print("Error: Domain not found: %s" % domain)
@@ -111,14 +111,14 @@ class Module(ModuleTemplate):
                             first_name = d.split(" ")[0]
                             last_name = " ".join(d.split(" ")[1:])
 
-                        created, user = self.User.find_or_create(
+                        created, user = self.User.objects.get_or_create(
                             first_name=first_name, last_name=last_name
                         )
                         if created:
                             print("New user created")
                         user.domain = domain_obj
                     # else:
-                    #     created, user = self.User.find_or_create(username=d)
+                    #     created, user = self.User.objects.get_or_create(username=d)
                     #     if created:
                     #         print("New username created")
                     #     user.domain = domain_obj

@@ -1,13 +1,13 @@
 #!/usr/bin/python
-from armory.database.repositories import (
-    PortRepository,
-    IPRepository,
-    ScopeCIDRRepository,
-    DomainRepository,
+from armory2.armory_main.models import (
+    Port,
+    IP,
+    ScopeCIDR,
+    Domain,
 )
 from netaddr import IPNetwork
-from armory.included.ModuleTemplate import ModuleTemplate
-from armory.included.utilities.color_display import display, display_error, display_warning
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
+from armory2.armory_main.included.utilities.color_display import display, display_error, display_warning
 import json
 import pdb
 import requests
@@ -24,8 +24,9 @@ def only_valid(txt):
     return res
 
 def get_domains_from_data(txt):
-    return [match for match in re.split("(\\\\x\w\w)", txt) if len(match) > 4 and "." in match and "*" not in match]
-    
+    results = [match for match in re.split("(\\\\x\w\w)", txt) if len(match) > 4 and "." in match and "*" not in match]
+
+    return list(set([only_valid(match).lower() for match in results if only_valid(match)]))
 
 
 class Module(ModuleTemplate):
@@ -40,10 +41,10 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.Port = PortRepository(db, self.name)
-        self.IPAddress = IPRepository(db, self.name)
-        self.ScopeCidr = ScopeCIDRRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
+        self.Port = Port(db, self.name)
+        self.IPAddress = IP(db, self.name)
+        self.ScopeCidr = ScopeCIDR(db, self.name)
+        self.Domain = Domain(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -145,7 +146,7 @@ class Module(ModuleTemplate):
 
                 self.get_shodan(r, args)
 
-            created, cd = self.ScopeCidr.find_or_create(cidr=c)
+            created, cd = self.ScopeCidr.objects.get_or_create(cidr=c)
             if created:
                 cd.delete()
             else:
@@ -155,7 +156,7 @@ class Module(ModuleTemplate):
         for i in ips:
             self.get_shodan(i, args)
 
-            created, ip = self.IPAddress.find_or_create(ip_address=i)
+            created, ip = self.IPAddress.objects.get_or_create(ip_address=i)
             if created:
                 ip.delete()
             else:
@@ -166,7 +167,7 @@ class Module(ModuleTemplate):
             self.get_shodan(s, args)
 
             if s[:4] == "net:":
-                created, cd = self.ScopeCidr.find_or_create(cidr=s[4:])
+                created, cd = self.ScopeCidr.objects.get_or_create(cidr=s[4:])
                 if created:
                     cd.delete()
                 else:
@@ -242,10 +243,10 @@ class Module(ModuleTemplate):
                     )
                 )
 
-                created, IP = self.IPAddress.find_or_create(ip_address=ip_str)
+                created, IP = self.IPAddress.objects.get_or_create(ip_address=ip_str)
                 IP.meta["shodan_data"] = results
 
-                created, port = self.Port.find_or_create(
+                created, port = self.Port.objects.get_or_create(
                     ip_address=IP, port_number=port_str, proto=transport
                 )
                 if created:
@@ -278,7 +279,7 @@ class Module(ModuleTemplate):
 
             for d in list(set(domains)):
                 display("Adding discovered domain {}".format(only_valid(d)))
-                created, domain = self.Domain.find_or_create(domain=only_valid(d))
+                created, domain = self.Domain.objects.get_or_create(domain=only_valid(d))
 
         else:
             display("Searching for {}".format(r))
@@ -303,10 +304,10 @@ class Module(ModuleTemplate):
                             ip_str, port_str, transport
                         )
                     )
-                    created, IP = self.IPAddress.find_or_create(ip_address=ip_str)
+                    created, IP = self.IPAddress.objects.get_or_create(ip_address=ip_str)
                     IP.meta["shodan_data"] = results
 
-                    created, port = self.Port.find_or_create(
+                    created, port = self.Port.objects.get_or_create(
                         ip_address=IP, port_number=port_str, proto=transport
                     )
 
@@ -342,4 +343,4 @@ class Module(ModuleTemplate):
 
                 for d in list(set(domains)):
                     display("Adding discovered domain {}".format(d))
-                    created, domain = self.Domain.find_or_create(domain=d)
+                    created, domain = self.Domain.objects.get_or_create(domain=d)

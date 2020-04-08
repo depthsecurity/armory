@@ -29,11 +29,11 @@ class Module(ModuleTemplate):
 
     # def __init__(self, db):
     #     self.db = db
-    #     self.BaseDomain = BaseDomainRepository(db, self.name)
-    #     self.Domain = DomainRepository(db, self.name)
-    #     self.IPAddress = IPRepository(db, self.name)
-    #     self.CIDR = CIDRRepository(db, self.name)
-    #     self.ScopeCIDR = ScopeCIDRRepository(db, self.name)
+    #     BaseDomain = BaseDomain(db, self.name)
+    #     self.Domain = Domain(db, self.name)
+    #     self.IPAddress = IP(db, self.name)
+    #     self.CIDR = CIDR(db, self.name)
+    #     self.ScopeCIDR = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -137,7 +137,7 @@ class Module(ModuleTemplate):
                 
 
         if args.scope_base_domains:
-            base_domains = self.BaseDomain.all(active_scope=False, passive_scope=False)
+            base_domains = BaseDomain.all(active_scope=False, passive_scope=False)
 
             for bd in base_domains:
                 self.reclassify_domain(bd)

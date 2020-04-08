@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory.database.repositories import BaseDomainRepository, DomainRepository
+from armory2.armory_main.models import BaseDomain, Domain
 from ..ModuleTemplate import ToolTemplate
 from ..utilities.color_display import display_error
 import os
@@ -17,8 +17,8 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.Domain = Domain(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -54,21 +54,21 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += [b.domain for b in self.BaseDomain.all(scope_type="passive")]
+                targets += [b.domain for b in BaseDomain.all(scope_type="passive")]
             else:
                 targets += [
                     b.domain
-                    for b in self.BaseDomain.all(scope_type="passive", tool=self.name)
+                    for b in BaseDomain.all(scope_type="passive", tool=self.name)
                 ]
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
 
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(output_path):
@@ -106,12 +106,12 @@ class Module(ToolTemplate):
                 for d in data:
                     if "Found: " in d:
                         new_domain = d.split(" ")[1].lower()
-                        created, subdomain = self.Domain.find_or_create(
+                        created, subdomain = self.Domain.objects.get_or_create(
                             domain=new_domain
                         )
             else:
                 display_error("{} not found.".format(output_path))
 
-            created, bd = self.BaseDomain.find_or_create(domain=c['target'])
+            created, bd = BaseDomain.objects.get_or_create(domain=c['target'])
             bd.set_tool(self.name)
         self.Domain.commit()

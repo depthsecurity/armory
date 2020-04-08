@@ -1,9 +1,9 @@
 #!/usr/bin/python
-from armory.database.repositories import BaseDomainRepository, UserRepository
+from armory2.armory_main.models import BaseDomain, User
 from collections import Counter
-from armory.included.ModuleTemplate import ModuleTemplate
-from armory.included.utilities import which
-from armory.included.utilities.color_display import display, display_error
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
+from armory2.armory_main.included.utilities import which
+from armory2.armory_main.included.utilities.color_display import display, display_error
 import csv
 import os
 import shlex
@@ -36,8 +36,8 @@ class Module(ModuleTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.BaseDomain = BaseDomainRepository(db, self.name)
-        self.User = UserRepository(db, self.name)
+        BaseDomain = BaseDomain(db, self.name)
+        self.User = User(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -99,7 +99,7 @@ class Module(ModuleTemplate):
             )
 
         if args.domain:
-            created, domain = self.BaseDomain.find_or_create(domain=args.domain)
+            created, domain = BaseDomain.objects.get_or_create(domain=args.domain)
             if args.top:
                 titles = [
                     user.job_title.split(" at ")[0]
@@ -136,7 +136,7 @@ class Module(ModuleTemplate):
                             
                             args.keywords = w
                             self.process_domain(domain, args)
-                            self.BaseDomain.commit()
+                            BaseDomain.commit()
                             bfile.write('{}\n'.format(w))
                         else:
                             display("Skipped {} due to it already being searched.".format(w))
@@ -146,17 +146,17 @@ class Module(ModuleTemplate):
                     ['"{}"'.format(i) for i in args.smart_shuffle.split(",")]
                 )
                 self.process_domain(domain, args)
-                self.BaseDomain.commit()
+                BaseDomain.commit()
                 args.keywords = " AND ".join(
                     ['-"{}"'.format(i) for i in args.smart_shuffle.split(",")]
                 )
                 self.process_domain(domain, args)
-                self.BaseDomain.commit()
+                BaseDomain.commit()
             else:
                 self.process_domain(domain, args)
-                self.BaseDomain.commit()            
+                BaseDomain.commit()            
 
-            self.BaseDomain.commit()
+            BaseDomain.commit()
 
     def process_domain(self, domain_obj, args):
 
@@ -164,11 +164,11 @@ class Module(ModuleTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
         if not os.path.exists(output_path):
@@ -213,7 +213,7 @@ class Module(ModuleTemplate):
             for row in csvreader:
                 count += 1
                 
-                created, user = self.User.find_or_create(
+                created, user = self.User.objects.get_or_create(
                         email=remove_binary(row[3])
                     )
 

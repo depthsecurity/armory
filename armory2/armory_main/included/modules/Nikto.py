@@ -1,9 +1,9 @@
 #!/usr/bin/python
-from armory.database.repositories import (
-    IPRepository,
-    DomainRepository,
-    PortRepository,
-    UrlRepository,
+from armory2.armory_main.models import (
+    IP,
+    Domain,
+    Port,
+    Url,
 )
 from ..ModuleTemplate import ToolTemplate
 from ..utilities import get_urls
@@ -19,10 +19,10 @@ class Module(ToolTemplate):
 
     def __init__(self, db):
         self.db = db
-        self.IPAddress = IPRepository(db, self.name)
-        self.Domain = DomainRepository(db, self.name)
-        self.Port = PortRepository(db, self.name)
-        self.Url = UrlRepository(db, self.name)
+        self.IPAddress = IP(db, self.name)
+        self.Domain = Domain(db, self.name)
+        self.Port = Port(db, self.name)
+        self.Url = Url(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -63,14 +63,14 @@ class Module(ToolTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"],
+                self.base_config["ARMORY_BASE_PATH"],
                 args.output_path[1:],
                 str(int(time.time())),
             )
 
         else:
             output_path = os.path.join(
-                self.base_config["PROJECT"]["base_path"],
+                self.base_config["ARMORY_BASE_PATH"],
                 args.output_path,
                 str(int(time.time())),
             )
