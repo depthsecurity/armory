@@ -50,10 +50,7 @@ class Module(ToolTemplate):
                 if u:
                     targets.append(u)
 
-        if os.path.exists(args.wordlist):
-            wordlist = args.wordlist
-        else:
-            display_error("{} not found.".format(args.wordlist))
+        
 
         if args.import_database:
             if args.rescan:
