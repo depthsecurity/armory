@@ -64,7 +64,7 @@ class Module(ToolTemplate):
             if args.rescan:
                 domains = BaseDomain.get_set(scope_type="passive")
             else:
-                domains = BaseDomain.get_set(scope_type="passive", tool=self.name, args=self.tool_args)
+                domains = BaseDomain.get_set(scope_type="passive", tool=self.name, args=self.args.tool_args)
             for domain in domains:
                 targets.append(domain.name)
 
@@ -75,7 +75,7 @@ class Module(ToolTemplate):
             if args.rescan:
                 cidrs = CIDR.get_set(scope_type="active")
             else:
-                cidrs = CIDR.get_set(scope_type="active", tool=self.name, args=self.tool_args)
+                cidrs = CIDR.get_set(scope_type="active", tool=self.name, args=self.args.tool_args)
 
             for cidr in cidrs:
                 targets.append(cidr.name)
