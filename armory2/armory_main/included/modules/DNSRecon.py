@@ -130,7 +130,7 @@ class Module(ToolTemplate):
                 display_error("DnsRecon failed for {}".format(target))
                 continue
             if " -d " in res[0]["arguments"]:
-                dbrec, created = self.Domain.objects.get_or_create(name=target)
+                dbrec, created = Domain.objects.get_or_create(name=target)
                 dbrec.dns = res
                 dbrec.save()
 
