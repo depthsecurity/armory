@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 from armory2.armory_main.models import (
-    IP,
+    IPAddress,
     Domain,
     Port,
-    Url,
+    
 )
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities import get_urls
@@ -23,12 +23,6 @@ class Module(ToolTemplate):
     name = "FFuF"
     binary_name = "ffuf"
 
-    def __init__(self, db):
-        self.db = db
-        self.IPAddress = IP(db, self.name)
-        self.Domain = Domain(db, self.name)
-        self.Port = Port(db, self.name)
-        self.Url = Url(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -64,9 +58,9 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += get_urls.run(self.db, scope_type="active")
+                targets += get_urls.run(scope_type="active")
             else:
-                targets += get_urls.run(self.db, tool=self.name, scope_type="active")
+                targets += get_urls.run(tool=self.name, args=args.tool_args, scope_type="active")
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
@@ -133,20 +127,14 @@ class Module(ToolTemplate):
 
             try:
                 [int(i) for i in url.split('.')]
-                created, ip = self.IPAddress.objects.get_or_create(ip_address=url)
-                port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
-                port.set_tool(self.name)
+                ip, created = IPAddress.objects.get_or_create(ip_address=url, defaults={'active_scope':True})
+                
+                ip.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args))
             except:
                 display("Domain found: {}".format(url))
-                created, domain = self.Domain.objects.get_or_create(domain=url)
-                for ip in domain.ip_addresses:
-                    try:
-                        port = [p for p in ip.ports if p.port_number == int(port_num) and p.proto == 'tcp'][0]
-                        port.set_tool(self.name) 
-                    except Exception as e:
-                        print("Error getting ports: {}".format(e))
-            
+                domain, created = Domain.objects.get_or_create(name=url)
+                domain.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args))
             
 
-        self.Port.commit()
+        
         

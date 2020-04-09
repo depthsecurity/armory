@@ -113,5 +113,5 @@ class Module(ToolTemplate):
                 display_error("{} not found.".format(output_path))
 
             created, bd = BaseDomain.objects.get_or_create(domain=c['target'])
-            bd.set_tool(self.name)
+            bd.add_tool_run(self.name)
         self.Domain.commit()

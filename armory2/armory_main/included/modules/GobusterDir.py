@@ -1,14 +1,9 @@
 #!/usr/bin/python
 
-from armory2.armory_main.models import (
-    IP,
-    Domain,
-    Port,
-    Url,
-)
-from ..ModuleTemplate import ToolTemplate
-from ..utilities import get_urls
-from ..utilities.color_display import display_warning
+
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities import get_urls
+from armory2.armory_main.included.utilities.color_display import display_warning
 import os
 import time
 
@@ -22,13 +17,6 @@ class Module(ToolTemplate):
 
     name = "GobusterDir"
     binary_name = "gobuster"
-
-    def __init__(self, db):
-        self.db = db
-        self.IPAddress = IP(db, self.name)
-        self.Domain = Domain(db, self.name)
-        self.Port = Port(db, self.name)
-        self.Url = Url(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -74,9 +62,9 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += get_urls.run(self.db, scope_type="active")
+                targets += get_urls.run(scope_type="active")
             else:
-                targets += get_urls.run(self.db, tool=self.name, scope_type="active")
+                targets += get_urls.run(tool=self.name, args=self.args.tool_args, scope_type="active")
 
         if args.output_path[0] == "/":
             output_path = os.path.join(

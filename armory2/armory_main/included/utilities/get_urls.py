@@ -1,32 +1,46 @@
 #!/usr/bin/python
 
-from ...database.repositories import PortRepository
+from armory2.armory_main.models import Port
+from django.db.models import Q
+import pdb
 
 
-def run(db, tool=None, scope_type=None):
+def run(tool=None, args="", scope_type=None):
 
     results = []
-    Port = PortRepository(db)
+    
 
-    ports = Port.all(service_name="http", tool=tool)
-    ports += Port.all(service_name="https", tool=tool)
+    ports = Port.objects.all().filter(Q(service_name="http")| Q(service_name="https"))
+    
 
     for p in ports:
 
         if (
             p.ip_address
-            and (scope_type == "active" and p.ip_address.in_scope)  # noqa: W503
-            or (scope_type == "passive" and p.ip_address.passive_scope)  # noqa: W503
-            or not scope_type  # noqa: W503
+            and ((scope_type == "active" and p.ip_address.active_scope)
+            or (scope_type == "passive" and p.ip_address.passive_scope)
+            or not scope_type) 
+            and ((not tool) or (tool not in p.ip_address.tools.keys() or "{}-{}".format(p.port_number, args) not in p.ip_address.tools[tool]))
         ):
-
-            domain_list = [d.domain for d in p.ip_address.domains]
-
+            
             results.append(
                 "%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number)
             )
-            for d in domain_list:
-                results.append("%s://%s:%s" % (p.service_name, d, p.port_number))
+
+        domain_list = [d for d in p.ip_address.domain_set.all()]
+
+
+        for d in domain_list:
+            
+            if (
+                (scope_type == "active" and d.active_scope)
+                or (scope_type == "passive" and d.passive_scope)  
+                or not scope_type):   # and ((not tool) or (tool in p.tools.keys() and args in p.tools[tool]))
+                
+                if (not tool) or (tool not in d.tools.keys() or "{}-{}".format(p.port_number, args) not in d.tools[tool]):
+
+            
+                    results.append("%s://%s:%s" % (p.service_name, d.name, p.port_number))
 
     return sort_by_url(results)
 

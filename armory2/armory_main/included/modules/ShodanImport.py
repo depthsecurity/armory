@@ -1,8 +1,8 @@
 #!/usr/bin/python
 from armory2.armory_main.models import (
     Port,
-    IP,
-    ScopeCIDR,
+    IPAddress,
+    CIDR,
     Domain,
 )
 from netaddr import IPNetwork
@@ -24,6 +24,7 @@ def only_valid(txt):
     return res
 
 def get_domains_from_data(txt):
+    txt = txt.replace('\\t', '').replace('\\n', '')
     results = [match for match in re.split("(\\\\x\w\w)", txt) if len(match) > 4 and "." in match and "*" not in match]
 
     return list(set([only_valid(match).lower() for match in results if only_valid(match)]))
@@ -39,13 +40,7 @@ class Module(ModuleTemplate):
 
     name = "ShodanImport"
 
-    def __init__(self, db):
-        self.db = db
-        self.Port = Port(db, self.name)
-        self.IPAddress = IP(db, self.name)
-        self.ScopeCidr = ScopeCIDR(db, self.name)
-        self.Domain = Domain(db, self.name)
-
+    
     def set_options(self):
         super(Module, self).set_options()
 
@@ -93,28 +88,28 @@ class Module(ModuleTemplate):
         if args.import_db:
             if args.rescan:
                 if args.fast:
-                    search += ["net:{}".format(c.cidr) for c in self.ScopeCidr.all()]
+                    search += ["net:{}".format(c.name) for c in CIDR.get_set(scope_type="active")]
                 else:
-                    cidrs += [c.cidr for c in self.ScopeCidr.all()]
+                    cidrs += [c.name for c in CIDR.get_set(scope_type="active")]
                     
                 if not args.cidr_only:
                     ips += [
                         "{}".format(i.ip_address)
-                        for i in self.IPAddress.all(scope_type="active")
+                        for i in IPAddress.get_set(scope_type="active")
                     ]
             else:
                 if args.fast:
                     search += [
-                        "net:{}".format(c.cidr)
-                        for c in self.ScopeCidr.all(tool=self.name)
+                        "net:{}".format(c.name)
+                        for c in CIDR.get_set(scope_type="active")
                     ]
                 else:
-                    cidrs += [c.cidr for c in self.ScopeCidr.all(tool=self.name)]
+                    cidrs += [c.name for c in CIDR.get_set(scope_type="active")]
                     
                 if not args.cidr_only:
                     ips += [
                         "{}".format(i.ip_address)
-                        for i in self.IPAddress.all(scope_type="active", tool=self.name)
+                        for i in IPAddress.get_set(scope_type="active", tool=self.name)
                     ]
         if args.target:
             
@@ -125,10 +120,6 @@ class Module(ModuleTemplate):
             else:
                 cidrs += [args.target]
 
-
-
-        
-        
 
         for c in cidrs:
             ranges += [str(i) for i in IPNetwork(c)]
@@ -146,33 +137,27 @@ class Module(ModuleTemplate):
 
                 self.get_shodan(r, args)
 
-            created, cd = self.ScopeCidr.objects.get_or_create(cidr=c)
-            if created:
-                cd.delete()
-            else:
-                cd.set_tool(self.name)
-            self.ScopeCidr.commit()
+            cd = CIDR.objects.all().filter(name=c)
+            if cd:
+                cd[0].add_tool_run(tool=self.name)
+            
         display("Processing {} IPs. Estimated time: {} days, {} hours, {} minutes and {} seconds.".format(len(ips), int(len(ranges)/24.0/60.0/60.0), int(len(ranges)/60.0/60.0)%60, int(len(ranges)/60.0)%60, len(ranges)%60))
         for i in ips:
             self.get_shodan(i, args)
 
-            created, ip = self.IPAddress.objects.get_or_create(ip_address=i)
-            if created:
-                ip.delete()
-            else:
-                ip.set_tool(self.name)
-            self.IPAddress.commit()
+            ip = IPAddress.objects.all().filter(ip_address=i)
+            if ip:
+                ip[0].add_tool_run(tool=self.name)
+            
 
         for s in search:
             self.get_shodan(s, args)
 
             if s[:4] == "net:":
-                created, cd = self.ScopeCidr.objects.get_or_create(cidr=s[4:])
-                if created:
-                    cd.delete()
-                else:
-                    cd.set_tool(self.name)
-                self.ScopeCidr.commit()
+                cd = CIDR.objects.objects.all().filter(name=s[4:])
+                if cd:
+                    cd[0].add_tool_run(tool=self.name)
+                
 
     def get_shodan(self, r, args):
 
@@ -243,10 +228,10 @@ class Module(ModuleTemplate):
                     )
                 )
 
-                created, IP = self.IPAddress.objects.get_or_create(ip_address=ip_str)
+                IP, created = IPAddress.objects.get_or_create(ip_address=ip_str)
                 IP.meta["shodan_data"] = results
 
-                created, port = self.Port.objects.get_or_create(
+                port, created = Port.objects.get_or_create(
                     ip_address=IP, port_number=port_str, proto=transport
                 )
                 if created:
@@ -278,8 +263,11 @@ class Module(ModuleTemplate):
                     domains += res['hostnames']
 
             for d in list(set(domains)):
-                display("Adding discovered domain {}".format(only_valid(d)))
-                created, domain = self.Domain.objects.get_or_create(domain=only_valid(d))
+                if d.count('.') > 0:
+                    display("Adding discovered domain {}".format(only_valid(d)))
+                    domain, created = Domain.objects.get_or_create(name=only_valid(d))
+                else:
+                    display_error("Ignoring bad domain {}".format(d))
 
         else:
             display("Searching for {}".format(r))
@@ -304,10 +292,10 @@ class Module(ModuleTemplate):
                             ip_str, port_str, transport
                         )
                     )
-                    created, IP = self.IPAddress.objects.get_or_create(ip_address=ip_str)
+                    IP, created = IPAddress.objects.get_or_create(ip_address=ip_str)
                     IP.meta["shodan_data"] = results
 
-                    created, port = self.Port.objects.get_or_create(
+                    port, created = Port.objects.get_or_create(
                         ip_address=IP, port_number=port_str, proto=transport
                     )
 
@@ -342,5 +330,8 @@ class Module(ModuleTemplate):
                         domains += res['hostnames']
 
                 for d in list(set(domains)):
-                    display("Adding discovered domain {}".format(d))
-                    created, domain = self.Domain.objects.get_or_create(domain=d)
+                    if d.count('.') > 0:
+                        display("Adding discovered domain {}".format(d))
+                        domain, created = Domain.objects.get_or_create(name=d)
+                    else:
+                        display_error("Ignoring bad domain {}".format(d))
