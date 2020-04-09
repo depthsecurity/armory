@@ -152,10 +152,7 @@ class Module(ToolTemplate):
 
                 if domain:
                     domain_obj, created = Domain.objects.get_or_create(name=domain)
-                    if ip:
-                        ip_obj, created = IPAddress.objects.get_or_create(ip_address=ip)
-                        domain_obj.ip_addresses.append(ip_obj)
-                        domain_obj.save()
+                    
 
             if '/' in target:
                 bd, created = CIDR.objects.get_or_create(name=target, defaults={'active_scope':True})
