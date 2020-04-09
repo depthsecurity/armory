@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from armory2.armory_main.models import BaseDomain, Domain
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_error
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display_error
 import os
 
 
@@ -15,10 +15,6 @@ class Module(ToolTemplate):
     name = "GobusterDNS"
     binary_name = "gobuster"
 
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.Domain = Domain(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -54,11 +50,11 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += [b.domain for b in BaseDomain.all(scope_type="passive")]
+                targets += [b.name for b in BaseDomain.get_set(scope_type="passive")]
             else:
                 targets += [
-                    b.domain
-                    for b in BaseDomain.all(scope_type="passive", tool=self.name)
+                    b.name
+                    for b in BaseDomain.get_set(scope_type="passive", tool=self.name, args=self.args.tool_args)
                 ]
 
         if args.output_path[0] == "/":
@@ -106,12 +102,12 @@ class Module(ToolTemplate):
                 for d in data:
                     if "Found: " in d:
                         new_domain = d.split(" ")[1].lower()
-                        created, subdomain = self.Domain.objects.get_or_create(
-                            domain=new_domain
+                        subdomain, created = Domain.objects.get_or_create(
+                            name=new_domain
                         )
             else:
                 display_error("{} not found.".format(output_path))
 
-            created, bd = BaseDomain.objects.get_or_create(domain=c['target'])
-            bd.add_tool_run(self.name)
+            bd, created = BaseDomain.objects.get_or_create(name=c['target'])
+            bd.add_tool_run(self.name, self.args.tool_args)
         self.Domain.commit()
