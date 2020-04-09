@@ -110,4 +110,4 @@ class Module(ToolTemplate):
 
             bd, created = BaseDomain.objects.get_or_create(name=c['target'])
             bd.add_tool_run(self.name, self.args.tool_args)
-        self.Domain.commit()
+        
