@@ -1,11 +1,24 @@
-FROM debian:buster-slim
+FROM debian:stable-slim
 MAINTAINER dlawson@depthsecurity.com
 
+ENV DEBIAN_FRONTEND noninteractive
+ENV GOROOT /opt/src/golang/go
+ENV GOPATH /root/go
 RUN echo "deb-src http://deb.debian.org/debian buster main" >> /etc/apt/sources.list
-RUN apt update
 CMD ["echo", "Installing Debian packages needed."]
-RUN apt install -y python2 python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev golang sudo chromium xclip
+
+RUN apt update
+RUN apt install -y python python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev sudo chromium xclip
+
+WORKDIR /opt/src/golang
+RUN wget https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz
+RUN tar zxfv go1.14.2.linux-amd64.tar.gz
+RUN ln -s /opt/src/golang/go/bin/go /usr/local/bin/
+RUN ln -s /opt/src/golang/go/bin/gofmt /usr/local/bin/
+RUN mkdir /root/go
+
 WORKDIR /opt/src
+
 CMD ["echo", "Cloning various repos"]
 RUN git clone https://github.com/joaomatosf/jexboss.git
 RUN git clone https://github.com/fang0654/linkedint
@@ -21,7 +34,7 @@ RUN git clone https://github.com/vysec/DomLink.git
 # RUN go get github.com/ffuf/ffuf
 
 # Next couple of lines are to use custom version of ffuf until it gets updated
-RUN go get github.com/fang0654/ffuf
+RUN go get github.com/ffuf/ffuf
 
 RUN ln -s /root/go/bin/ffuf /usr/local/bin/ffuf
 RUN gem install aquatone
@@ -29,7 +42,7 @@ RUN go get github.com/OJ/gobuster
 RUN ln -s /root/go/bin/gobuster /usr/local/bin/gobuster
 RUN go get github.com/sensepost/gowitness
 RUN ln -s /root/go/bin/gowitness /usr/local/bin/gowitness
-RUN go get github.com/subfinder/subfinder
+RUN go get github.com/projectdiscovery/subfinder/cmd/subfinder
 RUN ln -s /root/go/bin/subfinder /usr/local/bin/subfinder
 WORKDIR /opt/src/jexboss
 RUN pip install -r requires.txt
@@ -43,13 +56,14 @@ RUN make install
 RUN ln -s /opt/src/nikto/program /opt/nikto
 RUN ln -s /opt/nikto/nikto.pl /usr/local/bin/nikto
 WORKDIR /opt/src/pymeta
-RUN chmod +x setup.sh
-RUN ./setup.sh
+RUN python3 setup.py install
 RUN chmod +x pymeta.py
-RUN ln -s /opt/src/pymeta/pymeta.py /usr/local/bin/pymeta
+
 WORKDIR /opt/src/sslscan
 RUN apt-get build-dep openssl -y
+# RUN sed -i 's/fPIE/fPIC/g' Makefile
 RUN make static
+
 RUN ln -s /opt/src/sslscan/sslscan /usr/local/bin/sslscan
 WORKDIR /opt/src/Sublist3r
 RUN pip install -r requirements.txt
@@ -71,7 +85,9 @@ WORKDIR /opt/src
 RUN touch /tmp/revision16
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
+RUN git checkout armory2.0
 CMD ["echo", "Installing Armory"]
+RUN pip3 install django # Not sure why this doesn't work from the setup
 RUN python3 setup.py install
 RUN pip3 install jinja2 xlsxwriter
 WORKDIR /root/current
