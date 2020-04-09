@@ -23,12 +23,7 @@ class Module(ToolTemplate):
 
         self.options.add_argument("-u", "--url", help="URL to brute force")
         self.options.add_argument("--file", help="Import URLs from file")
-        self.options.add_argument(
-            "-w", 
-            "--wordlist", 
-            required=True,
-            help="Path to wordlist"
-        )
+        
         self.options.add_argument(
             "-i",
             "--import_database",
@@ -105,7 +100,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = self.binary + " dir -k "
-        cmd += " -o {output} -u {target} -w {wordlist} "
+        cmd += " -o {output} -u {target} "
 
         if args.tool_args:
             cmd += args.tool_args
