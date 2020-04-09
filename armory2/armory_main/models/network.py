@@ -72,7 +72,7 @@ def pre_save_domain(sender, instance, *args, **kwargs):
         if domain_name.count('.') > 0:
             base_domain = '.'.join(domain_name.split('.')[-2:])
 
-            bd, created = BaseDomain.objects.get_or_create(name=base_domain)
+            bd, created = BaseDomain.objects.get_or_create(name=base_domain, defaults="active_scope":instance.active_scope, "passive_scope":instance.passive_scope)
 
             if not created:
                 instance.passive_scope = bd.passive_scope
