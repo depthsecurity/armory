@@ -28,6 +28,7 @@ class Module(ToolTemplate):
             action="store_true",
         )
         self.options.add_argument("-f", "--import_file", help="Import URLs from file")
+        self.options.add_argument("--rescan", help="Rescan already-scanned URLs")
 
 
     def get_targets(self, args):
@@ -95,7 +96,7 @@ class Module(ToolTemplate):
         """
         """
         # Mark them all as having been run. Since we aren't processing output, this seems to be the best way of doing it. In the future I might just grab the finished files.
-        
+
         add_tools_urls(scope_type="active", tool=self.name, args=self.args.tool_args)
 
     def chunks(self, chunkable, n):
