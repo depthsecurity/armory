@@ -29,7 +29,7 @@ class Module(ToolTemplate):
         )
         self.options.add_argument("-f", "--import_file", help="Import URLs from file")
         self.options.add_argument("--rescan", help="Rescan already-scanned URLs")
-
+        self.optiosn.add_argument("--group_size", help="Size of each file to be scanned (Default 50 URLs)", default=50)
 
     def get_targets(self, args):
 
