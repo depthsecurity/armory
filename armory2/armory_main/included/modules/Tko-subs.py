@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from armory2.armory_main.models import Domain
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_new, display_warning
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display_new, display_warning
 import os
 
 

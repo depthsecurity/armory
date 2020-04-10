@@ -8,7 +8,7 @@ from armory2.armory_main.models import (
     CVE,
 )
 from netaddr import IPNetwork
-from ..ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 import datetime
 import json
 import os

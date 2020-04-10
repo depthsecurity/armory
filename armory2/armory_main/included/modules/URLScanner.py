@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from ..ModuleTemplate import ModuleTemplate
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
 import re
-from ..utilities.get_urls import run as geturls
+from armory2.armory_main.included.utilities.get_urls import run as geturls
 import requests
 import time
 import os

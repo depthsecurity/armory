@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from armory2.armory_main.models import BaseDomain, User
-from ..ModuleTemplate import ModuleTemplate
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
 import csv
 import glob
 import six

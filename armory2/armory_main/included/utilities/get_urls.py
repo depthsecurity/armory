@@ -44,6 +44,43 @@ def run(tool=None, args="", scope_type=None):
 
     return sort_by_url(results)
 
+def add_tools_urls(tool, args="", scope_type=None):
+
+    results = []
+    
+
+    ports = Port.objects.all().filter(Q(service_name="http")| Q(service_name="https"))
+    
+
+    for p in ports:
+
+        if (
+            p.ip_address
+            and ((scope_type == "active" and p.ip_address.active_scope)
+            or (scope_type == "passive" and p.ip_address.passive_scope)
+            or not scope_type) 
+            and ((not tool) or (tool not in p.ip_address.tools.keys() or "{}-{}".format(p.port_number, args) not in p.ip_address.tools[tool]))
+        ):
+            
+            p.ip_address.add_tool_run(tool, args="{}-{}".format(p.port_number, args))
+            
+
+        domain_list = [d for d in p.ip_address.domain_set.all()]
+
+
+        for d in domain_list:
+            
+            if (
+                (scope_type == "active" and d.active_scope)
+                or (scope_type == "passive" and d.passive_scope)  
+                or not scope_type):   # and ((not tool) or (tool in p.tools.keys() and args in p.tools[tool]))
+                
+                if (not tool) or (tool not in d.tools.keys() or "{}-{}".format(p.port_number, args) not in d.tools[tool]):
+
+            
+                    d.add_tool_run(tool, args="{}-{}".format(p.port_number, args))
+
+    
 
 def sort_by_url(data):
     d_data = {}

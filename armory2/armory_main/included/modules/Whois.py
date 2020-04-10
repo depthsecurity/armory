@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 from armory2.armory_main.models import BaseDomain, ScopeCIDR
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display
-from ..utilities.readFile import read_file
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display
+from armory2.armory_main.included.utilities.readFile import read_file
 import os
 
 

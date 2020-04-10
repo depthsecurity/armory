@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 from armory2.armory_main.models import BaseDomain, User
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_error
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display_error
 import os
 import csv
 import pdb

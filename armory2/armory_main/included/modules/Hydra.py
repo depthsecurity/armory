@@ -1,19 +1,14 @@
 #!/usr/bin/python
-from armory2.armory_main.models import Domain, IP, Port
-from ..ModuleTemplate import ToolTemplate
+from armory2.armory_main.models import Domain, IPAddress, Port
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 import os
-
+import pdb
 
 class Module(ToolTemplate):
 
     name = "Hydra"
     binary_name = "hydra"
 
-    def __init__(self, db):
-        self.db = db
-        self.Domain = Domain(db, self.name)
-        self.IPAddress = IP(db, self.name)
-        self.Port = Port(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -69,52 +64,44 @@ class Module(ToolTemplate):
 
         elif args.scan_defaults:
             lists = {}
+            if args.rescan:
+                all_hosts = Port.get_set(scope_type="Active")
+            else:
+                all_hosts = Port.get_set(scope_type="Active", tool=self.name)
+
+
             if args.ftp_wordlist:
-                for p in ["ftps", "ftp"]:
-                    lists[args.ftp_wordlist] = [
-                        s for s in self.Port.all(tool=self.name, service_name=p)
-                    ]
+                lists[("ftps", "ftp")] = {'wordlist':args.ftp_wordlist, 'hosts':[]}
 
             if args.telnet_wordlist:
-                for p in ["telnet"]:
-                    lists[args.telnet_wordlist] = [
-                        s for s in self.Port.all(tool=self.name, service_name=p)
-                    ]
+                lists[("telnet",)] = {'wordlist':args.telnet_wordlist, 'hosts':[]}
+                    
 
             if args.email_wordlist:
-                for p in ["smtps", "smtp", "pop3", "pop3s", "imap", "imaps"]:
-                    lists[args.email_wordlist] = [
-                        s for s in self.Port.all(tool=self.name, service_name=p)
-                    ]
+                lists[("smtps", "smtp", "pop3", "pop3s", "imap", "imaps")] = {'wordlist':args.email_wordlist, 'hosts':[]}
+                    
 
             if args.ssh_wordlist:
-                for p in ["ssh"]:
-                    lists[args.ssh_wordlist] = [
-                        s for s in self.Port.all(tool=self.name, service_name=p)
-                    ]
+                lists[('ssh',)] = {'wordlist':args.ssh_wordlist, 'hosts':[]}
 
             if args.vnc_wordlist:
-                for p in ["vnc"]:
-                    lists[args.vnc_wordlist] = [
-                        s for s in self.Port.all(tool=self.name, service_name=p)
-                    ]
+                lists[("vnc",)] = {'wordlist':args.vnc_wordlist, 'hosts':[]}
 
-            for k in lists.keys():
-                for s in lists[k]:
+            for a in all_hosts:
+                for k in lists.keys():
+                    if a.service_name in k:
+                        lists[k]["hosts"].append(a)
+                        targets.append({
+                            "service": a.service_name,
+                            "target": a.ip_address.ip_address,
+                            "port": a.port_number,
+                            "wordlist": lists[k]['wordlist'],
 
-                    port_number = s.port_number
-                    ip_address = s.ip_address.ip_address
-                    name = s.service_name
+                            })
+                        
+                        a.add_tool_run(tool=self.name)
 
-                    targets.append(
-                        {
-                            "service": name,
-                            "target": ip_address,
-                            "port": port_number,
-                            "wordlist": k,
-                        }
-                    )
-
+            
         if args.output_path[0] == "/":
             output_path = os.path.join(
                 self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]

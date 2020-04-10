@@ -4,9 +4,9 @@ from armory2.armory_main.models import (
     BaseDomain,
     IP,
 )
-from ..ModuleTemplate import ToolTemplate
-from ..utilities import get_domain_ip
-from ..utilities.color_display import display, display_error, display_warning
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities import get_domain_ip
+from armory2.armory_main.included.utilities.color_display import display, display_error, display_warning
 import io
 import os
 

@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from armory2.armory_main.models import IP
-from ..ModuleTemplate import ToolTemplate
-from ..utilities import get_urls
+from armory2.armory_main.models import IPAddress
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.get_urls import run, add_tools_urls
 import os
 import re
 import subprocess
@@ -27,9 +27,6 @@ class Module(ToolTemplate):
     name = "Gowitness"
     binary_name = "gowitness"
 
-    def __init__(self, db):
-        self.db = db
-        self.IPAddress = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -69,9 +66,9 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += get_urls.run(self.db, scope_type="active")
+                targets += run(scope_type="active")
             else:
-                targets += get_urls.run(self.db, scope_type="active", tool=self.name)
+                targets += run(scope_type="active", tool=self.name, args=self.args.tool_args)
 
         if args.scan_folder:
 
@@ -159,7 +156,7 @@ class Module(ToolTemplate):
             subprocess.Popen(cmd, shell=False).wait()
             os.chdir(cwd)
 
-        self.IPAddress.commit()
+        add_tools_urls(scope_type="active", tool=self.name, args=self.args.tool_args)
 
     def chunks(self, chunkable, n):
         """ Yield successive n-sized chunks from l.

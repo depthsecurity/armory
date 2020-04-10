@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-from armory2.armory_main.models import IP
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_error
-from ..utilities import get_urls
+from armory2.armory_main.models import IPAddress
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display_error
+from armory2.armory_main.included.utilities import get_urls
 import os
 import tempfile
 from time import time
@@ -17,10 +17,6 @@ class Module(ToolTemplate):
 
     name = "JexBoss"
     binary_name = "jexboss.py"
-
-    def __init__(self, db):
-        self.db = db
-        self.IPAddress = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -43,9 +39,9 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += get_urls.run(self.db, scope_type="active")
+                targets += get_urls.run(scope_type="active")
             else:
-                targets += get_urls.run(self.db, scope_type="active", tool=self.name)
+                targets += get_urls.run(scope_type="active", tool=self.name, args=self.args.tool_args)
 
         if targets:
             if args.output_path[0] == "/":
@@ -98,8 +94,9 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
         """
         """
-
-        self.IPAddress.commit()
+        # Mark them all as having been run. Since we aren't processing output, this seems to be the best way of doing it. In the future I might just grab the finished files.
+        
+        add_tools_urls(scope_type="active", tool=self.name, args=self.args.tool_args)
 
     def chunks(self, chunkable, n):
         """ Yield successive n-sized chunks from l.

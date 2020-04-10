@@ -5,9 +5,9 @@ from armory2.armory_main.models import (
     Port,
     Url,
 )
-from ..ModuleTemplate import ToolTemplate
-from ..utilities import get_urls
-from ..utilities.color_display import display_warning
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities import get_urls
+from armory2.armory_main.included.utilities.color_display import display_warning
 import os
 import time
 

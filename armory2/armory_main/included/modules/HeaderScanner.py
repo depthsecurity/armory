@@ -1,16 +1,18 @@
 #!/usr/bin/python
 
-from armory2.armory_main.models import Port, Domain, IP
-from ..ModuleTemplate import ModuleTemplate
+from armory2.armory_main.models import Port, Domain, IPAddress
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
 import requests
 import sys
 from multiprocessing import Pool as ThreadPool
-from ..utilities.color_display import (
+from armory2.armory_main.included.utilities.get_urls import run
+from armory2.armory_main.included.utilities.color_display import (
     display,
     display_error,
     display_warning,
     display_new,
 )
+import pdb
 
 
 def check_if_ip(txt):
@@ -24,12 +26,6 @@ def check_if_ip(txt):
 class Module(ModuleTemplate):
 
     name = "HeaderScanner"
-
-    def __init__(self, db):
-        self.db = db
-        self.Port = Port(db, self.name)
-        self.Domain = Domain(db, self.name)
-        self.IPAddress = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -53,114 +49,78 @@ class Module(ModuleTemplate):
         )
 
     def run(self, args):
-        data = []
+        urls = []
         if args.url:
-            service = args.url.split(":")[0]
-            host = args.url.split("/")[2]
-
-            if args.url.count(":") == 2:
-                port = args.url.split(":")[2].split("/")[0]
-            elif service == "http":
-                port = "80"
-            elif service == "https":
-                port = "443"
-            else:
-                display_error(
-                    "Could not figure out port number for url: {}".format(args.url)
-                )
-                sys.exit(1)
-
-            if check_if_ip(host):
-                created, ip = self.IPAddress.objects.get_or_create(ip_address=host)
-            else:
-
-                created, domain = self.Domain.objects.get_or_create(domain=host)
-                ip = domain.ip_addresses[0]
-
-            created, service_id = self.Port.objects.get_or_create(
-                ip_address=ip, port_number=port
-            )
-            service_id.service_name = service
-
-            data.append([service_id.id, [args.url], args.timeout])
-
+            urls.append(args.url)
+            
         if args.file:
             url = open(args.file).read().split("\n")
             for u in url:
                 if u:
-                    service = u.split(":")[0]
-                    host = u.split("/")[2]
-
-                    if u.count(":") == 2:
-                        port = u.split(":")[2].split("/")[0]
-                    elif service == "http":
-                        port = "80"
-                    elif service == "https":
-                        port = "443"
-                    else:
-                        display_error(
-                            "Could not figure out port number for url: {}".format(
-                                args.url
-                            )
-                        )
-                        sys.exit(1)
-
-                    if check_if_ip(host):
-                        created, ip = self.IPAddress.objects.get_or_create(ip_address=host)
-                    else:
-
-                        created, domain = self.Domain.objects.get_or_create(domain=host)
-                        ip = domain.ip_addresses[0]
-
-                    created, service_id = self.Port.objects.get_or_create(
-                        ip_address=ip, port_number=port
-                    )
-                    service_id.service_name = service
-
-                    data.append([service_id.id, [u], args.timeout])
+                    urls.append(u)
 
         if args.import_db:
 
+                    
             if args.rescan:
-                svc = self.Port.all(service_name="http")
-                svc += self.Port.all(service_name="https")
+                urls += run(scope_type="active")
             else:
-                svc = self.Port.all(service_name="http", tool=self.name)
-                svc += self.Port.all(service_name="https", tool=self.name)
+                urls += run(scope_type="active", tool=self.name)
 
-            for s in svc:
-                if s.ip_address.in_scope:
-                    urls = [
-                        "%s://%s:%s"
-                        % (s.service_name, s.ip_address.ip_address, s.port_number)
-                    ]
 
-                    for d in s.ip_address.domains:
-                        urls.append(
-                            "%s://%s:%s" % (s.service_name, d.domain, s.port_number)
-                        )
 
-                    data.append([s.id, urls, args.timeout])
-
-        if data:
+        if urls:
             pool = ThreadPool(int(args.threads))
+            data = [(u, args.timeout) for u in urls]
 
             results = pool.map(process_urls, data)
             display_new("Adding headers to the database")
-            for i, headers, cookies in results:
-                created, svc = self.Port.objects.get_or_create(id=i)
+            
+            for headers, cookies in results:
+                if len(list(headers.keys())) > 0:
+                    h = list(headers.keys())[0]
+                    dom, dom_type, scheme, port = get_url_data(h)
+                    display("Processing headers and cookies from URL {}".format(h))
+                
+                    if dom_type == 'ip':
+                        ip, created = IPAddress.objects.get_or_create(ip_address=dom)
+                        
+                        ip.add_tool_run(tool=self.name)
 
-                svc.meta["headers"] = headers
+                        p, created = Port.objects.get_or_create(ip_address=ip, port_number=port, service_name=scheme, proto="tcp")
+                        if not p.meta.get('headers'):
+                            p.meta['headers'] = {} 
+                        p.meta['headers'][dom] = headers[h]
+                        
+                        if not p.meta.get('cookies'):
+                            p.meta['cookies'] = {} 
+                        p.meta['cookies'][dom] = cookies[h]
+                            
+                        p.save()
 
-                svc.meta["cookies"] = cookies
-                svc.update()
+                    else:
+                        domain, created = Domain.objects.get_or_create(name=dom)
 
-            self.Port.commit()
+                        domain.add_tool_run(tool=self.name)
 
+                        for ip in domain.ip_addresses.all():
 
+                            p, created = Port.objects.get_or_create(ip_address=ip, port_number=port, service_name=scheme, proto="tcp")
+                            if not p.meta.get('headers'):
+                                p.meta['headers'] = {} 
+                            p.meta['headers'][dom] = headers[h]
+                            
+                            if not p.meta.get('cookies'):
+                                p.meta['cookies'] = {} 
+                            p.meta['cookies'][dom] = cookies[h]
+                            
+                            p.save()
+
+            
 def process_urls(data):
 
-    i, urls, timeout = data
+    u = data[0]
+    timeout = data[1]
     blacklist = [
         "Date",
         "Connection",
@@ -172,22 +132,45 @@ def process_urls(data):
     ]
     new_headers = {}
     new_cookies = {}
-    for u in urls:
-        display("Processing %s" % u)
-        try:
-            res = requests.get(u, timeout=int(timeout), verify=False)
+    
+    display("Processing %s" % u)
+    try:
+        res = requests.get(u, timeout=int(timeout), verify=False)
 
-            for k in res.headers.keys():
-                if k not in blacklist:
-                    if not new_headers.get(u, False):
-                        new_headers[u] = []
+        for k in res.headers.keys():
+            if k not in blacklist:
+                if not new_headers.get(u, False):
+                    new_headers[u] = []
 
-                    new_headers[u].append("%s: %s" % (k, res.headers[k]))
-            new_cookies[u] = dict(res.cookies)
+                new_headers[u].append("%s: %s" % (k, res.headers[k]))
+        new_cookies[u] = dict(res.cookies)
 
-        except KeyboardInterrupt:
-            display_warning("Got Ctrl+C, exiting")
-            sys.exit(1)
-        except Exception as e:
-            display_error("%s no good, skipping: %s" % (u, e))
-    return (i, new_headers, new_cookies)
+    except KeyboardInterrupt:
+        display_warning("Got Ctrl+C, exiting")
+        sys.exit(1)
+    except Exception as e:
+        display_error("%s no good, skipping: %s" % (u, e))
+    return (new_headers, new_cookies)
+
+def get_url_data(url):
+
+    scheme = url.split(':')[0]
+    if url.count(':') == 2:
+        port = url.split(':')[-1]
+    elif scheme == 'http':
+        port = 80
+    elif scheme == 'https':
+        port = 443
+    else:
+        port = 0
+    
+    dom = url.split('/')[2].split(':')[0]
+    try:
+        [int(i) for i in dom.split('.')]
+        # If we made it here, it is an IP
+
+        dom_type = 'ip'
+    except:
+        dom_type = "domain"
+
+    return dom, dom_type, scheme, port

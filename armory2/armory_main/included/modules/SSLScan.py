@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from armory2.armory_main.models import Domain, IP, Port
-from ..ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 import os
 
 

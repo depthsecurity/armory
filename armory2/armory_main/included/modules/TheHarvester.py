@@ -4,8 +4,8 @@ from armory2.armory_main.models import (
     Domain,
     User,
 )
-from ..ModuleTemplate import ToolTemplate
-from ..utilities.color_display import display_new, display_error, display
+from armory2.armory_main.included.ModuleTemplate import ToolTemplate
+from armory2.armory_main.included.utilities.color_display import display_new, display_error, display
 import os
 import xmltodict
 import pdb
