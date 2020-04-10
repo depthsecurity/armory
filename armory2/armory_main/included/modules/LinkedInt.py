@@ -34,11 +34,6 @@ class Module(ModuleTemplate):
     name = "LinkedInt"
     binary_name = "linkedint.py"
 
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.User = User(db, self.name)
-
     def set_options(self):
         super(Module, self).set_options()
 
@@ -85,6 +80,21 @@ class Module(ModuleTemplate):
             action="store_true"
         )
 
+        self.options.add_argument(
+            "--login",
+            help="Login for LinkedIn"
+        )
+
+        self.options.add_argument(
+            "--password",
+            help="Password for LinkedIn"
+        )
+
+        self.options.add_argument(
+            "--apikey",
+            help="API Key for HunterIO"
+        )
+
     def run(self, args):
         # pdb.set_trace()
         if not args.binary:
@@ -99,7 +109,7 @@ class Module(ModuleTemplate):
             )
 
         if args.domain:
-            created, domain = BaseDomain.objects.get_or_create(domain=args.domain)
+            domain, created = BaseDomain.objects.get_or_create(name=args.domain)
             if args.top:
                 titles = [
                     user.job_title.split(" at ")[0]
@@ -136,7 +146,7 @@ class Module(ModuleTemplate):
                             
                             args.keywords = w
                             self.process_domain(domain, args)
-                            BaseDomain.commit()
+                            
                             bfile.write('{}\n'.format(w))
                         else:
                             display("Skipped {} due to it already being searched.".format(w))
@@ -146,21 +156,21 @@ class Module(ModuleTemplate):
                     ['"{}"'.format(i) for i in args.smart_shuffle.split(",")]
                 )
                 self.process_domain(domain, args)
-                BaseDomain.commit()
+                
                 args.keywords = " AND ".join(
                     ['-"{}"'.format(i) for i in args.smart_shuffle.split(",")]
                 )
                 self.process_domain(domain, args)
-                BaseDomain.commit()
+                
             else:
                 self.process_domain(domain, args)
-                BaseDomain.commit()            
+                
 
-            BaseDomain.commit()
+            
 
     def process_domain(self, domain_obj, args):
 
-        domain = domain_obj.domain
+        domain = domain_obj.name
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
@@ -194,13 +204,19 @@ class Module(ModuleTemplate):
         if args.email_format:
             command_args += " -f " + args.email_format
 
+        if args.login and args.password:
+            command_args += " --login {} --password {} ".format(args.login, args.password)
+
+        if args.apikey:
+            command_args += " --apikey {} ".format(args.apikey)
+            
         current_dir = os.getcwd()
 
         new_dir = "/".join(self.binary.split("/")[:-1])
 
         os.chdir(new_dir)
 
-        cmd = shlex.split("python2 " + self.binary + command_args)
+        cmd = shlex.split("python " + self.binary + command_args)
         print("Executing: %s" % " ".join(cmd))
 
         subprocess.Popen(cmd).wait()
@@ -213,7 +229,7 @@ class Module(ModuleTemplate):
             for row in csvreader:
                 count += 1
                 
-                created, user = self.User.objects.get_or_create(
+                user, created = User.objects.get_or_create(
                         email=remove_binary(row[3])
                     )
 
@@ -233,4 +249,4 @@ class Module(ModuleTemplate):
                 user.update()
 
         print("%s found and imported" % count)
-        self.User.commit()
+        
