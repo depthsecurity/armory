@@ -3,7 +3,7 @@
 from armory2.armory_main.models import IPAddress
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities.color_display import display_error
-from armory2.armory_main.included.utilities import get_urls
+from armory2.armory_main.included.utilities.get_urls import run as get_urls, add_tools_urls
 import os
 import tempfile
 from time import time
@@ -40,9 +40,9 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += get_urls.run(scope_type="active")
+                targets += get_urls(scope_type="active")
             else:
-                targets += get_urls.run(scope_type="active", tool=self.name, args=self.args.tool_args)
+                targets += get_urls(scope_type="active", tool=self.name, args=self.args.tool_args)
 
         if targets:
             if args.output_path[0] == "/":
