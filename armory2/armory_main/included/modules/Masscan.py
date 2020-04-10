@@ -1,11 +1,9 @@
 from armory2.armory_main.models import (
     BaseDomain,
     Domain,
-    IP,
+    IPAddress,
     Port,
-    ScopeCIDR,
-    Vuln,
-    CVE,
+    CIDR,
 )
 from netaddr import IPNetwork
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
@@ -37,16 +35,6 @@ class Module(ToolTemplate):
     name = "Masscan"
     binary_name = "masscan"
 
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.Domain = Domain(db, self.name)
-        self.IPAddress = IP(db, self.name)
-        self.Port = Port(db, self.name)
-
-        self.Vulnerability = Vuln(db, self.name)
-        self.CVE = CVE(db, self.name)
-        self.ScopeCIDR = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -89,36 +77,36 @@ class Module(ToolTemplate):
                     if check_if_ip(h):
                         targets.append(h)
                     else:
-                        created, domain = self.Domain.objects.get_or_create(domain=h)
-                        targets += [i.ip_address for i in domain.ip_addresses]
+                        domain, created = Domain.objects.get_or_create(name=h, defaults={'active_scope':True})
+                        targets += [i.ip_address for i in domain.ip_addresses.all()]
 
             else:
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.objects.get_or_create(domain=h)
-                    targets += [i.ip_address for i in domain.ip_addresses]
+                    domain, created = Domain.objects.get_or_create(name=h, defaults={'active_scope':True})
+                    targets += [i.ip_address for i in domain.ip_addresses.all()]
 
         if args.hosts_database:
             if args.rescan:
                 targets += [
-                    h.ip_address for h in self.IPAddress.all(scope_type="active")
+                    h.ip_address for h in IPAddress.get_set(scope_type="active")
                 ]
-                targets += [h.cidr for h in self.ScopeCIDR.all()]
+                targets += [h.name for h in CIDR.get_set(scope_type="active")]
             else:
                 targets += [
                     h.ip_address
-                    for h in self.IPAddress.all(tool=self.name, scope_type="active")
+                    for h in IPAddress.get_set(tool=self.name, scope_type="active", args=self.args.tool_args)
                 ]
-                targets += [h.cidr for h in self.ScopeCIDR.all(tool=self.name)]
+                targets += [h.name for h in CIDR.get_set(tool=self.name, scope_type="active", args=self.args.tool_args)]
 
         if args.hosts_file:
             for h in [l for l in open(args.hosts_file).read().split("\n") if l]:
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.objects.get_or_create(domain=h)
-                    targets += [i.ip_address for i in domain.ip_addresses]
+                    domain = Domain.objects.get_or_create(name=h, defaults={'active_scope':True})
+                    targets += [i.ip_address for i in domain.ip_addresses.all()]
 
         # Here we should deduplicate the targets, and ensure that we don't have IPs listed that also exist inside CIDRs
         data = []
@@ -184,7 +172,7 @@ class Module(ToolTemplate):
         for host in hosts:
             hostIP = host.find("address").get("addr")
 
-            created, ip = self.IPAddress.objects.get_or_create(ip_address=hostIP)
+            ip, created = IPAddress.objects.get_or_create(ip_address=hostIP)
 
             for hostname in host.findall("hostnames/hostname"):
                 hostname = hostname.get("name")
@@ -195,8 +183,8 @@ class Module(ToolTemplate):
                 # )  # attempt to not get PTR record
                 # if not reHostname:
 
-                created, domain = self.Domain.objects.get_or_create(domain=hostname)
-                if ip not in domain.ip_addresses:
+                domain, created = Domain.objects.get_or_create(name=hostname)
+                if ip not in domain.ip_addresses.all():
                     domain.ip_addresses.append(ip)
                     domain.save()
 
@@ -207,7 +195,7 @@ class Module(ToolTemplate):
                     hostPort = port.get("portid")
                     portProto = port.get("protocol")
 
-                    created, db_port = self.Port.objects.get_or_create(
+                    db_port, created = Port.objects.get_or_create(
                         port_number=hostPort,
                         status=portState,
                         proto=portProto,
@@ -234,7 +222,7 @@ class Module(ToolTemplate):
                     db_port.info = info
                     db_port.save()
 
-            self.IPAddress.commit()
+            
 
     def get_domains_from_cert(self, cert):
         # Shamelessly lifted regex from stack overflow

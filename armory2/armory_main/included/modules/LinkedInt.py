@@ -9,6 +9,7 @@ import os
 import shlex
 import string
 import subprocess
+import pdb
 
 
 def remove_binary(txt):
@@ -101,7 +102,7 @@ class Module(ModuleTemplate):
             self.binary = which.run("LinkedInt.py")
 
         else:
-            self.binary = which.run(args.binary)
+            self.binary = args.binary
 
         if not self.binary:
             display_error(
@@ -209,9 +210,9 @@ class Module(ModuleTemplate):
 
         if args.apikey:
             command_args += " --apikey {} ".format(args.apikey)
-            
-        current_dir = os.getcwd()
 
+        current_dir = os.getcwd()
+        # pdb.set_trace()
         new_dir = "/".join(self.binary.split("/")[:-1])
 
         os.chdir(new_dir)
@@ -230,7 +231,7 @@ class Module(ModuleTemplate):
                 count += 1
                 
                 user, created = User.objects.get_or_create(
-                        email=remove_binary(row[3])
+                        email=remove_binary(row[3]), defaults={"domain":domain_obj}
                     )
 
                 user.first_name = remove_binary(row[0])
@@ -238,15 +239,14 @@ class Module(ModuleTemplate):
                 user.job_title = remove_binary(row[4])
                 user.location = remove_binary(row[5])
 
-                if created:
-                    user.domain = domain_obj
+                
 
-                    print(
-                        "New user: %s %s"
-                        % (remove_binary(row[0]), remove_binary(row[1]))
-                    )
+                print(
+                    "New user: %s %s"
+                    % (remove_binary(row[0]), remove_binary(row[1]))
+                )
 
-                user.update()
+                user.save()
 
         print("%s found and imported" % count)
         
