@@ -81,7 +81,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " -o {output} -d {target} -f {output}/pymeta_{target}.csv -csv"
+        cmd = self.binary + " -o {output} -d {target} -f {output}/pymeta_{target}.csv "
         if args.tool_args:
             cmd += args.tool_args
         return cmd
