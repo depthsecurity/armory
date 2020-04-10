@@ -1,10 +1,10 @@
 from armory2.armory_main.models import (
     BaseDomain,
     Domain,
-    IP,
+    IPAddress,
     Port,
-    ScopeCIDR,
-    Vuln,
+    CIDR,
+    Vulnerability,
     CVE,
 )
 from netaddr import IPNetwork
@@ -39,17 +39,6 @@ class Module(ToolTemplate):
 
     name = "Nmap"
     binary_name = "nmap"
-
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.Domain = Domain(db, self.name)
-        self.IPAddress = IP(db, self.name)
-        self.Port = Port(db, self.name)
-
-        self.Vulnerability = Vuln(db, self.name)
-        self.CVE = CVE(db, self.name)
-        self.ScopeCIDR = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -89,7 +78,7 @@ class Module(ToolTemplate):
 
     def get_targets(self, args):
 
-        self.args = args
+        
         if args.import_file:
             args.no_binary = True
             return [{"target": "", "output": args.import_file}]
@@ -103,44 +92,44 @@ class Module(ToolTemplate):
                     if check_if_ip(h):
                         targets.append(h)
                     else:
-                        created, domain = self.Domain.objects.get_or_create(domain=h)
-                        targets += [i.ip_address for i in domain.ip_addresses]
+                        domain = Domain.objects.get_or_create(name=h)
+                        targets += [i.ip_address for i in domain.ip_addresses.all()]
 
             else:
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.objects.get_or_create(domain=h)
-                    targets += [i.ip_address for i in domain.ip_addresses]
+                    domain = Domain.objects.get_or_create(name=h)
+                    targets += [i.ip_address for i in domain.ip_addresses.all()]
 
         if args.hosts_database:
             if args.rescan:
                 targets += [
-                    h.ip_address for h in self.IPAddress.all(scope_type="active")
+                    h.ip_address for h in IPAddress.get_set(scope_type="active")
                 ]
-                targets += [h.cidr for h in self.ScopeCIDR.all()]
+                targets += [h.name for h in CIDR.get_set(scope_type="active")]
             else:
                 targets += [
                     h.ip_address
-                    for h in self.IPAddress.all(tool=self.name, scope_type="active")
+                    for h in IPAddress.get_set(tool=self.name, args=args.tool_args, scope_type="active")
                 ]
-                targets += [h.cidr for h in self.ScopeCIDR.all(tool=self.name)]
+                targets += [h.name for h in CIDR.get_set(tool=self.name, args=args.tool_args, scope_type="active")]
 
         if args.hosts_file:
             for h in [l for l in open(args.hosts_file).read().split("\n") if l]:
                 if check_if_ip(h):
                     targets.append(h)
                 else:
-                    created, domain = self.Domain.objects.get_or_create(domain=h)
-                    targets += [i.ip_address for i in domain.ip_addresses]
+                    domain, created = Domain.objects.get_or_create(name=h)
+                    targets += [i.ip_address for i in domain.ip_addresses.all()]
 
         data = []
         if args.ssl_cert_mode:
-            ports = self.Port.all(service_name="https")
+            ports = Port.objects.all().filter(service_name="https")
 
-            data = list(set([i.ip_address.ip_address for i in ports]))
+            data = list(set([p.ip_address.ip_address for p in ports]))
 
-            port_numbers = list(set([str(i.port_number) for i in ports]))
+            port_numbers = list(set([str(p.port_number) for p in ports]))
             args.tool_args += " -sV -p {} --script ssl-cert ".format(
                 ",".join(port_numbers)
             )
@@ -239,7 +228,7 @@ class Module(ToolTemplate):
         for host in hosts:
             hostIP = host.find("address").get("addr")
 
-            created, ip = self.IPAddress.objects.get_or_create(ip_address=hostIP)
+            ip, created = IPAddress.objects.get_or_create(ip_address=hostIP)
 
             for hostname in host.findall("hostnames/hostname"):
                 hostname = hostname.get("name")
@@ -250,9 +239,9 @@ class Module(ToolTemplate):
                 # )  # attempt to not get PTR record
                 # if not reHostname:
 
-                created, domain = self.Domain.objects.get_or_create(domain=hostname)
-                if ip not in domain.ip_addresses:
-                    domain.ip_addresses.append(ip)
+                domain, created = Domain.objects.get_or_create(name=hostname)
+                if ip not in domain.ip_addresses.all():
+                    domain.ip_addresses.add(ip)
                     domain.save()
 
             for port in host.findall("ports/port"):
@@ -265,7 +254,7 @@ class Module(ToolTemplate):
                     if not self.args.filter_ports or int(hostPort) not in [
                         int(p) for p in self.args.filter_ports.split(",")
                     ]:
-                        created, db_port = self.Port.objects.get_or_create(
+                        db_port, created = Port.objects.get_or_create(
                             port_number=hostPort,
                             status=portState,
                             proto=portProto,
@@ -329,7 +318,7 @@ class Module(ToolTemplate):
                         db_port.info = info
                         db_port.save()
 
-            self.IPAddress.commit()
+            
 
     def parseVulners(self, scriptOutput, db_port):
         urls = re.findall(r"(https://vulners.com/cve/CVE-\d*-\d*)", scriptOutput)
@@ -347,7 +336,7 @@ class Module(ToolTemplate):
                 if edb.split("/exploits/")[1] not in vuln_refs:
                     vuln_refs.append(edb.split("/exploits/")[1])
 
-            if not self.CVE.find(name=cve):
+            if not CVE.objects.all().filter(name=cve):
                 # print "Gathering CVE info for", cve
                 try:
                     res = json.loads(
@@ -365,14 +354,14 @@ class Module(ToolTemplate):
                     else:
                         severity = int(cvss) / 2
 
-                    if not self.Vulnerability.find(name=findingName):
+                    if not self.Vulnerability.objects.all().filter(name=findingName):
                         # print "Creating", findingName
-                        created, db_vuln = self.Vulnerability.objects.get_or_create(
+                        db_vuln, created = Vulnerability.objects.get_or_create(
                             name=findingName,
                             severity=severity,
                             description=cveDescription,
                         )
-                        db_vuln.ports.append(db_port)
+                        db_vuln.port.add(db_port)
                         db_vuln.exploitable = exploitable
                         if vuln_refs:
                             db_vuln.exploit_reference = {"edb-id": vuln_refs}
@@ -380,8 +369,8 @@ class Module(ToolTemplate):
 
                     else:
                         # print "modifying",findingName
-                        db_vuln = self.Vulnerability.find(name=findingName)
-                        db_vuln.ports.append(db_port)
+                        db_vuln = Vulnerability.objects.get(name=findingName)
+                        db_vuln.ports.add(db_port)
                         db_vuln.exploitable = exploitable
 
                         if vuln_refs:
@@ -404,20 +393,19 @@ class Module(ToolTemplate):
 
                         db_vuln.save()
 
-                    if not self.CVE.find(name=cve):
-                        created, db_cve = self.CVE.objects.get_or_create(
+                    if not CVE.objects.all().filter(name=cve):
+                        db_cve, created = CVE.objects.get_or_create(
                             name=cve, description=cveDescription, temporal_score=cvss
                         )
-                        db_cve.vulnerabilities.append(db_vuln)
+                        db_cve.vulnerability_set.add(db_vuln)
                         db_cve.save()
 
                     else:
-                        db_cve = self.CVE.find(name=cve)
-                        db_cve.vulnerabilities.append(db_vuln)
+                        db_cve = self.CVE.objects.get(name=cve)
+                        db_cve.vulnerability_set.add(db_vuln)
                         db_cve.save()
 
-                    self.Vulnerability.commit()
-                    self.CVE.commit()
+                    
                 except Exception:
                     print("something went wrong with the vuln/cve info gathering")
                     if vulners:
@@ -431,10 +419,10 @@ class Module(ToolTemplate):
                     pass
 
             else:
-                db_cve = self.CVE.find(name=cve)
+                db_cve = CVE.objects.get(name=cve)
                 for db_vulns in db_cve.vulnerabilities:
                     if db_port not in db_vulns.ports:
-                        db_vulns.ports.append(db_port)
+                        db_vulns.ports.add(db_port)
         return
 
     def get_domains_from_cert(self, cert):

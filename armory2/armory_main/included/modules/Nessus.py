@@ -2,11 +2,11 @@ from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
 from armory2.armory_main.models import (
     BaseDomain,
     Domain,
-    IP,
+    IPAddress,
     Port,
-    Vuln,
+    Vulnerability,
     CVE,
-    ScopeCIDR,
+    CIDR,
 )
 from armory2.armory_main.included.utilities.color_display import display, display_new, display_error
 from armory2.armory_main.included.utilities.nessus import NessusRequest
@@ -22,16 +22,6 @@ import pdb
 class Module(ModuleTemplate):
 
     name = "Nessus"
-
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.Domain = Domain(db, self.name)
-        self.IPAddress = IP(db, self.name)
-        self.Port = Port(db, self.name)
-        self.Vulnerability = Vuln(db, self.name)
-        self.CVE = CVE(db, self.name)
-        self.ScopeCIDR = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -102,12 +92,12 @@ class Module(ModuleTemplate):
 
                 ips = [
                     ip.ip_address
-                    for ip in self.IPAddress.all(scope_type="active", tool=self.name)
+                    for ip in IPAddress.get_set(scope_type="active", tool=self.name)
                 ]
-                cidrs = [cidr.cidr for cidr in self.ScopeCIDR.all(tool=self.name)]
+                cidrs = [cidr.name for cidr in CIDR.get_set(tool=self.name, scope_type="active")]
                 domains = [
-                    domain.domain
-                    for domain in self.Domain.all(scope_type="active", tool=self.name)
+                    domain.name
+                    for domain in Domain.all(scope_type="active", tool=self.name)
                 ]
                 targets = ", ".join(merge_ranges(ips + cidrs) + domains)
 
@@ -314,7 +304,7 @@ class Module(ModuleTemplate):
             else:
                 portName = svc_name
 
-            created, db_port = self.Port.objects.get_or_create(
+            db_port, created = Port.objects.get_or_create(
                 port_number=port, status="open", proto=proto, ip_address_id=ip.id
             )
 
@@ -377,24 +367,24 @@ class Module(ModuleTemplate):
             cwe_ids = [c.text for c in tag.findall("cwe")]
             references = [c.text for c in tag.findall("see_also")]
 
-            if not self.Vulnerability.find(name=findingName):
-                created, db_vuln = self.Vulnerability.objects.get_or_create(
+            if not Vulnerability.objects.all().filter(name=findingName):
+                db_vuln, created = Vulnerability.objects.get_or_create(
                     name=findingName,
                     severity=severity,
                     description=description,
                     remediation=solution,
                 )
-                db_vuln.ports.append(db_port)
+                db_vuln.ports.add(db_port)
                 db_vuln.exploitable = exploitable
                 if exploitable:
-                    display_new("exploit avalable for " + findingName)
+                    display_new("exploit available for " + findingName)
 
                 if vuln_refs:
                     db_vuln.exploit_reference = vuln_refs
 
             else:
-                db_vuln = self.Vulnerability.find(name=findingName)
-                db_vuln.ports.append(db_port)
+                db_vuln = Vulnerability.objects.get(name=findingName)
+                db_vuln.ports.add(db_port)
                 db_vuln.exploitable = exploitable
                 if vuln_refs:
                     if db_vuln.exploit_reference is not None:
@@ -428,9 +418,10 @@ class Module(ModuleTemplate):
 
             if not self.args.disable_mitre:
                 for cve in cves:
-                    if not self.CVE.find(name=cve):
+                    if not CVE.objects.all().filter(name=cve):
                         try:
-                            url = 'https://nvd.nist.gov/vuln/detail//{}'
+                            
+                            url = 'https://nvd.nist.gov/vuln/detail/{}/'
                             res = requests.get(url.format(cve)).text
 
                             cveDescription = res.split('<p data-testid="vuln-description">')[1].split('</p>')[0]
@@ -444,18 +435,18 @@ class Module(ModuleTemplate):
                             cvss = float(res["cvss"])
 
                         except Exception:
-                            cveDescription = None
+                            cveDescription = ""
                             cvss = None
 
-                        if not self.CVE.find(name=cve):
-                            created, db_cve = self.CVE.objects.get_or_create(
+                        if not CVE.objects.all().filter(name=cve):
+                            db_cve, created = CVE.objects.get_or_create(
                                 name=cve,
                                 description=cveDescription,
                                 temporal_score=cvss,
                             )
-                            db_cve.vulnerabilities.append(db_vuln)
+                            db_cve.vulnerability_set.add(db_vuln)
                         else:
-                            db_cve = self.CVE.find(name=cve)
+                            db_cve = CVE.objects.get(name=cve)
                             if (
                                 db_cve.description is None
                                 and cveDescription is not None  # noqa: W503
@@ -463,7 +454,7 @@ class Module(ModuleTemplate):
                                 db_cve.description = cveDescription
                             if db_cve.temporal_score is None and cvss is not None:
                                 db_cve.temporal_score = cvss
-                            db_cve.vulnerabilities.append(db_vuln)
+                            db_cve.vulnerability_set.add(db_vuln)
 
     def process_data(self, nFile, args):
         display("Reading " + nFile)
@@ -495,25 +486,26 @@ class Module(ModuleTemplate):
                 else:
                     display("Gathering Nessus info for {}".format(hostIP))
 
-                created, ip = self.IPAddress.objects.get_or_create(ip_address=hostIP)
+                ip, created = IPAddress.objects.get_or_create(ip_address=hostIP, defaults={'active_scope':True, 'passive_scope':True})
 
                 if hostname:
-                    created, domain = self.Domain.objects.get_or_create(domain=hostname)
+                    domain, created = Domain.objects.get_or_create(name=hostname)
 
-                    if ip not in domain.ip_addresses:
-                        ip.save()
-                        domain.ip_addresses.append(ip)
-                        domain.save()
+                    if ip not in domain.ip_addresses.all():
+                        ip.add_tool_run(tool=self.name)
+                        domain.ip_addresses.add(ip)
+                        domain.add_tool_run(tool=self.name)
+
 
                 if os:
                     for o in os:
-                        if not ip.OS:
-                            ip.OS = o
+                        if not ip.os:
+                            ip.os = o
                         else:
-                            if o not in ip.OS.split(" OR "):
-                                ip.OS += " OR " + o
+                            if o not in ip.os.split(" OR "):
+                                ip.os += " OR " + o
 
                 self.getVulns(ip, ReportHost)
-                self.IPAddress.commit()
+                
 
         return

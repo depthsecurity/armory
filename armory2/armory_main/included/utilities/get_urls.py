@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory2.armory_main.models import Port
+from armory2.armory_main.models import Port, IPAddress, Domain
 from django.db.models import Q
 import pdb
 
@@ -102,3 +102,18 @@ def sort_by_url(data):
             res.append("%s://%s:%s" % (s[1], d, s[0]))
 
     return res
+
+def add_tool_url(url, tool, args):
+    host = url.split("/")[2].split(":")[0]
+    scheme = url.split(":")[0]
+    port = url.split(":")[2]
+    
+    try:
+        [int(i) for i in host.split('.')]
+        ip, created = IPAddress.objects.get_or_create(ip_address=host)
+        ip.add_tool_run(tool=tool, args="{}-{}".format(port, args))
+    except:
+        d, created = Domain.objects.get_or_create(name=host)
+        d.add_tool_run(tool=tool, args="{}-{}".format(port, args))
+    
+

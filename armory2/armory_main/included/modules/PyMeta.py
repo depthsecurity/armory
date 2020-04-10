@@ -19,11 +19,6 @@ class Module(ToolTemplate):
     name = "PyMeta"
     binary_name = "pymeta"
 
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.User = User(db, self.name)
-
     def set_options(self):
         super(Module, self).set_options()
 
@@ -56,12 +51,12 @@ class Module(ToolTemplate):
 
         elif args.import_database:
             if args.rescan:
-                domains = BaseDomain.all(scope_type="passive")
+                domains = BaseDomain.get_set(scope_type="passive")
             else:
-                domains = BaseDomain.all(tool=self.name, scope_type="passive")
+                domains = BaseDomain.get_set(tool=self.name, args=args.tool_args, scope_type="passive")
             for d in domains:
 
-                targets.append(d.domain)
+                targets.append(d.name)
 
         res = []
 
@@ -96,7 +91,7 @@ class Module(ToolTemplate):
         for cmd in cmds:
             output_path = cmd["output"]
 
-            created, domain_obj = BaseDomain.objects.get_or_create(domain=cmd["target"])
+            domain_obj, created = BaseDomain.objects.get_or_create(name=cmd["target"])
 
             try:
                 csvreader = csv.reader(open(os.path.join(cmd["output"], "pymeta_{}.csv".format(cmd["target"]))))
@@ -131,8 +126,8 @@ class Module(ToolTemplate):
                                     first_name = d.split(" ")[0]
                                     last_name = " ".join(d.split(" ")[1:])
 
-                                created, user = self.User.objects.get_or_create(
-                                    first_name=first_name, last_name=last_name
+                                user, created = User.objects.get_or_create(
+                                    first_name=first_name, last_name=last_name, defaults={'email', ''}
                                 )
                                 if created:
                                     print("New user created")
@@ -140,17 +135,20 @@ class Module(ToolTemplate):
                     elif '@' in d:
                         res = raw_input("Is %s a valid email address? [y/N] " % d)
                         if res and res[0].lower() == 'y':
-                            created, user = self.User.objects.get_or_create(
+                            user, created = User.objects.get_or_create(
                                 email=d.strip())
                             if created:
                                 print("New user created")
                             user.domain = domain_obj
+
 
             except IOError:
                 pass
             except Exception as e:
                 
                 display_error("Error processing pymeta_{}.csv: {}".format(cmd["target"], e))
+
+            domain_obj.add_tool_run(tool=self.name, args=self.args.tool_args)
             
-        self.User.commit()
+        
 
