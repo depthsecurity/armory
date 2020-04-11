@@ -159,7 +159,7 @@ class Module(ToolTemplate):
 
         return cmd
 
-    def process_results(self, targets):
+    def process_output(self, targets):
         
         for t in targets:
             add_tool_url("url://{}".format(t.target))
