@@ -162,5 +162,5 @@ class Module(ToolTemplate):
     def process_output(self, targets):
         
         for t in targets:
-            add_tool_url("url://{}".format(t.target))
+            add_tool_url("url://{}".format(t['target']))
 
