@@ -4,6 +4,8 @@ from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 import os
 from armory2.armory_main.included.utilities.get_urls import add_tool_url
 
+import pdb
+
 class Module(ToolTemplate):
 
     name = "SSLScan"
@@ -94,7 +96,7 @@ class Module(ToolTemplate):
                     for s in Port.objects.all().filter(service_name=p, status="open"):
 
                         if (self.name not in s.ip_address.tools.keys() or "{}-".format(s.port_number) not in p.ip_address.tools[self.name]):
-                            svc += (s, "")
+                            svc.append([s, ""])
                         
                         
                 for p in [
@@ -111,9 +113,9 @@ class Module(ToolTemplate):
                     for s in Port.objects.all().filter(service_name=p, status="open"):
 
                         if (self.name not in s.ip_address.tools.keys() or "{}-".format(s.port_number) not in p.ip_address.tools[self.name]):
-                            svc += (s, "--starttls-%s" % p)
+                            svc.append([s, "--starttls-%s" % p])
                     
-                    
+            
             for s, option in svc:
 
                 port_number = s.port_number
@@ -123,9 +125,9 @@ class Module(ToolTemplate):
                     {"target": "%s:%s" % (ip_address, port_number), "option": option}
                 )
 
-                for d in s.ip_address.domains:
+                for d in s.ip_address.domain_set.all():
                     targets.append(
-                        {"target": "%s:%s" % (d.domain, port_number), "option": option}
+                        {"target": "%s:%s" % (d.name, port_number), "option": option}
                     )
 
         for t in targets:
