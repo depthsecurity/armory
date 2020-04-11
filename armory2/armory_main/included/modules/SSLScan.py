@@ -1,19 +1,14 @@
 #!/usr/bin/python
-from armory2.armory_main.models import Domain, IP, Port
+from armory2.armory_main.models import Domain, IPAddress, Port
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 import os
-
+from armory2.armory_main.included.utilities.get_urls import add_tool_url
 
 class Module(ToolTemplate):
 
     name = "SSLScan"
     binary_name = "sslscan"
 
-    def __init__(self, db):
-        self.db = db
-        self.Domain = Domain(db, self.name)
-        self.IPAddress = IP(db, self.name)
-        self.Port = Port(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -75,7 +70,7 @@ class Module(ToolTemplate):
                 for p in ["https", "ftps", "imaps", "sip-tls", "imqtunnels", "smtps"]:
                     svc += [
                         (s, "")
-                        for s in self.Port.all(service_name=p, status="open")
+                        for s in Port.objects.all().filter(service_name=p, status="open")
                         if s.ip_address.in_scope
                     ]
                 for p in [
@@ -91,18 +86,17 @@ class Module(ToolTemplate):
                 ]:
                     svc += [
                         (s, "--starttls-%s" % p)
-                        for s in self.Port.all(service_name=p, status="open")
+                        for s in Port.objects.all().filter(service_name=p, status="open")
                         if s.ip_address.in_scope
                     ]
             else:
                 for p in ["https", "ftps", "imaps", "sip-tls", "imqtunnels", "smtps"]:
-                    svc += [
-                        (s, "")
-                        for s in self.Port.all(
-                            tool=self.name, service_name=p, status="open"
-                        )
-                        if s.ip_address.in_scope
-                    ]
+                    for s in Port.objects.all().filter(service_name=p, status="open"):
+
+                        if (tool not in s.ip_address.tools.keys() or "{}-{}".format(s.port_number) not in p.ip_address.tools[tool]):
+                            svc += (s, "")
+                        
+                        
                 for p in [
                     "ftp",
                     "imap",
@@ -114,14 +108,12 @@ class Module(ToolTemplate):
                     "xmpp",
                     "psql",
                 ]:
-                    svc += [
-                        (s, "--starttls-%s" % p)
-                        for s in self.Port.all(
-                            tool=self.name, service_name=p, status="open"
-                        )
-                        if s.ip_address.in_scope
-                    ]
+                    for s in Port.objects.all().filter(service_name=p, status="open"):
 
+                        if (tool not in s.ip_address.tools.keys() or "{}-{}".format(s.port_number) not in p.ip_address.tools[tool]):
+                            svc += (s, "--starttls-%s" % p)
+                    
+                    
             for s, option in svc:
 
                 port_number = s.port_number
@@ -164,3 +156,9 @@ class Module(ToolTemplate):
             cmd += args.tool_args
 
         return cmd
+
+    def process_results(self, targets):
+        
+        for t in targets:
+            add_tool_url("url://{}".format(t.target))
+
