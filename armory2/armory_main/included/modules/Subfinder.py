@@ -2,10 +2,10 @@
 from armory2.armory_main.models import (
     Domain,
     BaseDomain,
-    IP,
+    IPAddress,
 )
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
-from armory2.armory_main.included.utilities import get_domain_ip
+from armory2.armory_main.included.utilities.network_tools import get_ips
 from armory2.armory_main.included.utilities.color_display import display, display_error, display_warning
 import io
 import os
@@ -14,12 +14,6 @@ import os
 class Module(ToolTemplate):
     name = "Subfinder"
     binary_name = "subfinder"
-
-    def __init__(self, db):
-        self.db = db
-        BaseDomains = BaseDomain(db, self.name)
-        self.Domains = Domain(db, self.name)
-        self.IPs = IP(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -64,13 +58,13 @@ class Module(ToolTemplate):
 
         if args.db_domains:
             if args.rescan:
-                domains = BaseDomains.all(scope_type="passive")
+                domains = BaseDomain.get_set(scope_type="passive")
             else:
-                domains = BaseDomains.all(tool=self.name, scope_type="passive")
+                domains = BaseDomain.get_set(tool=self.name, args=self.args.tool_args, scope_type="passive")
             for d in domains:
-                out_file = os.path.join(outpath, "{}.subfinder".format(d.domain))
+                out_file = os.path.join(outpath, "{}.subfinder".format(d.name))
                 targets.append(
-                    {"target": d.domain, "output": os.path.join(output_path, out_file)}
+                    {"target": d.name, "output": os.path.join(output_path, out_file)}
                 )
 
         elif args.domain_list:
@@ -104,20 +98,20 @@ class Module(ToolTemplate):
                         domain = line.strip()
                         if domain[0] == '.':
                             domain = domain[1:]
-                        ips = get_domain_ip.run(domain)
+                        ips = get_ips(domain)
                         ip_obj = None
-                        _, dom = self.Domains.objects.get_or_create(domain=domain)
+                        dom, created = Domains.objects.get_or_create(name=domain)
                         if ips:
                             for ip in ips:
-                                _, ip_obj = self.IPs.objects.get_or_create(ip_address=ip)
+                                ip_obj, created = IPAddress.objects.get_or_create(ip_address=ip)
                                 if ip_obj:
-                                    dom.ip_addresses.append(ip_obj)
+                                    dom.ip_addresses.add(ip_obj)
                             dom.save()
             except FileNotFoundError:
                 display_error("File doesn't exist for {}".format(target["output"]))
-        BaseDomains.commit()
-        self.IPs.commit()
-
+        
+            bd, created = BaseDomain.objects.get_or_create(name=target["target"])
+            bd.add_tool_run(tool=self.name, args=self.args.tool_args)
     def post_run(self, args):
         # Remove the temporary db file if it was created.
         if getattr(self, "db_domain_file", None):

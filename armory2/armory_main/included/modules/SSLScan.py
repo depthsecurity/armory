@@ -95,7 +95,7 @@ class Module(ToolTemplate):
                 for p in ["https", "ftps", "imaps", "sip-tls", "imqtunnels", "smtps"]:
                     for s in Port.objects.all().filter(service_name=p, status="open"):
 
-                        if (self.name not in s.ip_address.tools.keys() or "{}-".format(s.port_number) not in p.ip_address.tools[self.name]):
+                        if (self.name not in s.ip_address.tools.keys() or "{}-".format(s.port_number) not in s.ip_address.tools[self.name]):
                             svc.append([s, ""])
                         
                         
@@ -112,7 +112,7 @@ class Module(ToolTemplate):
                 ]:
                     for s in Port.objects.all().filter(service_name=p, status="open"):
 
-                        if (self.name not in s.ip_address.tools.keys() or "{}-".format(s.port_number) not in p.ip_address.tools[self.name]):
+                        if (self.name not in s.ip_address.tools.keys() or "{}-".format(s.port_number) not in s.ip_address.tools[self.name]):
                             svc.append([s, "--starttls-%s" % p])
                     
             

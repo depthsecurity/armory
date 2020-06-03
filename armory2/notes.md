@@ -32,6 +32,8 @@ or
 python -m armory2 manage makemigrations
 ```
 
+`test`
+
 ## Other notes
 
 
