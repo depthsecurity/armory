@@ -61,7 +61,7 @@ def generate_default_configs():
     # Delete any .sample files already there
 
     config_options = {}
-    custom_path = config.get("CUSTOM_MODULES", None)
+    custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
 
     if custom_path:
         for f in os.listdir(custom_path):
@@ -123,8 +123,8 @@ def load_module(module_path):
 
 def list_modules():
     config = get_config_options()
-    custom_path = config.get("CUSTOM_MODULES", None)
-
+    custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
+    
     modules = []
     if custom_path:
         modules += [m for m in get_modules(custom_path)]
@@ -137,7 +137,7 @@ def list_modules():
 
 def list_reports():
     config = get_config_options()
-    custom_path = config.get("CUSTOM_REPORTS", None)
+    custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
 
     modules = []
 
@@ -374,9 +374,10 @@ def main():
         if not base_args.quiet : print_banner()
         if base_args.module:
             config = get_config_options()
-            custom_path = config.get("CUSTOM_MODULES", None)
+            custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
 
             if custom_path:
+
                 modules = get_modules(custom_path)
                 mod = [m for m in modules if m.lower() == base_args.module.lower()]
 
@@ -406,7 +407,7 @@ def main():
         config = get_config_options()
         
 
-        custom_path = config.get("CUSTOM_MODULES", None)
+        custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
         custom_modules = []
         if custom_path:
             custom_modules = [m for m in get_modules(custom_path) if m.lower() == base_args.module.lower()]
@@ -428,7 +429,7 @@ def main():
         if not base_args.quiet : print_banner()
         if base_args.report:
             config = get_config_options()
-            custom_path = config.get("CUSTOM_REPORTS", None)
+            custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
 
             if custom_path:
                 modules = [r for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
@@ -455,7 +456,7 @@ def main():
     elif base_args.report:
         if not base_args.quiet : print_banner()
         config = get_config_options()
-        custom_path = config.get("CUSTOM_REPORTS", None)
+        custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
         custom_reports = []
         if custom_path:
             custom_reports = [r for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
