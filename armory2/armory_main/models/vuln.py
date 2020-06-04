@@ -7,7 +7,7 @@ from .network import Port
 class CVE(BaseModel):
     name = models.CharField(max_length=128)
     
-    temporal_score = models.FloatField(null=True)
+    temporal_score = models.FloatField(default=0.0)
     description = models.TextField()
 
 

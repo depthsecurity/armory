@@ -30,7 +30,7 @@ RUN git clone https://github.com/aboul3la/Sublist3r.git
 RUN git clone https://github.com/anshumanbh/tko-subs.git
 RUN git clone https://github.com/DanMcInerney/xsscrapy.git
 RUN git clone https://github.com/fang0654/Asnlookup.git
-RUN git clone https://github.com/vysec/DomLink.git
+RUN git clone https://github.com/fang0654/DomLink.git
 # RUN go get github.com/ffuf/ffuf
 
 # Next couple of lines are to use custom version of ffuf until it gets updated
@@ -86,7 +86,7 @@ RUN chmod +x /usr/local/bin/domLink.py
 WORKDIR /opt/src
 
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision47
+RUN touch /tmp/revision48
 
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
