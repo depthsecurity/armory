@@ -6,6 +6,8 @@ import requests
 import sys
 from multiprocessing import Pool as ThreadPool
 from armory2.armory_main.included.utilities.get_urls import run
+from armory2.armory_main.included.utilities.header_tools import process_urls
+
 from armory2.armory_main.included.utilities.color_display import (
     display,
     display_error,
@@ -13,6 +15,7 @@ from armory2.armory_main.included.utilities.color_display import (
     display_new,
 )
 import pdb
+import pickle
 
 
 def check_if_ip(txt):
@@ -21,6 +24,7 @@ def check_if_ip(txt):
         return True
     except ValueError:
         return False
+
 
 
 class Module(ModuleTemplate):
@@ -72,7 +76,7 @@ class Module(ModuleTemplate):
         if urls:
             pool = ThreadPool(int(args.threads))
             data = [(u, args.timeout) for u in urls]
-
+            # pdb.set_trace()
             results = pool.map(process_urls, data)
             display_new("Adding headers to the database")
             
@@ -86,7 +90,7 @@ class Module(ModuleTemplate):
                         ip, created = IPAddress.objects.get_or_create(ip_address=dom)
                         
                         ip.add_tool_run(tool=self.name)
-
+                        # pdb.set_trace()
                         p, created = Port.objects.get_or_create(ip_address=ip, port_number=port, service_name=scheme, proto="tcp")
                         if not p.meta.get('headers'):
                             p.meta['headers'] = {} 
@@ -94,8 +98,9 @@ class Module(ModuleTemplate):
                         
                         if not p.meta.get('cookies'):
                             p.meta['cookies'] = {} 
-                        p.meta['cookies'][dom] = cookies[h]
-                            
+                        
+                        p.meta['cookies'][dom] = cookies.get(h, [])
+                        
                         p.save()
 
                     else:
@@ -112,45 +117,12 @@ class Module(ModuleTemplate):
                             
                             if not p.meta.get('cookies'):
                                 p.meta['cookies'] = {} 
-                            p.meta['cookies'][dom] = cookies[h]
+                            p.meta['cookies'][dom] = cookies.get(h, [])
                             
                             p.save()
 
             
-def process_urls(data):
 
-    u = data[0]
-    timeout = data[1]
-    blacklist = [
-        "Date",
-        "Connection",
-        "Content-Type",
-        "Content-Length",
-        "Keep-Alive",
-        "Content-Encoding",
-        "Vary",
-    ]
-    new_headers = {}
-    new_cookies = {}
-    
-    display("Processing %s" % u)
-    try:
-        res = requests.get(u, timeout=int(timeout), verify=False)
-
-        for k in res.headers.keys():
-            if k not in blacklist:
-                if not new_headers.get(u, False):
-                    new_headers[u] = []
-
-                new_headers[u].append("%s: %s" % (k, res.headers[k]))
-        new_cookies[u] = dict(res.cookies)
-
-    except KeyboardInterrupt:
-        display_warning("Got Ctrl+C, exiting")
-        sys.exit(1)
-    except Exception as e:
-        display_error("%s no good, skipping: %s" % (u, e))
-    return (new_headers, new_cookies)
 
 def get_url_data(url):
 

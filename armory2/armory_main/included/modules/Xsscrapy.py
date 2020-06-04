@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 from armory2.armory_main.models import (
-    IP,
+    IPAddress,
     Domain,
     Port,
-    Url,
+    
 )
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities import get_urls
@@ -27,12 +27,6 @@ class Module(ToolTemplate):
     name = "Xsscrapy"
     binary_name = "xsscrapy.py"
 
-    def __init__(self, db):
-        self.db = db
-        self.IPAddress = IP(db, self.name)
-        self.Domain = Domain(db, self.name)
-        self.Port = Port(db, self.name)
-        self.Url = Url(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -67,9 +61,9 @@ class Module(ToolTemplate):
 
         if args.import_database:
             if args.rescan:
-                targets += get_urls.run(self.db, scope_type="active")
+                targets += get_urls.run(scope_type="active", args=self.args.tool_args)
             else:
-                targets += get_urls.run(self.db, tool=self.name, scope_type="active")
+                targets += get_urls.run(tool=self.name, scope_type="active", args=self.args.tool_args)
 
         if args.output_path[0] == "/":
             self.output_path = os.path.join(

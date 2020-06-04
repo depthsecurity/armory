@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from armory2.armory_main.models import BaseDomain, ScopeCIDR
+from armory2.armory_main.models import BaseDomain, CIDR
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities.color_display import display
 from armory2.armory_main.included.utilities.readFile import read_file
@@ -12,10 +12,6 @@ class Module(ToolTemplate):
     name = "Whois"
     binary_name = "whois"
 
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.ScopeCidr = ScopeCIDR(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -60,16 +56,16 @@ class Module(ToolTemplate):
             else:
                 scope_type = "passive"
             if args.rescan:
-                domains = BaseDomain.all(scope_type=scope_type)
-                cidrs = self.ScopeCidr.all()
+                domains = BaseDomain.get_set(scope_type=scope_type)
+                cidrs = CIDR.get_set(scope_type=scope_type)
             else:
-                domains = BaseDomain.all(scope_type=scope_type, tool=self.name)
-                cidrs = self.ScopeCidr.all(tool=self.name)
+                domains = BaseDomain.get_set(scope_type=scope_type, tool=self.name)
+                cidrs = CIDR.get_set(tool=self.name)
 
             for domain in domains:
-                targets.append({"domain": domain.domain, "cidr": ""})
+                targets.append({"domain": domain.name, "cidr": "", "cidr_name": ""})
             for cidr in cidrs:
-                targets.append({"domain": "", "cidr": cidr.cidr.split("/")[0]})
+                targets.append({"domain": "", "cidr": cidr.name.split('/')[0], "cidr_name": cidr.name})
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
@@ -108,15 +104,15 @@ class Module(ToolTemplate):
 
         for cmd in cmds:
             if cmd["cidr"]:
-                _, cidr = self.ScopeCidr.objects.get_or_create(cidr=cmd["cidr"])
+                cidr, _ = CIDR.objects.get_or_create(name=cmd["cidr_name"])
                 cidr.meta["whois"] = read_file(cmd["output"])
                 display(cidr.meta["whois"])
-                cidr.update()
+                cidr.add_tool_run(self.name)
 
             elif cmd["domain"]:
-                _, domain = BaseDomain.objects.get_or_create(domain=cmd["domain"])
+                domain, _ = BaseDomain.objects.get_or_create(name=cmd["domain"])
                 domain.meta["whois"] = read_file(cmd["output"])
                 display(domain.meta["whois"])
-                domain.update()
+                domain.add_tool_run(self.name)
 
-        BaseDomain.commit()
+        

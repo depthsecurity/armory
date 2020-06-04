@@ -436,7 +436,7 @@ class Module(ModuleTemplate):
 
                         except Exception:
                             cveDescription = ""
-                            cvss = None
+                            cvss = 0.0
 
                         if not CVE.objects.all().filter(name=cve):
                             db_cve, created = CVE.objects.get_or_create(

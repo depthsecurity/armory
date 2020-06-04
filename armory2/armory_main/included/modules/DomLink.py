@@ -21,9 +21,6 @@ class Module(ModuleTemplate):
     name = "DomLink"
     binary_name = "domLink.py"
 
-    def __init__(self, db):
-        self.db = db
-        self.Domains = Domain(db, self.name)
     
     def set_options(self):
         super(Module, self).set_options()
@@ -91,7 +88,7 @@ class Module(ModuleTemplate):
 
             os.chdir(new_dir)
 
-            cmd = shlex.split("python2 " + self.binary + command_args)
+            cmd = shlex.split("python3 " + self.binary + command_args)
             print("Executing: %s" % " ".join(cmd))
 
             subprocess.Popen(cmd).wait()
@@ -117,11 +114,11 @@ class Module(ModuleTemplate):
                     if cur_type == "domain":
 
                         if args.scope == "active":
-                            created, d = self.Domains.objects.get_or_create(domain=r, in_scope=True, passive_scope=True)
+                            d, created = Domain.objects.get_or_create(name=r, active_scope=True, passive_scope=True)
                         elif args.scope == "passive":
-                            created, d = self.Domains.objects.get_or_create(domain=r, in_scope=False, passive_scope=True)
+                            d, created = Domain.objects.get_or_create(name=r, active_scope=False, passive_scope=True)
                         else:
-                            created, d = self.Domains.objects.get_or_create(domain=r, in_scope=False, passive_scope=False)
+                            d, created = Domain.objects.get_or_create(name=r, active_scope=False, passive_scope=False)
                 
 
-        self.Domains.commit()
+        

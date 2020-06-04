@@ -11,10 +11,6 @@ class Module(ToolTemplate):
     name = "Sublist3r"
     binary_name = "sublist3r"
 
-    def __init__(self, db):
-        self.db = db
-        BaseDomain = BaseDomain(db, self.name)
-        self.Domain = Domain(db, self.name)
 
     def set_options(self):
         super(Module, self).set_options()
@@ -48,12 +44,12 @@ class Module(ToolTemplate):
 
         elif args.import_database:
             if args.rescan:
-                domains = BaseDomain.all(scope_type="passive")
+                domains = BaseDomain.get_set(scope_type="passive")
             else:
-                domains = BaseDomain.all(tool=self.name, scope_type="passive")
+                domains = BaseDomain.get_set(tool=self.name, scope_type="passive", args=self.args.tool_args)
             for d in domains:
 
-                targets.append(d.domain)
+                targets.append(d.name)
 
         res = []
 
@@ -95,14 +91,15 @@ class Module(ToolTemplate):
                         if ds:
                             new_domain = ds.split(":")[0].lower()
                             if new_domain:
-                                created, subdomain = self.Domain.objects.get_or_create(
-                                    domain=new_domain
+                                # print("Checking {}".format(new_domain))
+                                subdomain, created = Domain.objects.get_or_create(
+                                    name=new_domain
                                 )
             else:
                 display_error("{} not found.".format(output_path))
                 next
 
-        self.Domain.commit()
+        
         # except IOError:
         #     display_error("No results found.")
 

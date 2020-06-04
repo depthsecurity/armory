@@ -13,10 +13,6 @@ class Module(ToolTemplate):
     name = "Tko-subs"
     binary_name = "tko-subs"
 
-    def __init__(self, db):
-        self.db = db
-        self.Domain = Domain(db, self.name)
-
     def set_options(self):
         super(Module, self).set_options()
 
@@ -53,11 +49,11 @@ class Module(ToolTemplate):
 
         if args.importdb:
             if args.rescan:
-                all_domains = self.Domain.all(scope_type="active")
+                all_domains = Domain.get_set(scope_type="active", args=self.args.tool_args)
             else:
-                all_domains = self.Domain.all(scope_type="active", tool=self.name)
+                all_domains = Domain.get_set(scope_type="active", tool=self.name, args=self.args.tool_args)
             for d in all_domains:
-                domains.append(d.domain)
+                domains.append(d.name)
 
         # Set the output_path base, as a junction of the base_path and the path name supplied
         if args.output_path[0] == "/":
@@ -113,10 +109,14 @@ class Module(ToolTemplate):
 
             # Quick and dirty way to filter out headers and blank lines, as well
             # as duplicates
+            # Load up the DB entry.    
+            subdomain, created = Domain.objects.get_or_create(name=target)
+
+            
             res = list(set([d for d in data if "Domain,Cname,Provider" not in d and d]))
+            
             if res:
-                # Load up the DB entry.
-                created, subdomain = self.Domain.objects.get_or_create(domain=target)
+                
 
                 # Process results
                 for d in res:
@@ -140,7 +140,7 @@ class Module(ToolTemplate):
 
                 # This is a little hackish, but needed to get data to save
                 t = dict(subdomain.meta)
-                self.Domain.commit()
+                
                 subdomain.meta = t
-
-        self.Domain.commit()
+            subdomain.add_tool_run(self.name, self.args.tool_args)
+        

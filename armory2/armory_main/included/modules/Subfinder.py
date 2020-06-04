@@ -100,7 +100,7 @@ class Module(ToolTemplate):
                             domain = domain[1:]
                         ips = get_ips(domain)
                         ip_obj = None
-                        dom, created = Domains.objects.get_or_create(name=domain)
+                        dom, created = Domain.objects.get_or_create(name=domain)
                         if ips:
                             for ip in ips:
                                 ip_obj, created = IPAddress.objects.get_or_create(ip_address=ip)
