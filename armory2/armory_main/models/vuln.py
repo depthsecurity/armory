@@ -9,6 +9,7 @@ class CVE(BaseModel):
     
     temporal_score = models.FloatField(default=0.0)
     description = models.TextField()
+    updated = models.BooleanField(default=True)
 
 
 

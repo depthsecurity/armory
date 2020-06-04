@@ -51,7 +51,7 @@ WORKDIR /opt/src/jexboss
 RUN pip install -r requires.txt
 RUN ln -s /opt/src/jexboss/jexboss.py /usr/local/bin/jexboss.py
 WORKDIR /opt/src/LinkedInt
-RUN pip install thready
+RUN pip install thready http
 RUN ln -s /opt/src/linkedint/LinkedInt.py /usr/local/bin/LinkedInt.py
 WORKDIR /opt/src/masscan
 RUN make -j
