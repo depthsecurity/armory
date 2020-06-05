@@ -64,18 +64,22 @@ def generate_default_configs():
     custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
 
     if custom_path:
-        for f in os.listdir(custom_path):
-            if os.path.isfile(f) and f[-7:] == ".sample":
-                os.remove(f)
+        for c in custom_path:
+
+            for f in os.listdir(c):
+                if os.path.isfile(f) and f[-7:] == ".sample":
+                    os.remove(f)
 
     modules = get_modules(os.path.join(PATH, "armory_main/included/modules"))
     for m in modules:
         config_options[m] = get_module_options(".armory_main.included.modules." + m, m)
 
     if custom_path:
-        modules = get_modules(custom_path)
-        for m in modules:
-            config_options[m] = get_module_options(os.path.join(custom_path, m), m)
+        for c in custom_path:
+
+            modules = get_modules(c)
+    for m in modules:
+        config_options[m] = get_module_options(os.path.join(custom_path, m), m)
 
     for m, options in config_options.items():
         if not os.path.exists(os.path.join(CONFIG_FOLDER, "{}.ini.sample".format(m))):
@@ -127,7 +131,8 @@ def list_modules():
     
     modules = []
     if custom_path:
-        modules += [m for m in get_modules(custom_path)]
+        for c in custom_path:
+            modules += [m for m in get_modules(c)]
     modules += [m for m in get_modules(os.path.join(PATH, "armory_main/included/modules"))]
 
     print("Available modules:")
@@ -142,7 +147,8 @@ def list_reports():
     modules = []
 
     if custom_path:
-        modules += [m for m in get_modules(custom_path)]
+        for r in custom_path:
+            modules += [m for m in get_modules(r)]
     modules += [m for m in get_modules(os.path.join(PATH, "armory_main/included/reports"))]
 
     print("Available reports:")
@@ -377,13 +383,14 @@ def main():
             custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
 
             if custom_path:
-
-                modules = get_modules(custom_path)
-                mod = [m for m in modules if m.lower() == base_args.module.lower()]
+                mod = []
+                for c in custom_path:
+                    modules = get_modules(c)
+                    mod += [(m, c) for m in modules if m.lower() == base_args.module.lower()]
 
                 if len(mod) > 0:
                     list_module_options(
-                        os.path.join(custom_path, mod[0]), mod[0]
+                        os.path.join(mod[-1][1], mod[-1][0]), mod[-1][0]
                     )
                     sys.exit(0)
             modules = get_modules(os.path.join(PATH, "armory_main/included/modules"))
@@ -410,13 +417,16 @@ def main():
         custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
         custom_modules = []
         if custom_path:
-            custom_modules = [m for m in get_modules(custom_path) if m.lower() == base_args.module.lower()]
+            for c in custom_path:
+                # pdb.set_trace()
+                custom_modules += [(m, c) for m in get_modules(c) if m.lower() == base_args.module.lower()]
 
         modules = [m for m in get_modules(os.path.join(PATH, "armory_main/included/modules")) if m.lower() == base_args.module.lower()]
-
+        
         if custom_modules:
-            Module = load_module(os.path.join(custom_path, custom_modules[0]))
-            run_module(Module, cmd_args, custom_modules[0])
+                
+            Module = load_module(os.path.join(custom_modules[-1][1], custom_modules[-1][0]))
+            run_module(Module, cmd_args, custom_modules[-1][0])
         elif modules:
             Module = load_module(".armory_main.included.modules.%s" % modules[0])
             run_module(Module, cmd_args, modules[0])
@@ -430,13 +440,16 @@ def main():
         if base_args.report:
             config = get_config_options()
             custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
+            custom_modules = []
 
             if custom_path:
-                modules = [r for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
+                for c in custom_path:
+
+                    custom_modules += [(r, c) for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
 
                 if modules:
                     list_report_options(
-                        os.path.join(custom_path, modules[0]), modules[0]
+                        os.path.join(modules[-1][1], modules[-1][0]), modules[-1][0]
                     )
                     sys.exit(0)
             modules = [r for r in get_modules(os.path.join(PATH, "armory_main/included/reports")) if r.lower() == base_args.report.lower()]
@@ -459,13 +472,14 @@ def main():
         custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
         custom_reports = []
         if custom_path:
-            custom_reports = [r for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
+            for c in custom_path:
+                custom_reports += [(r, c) for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
 
         reports = [r for r in get_modules(os.path.join(PATH, "armory_main/included/reports")) if r.lower() == base_args.report.lower()]
 
         if custom_reports:
-            Report = load_module(os.path.join(custom_path, custom_reports[0]))
-            run_report(Report, cmd_args, custom_reports[0])
+            Report = load_module(os.path.join(custom_reports[-1][1], custom_reports[-1][0]))
+            run_report(Report, cmd_args, custom_reports[-1][0])
         elif reports:
             Report = load_module(".armory_main.included.reports.%s" % reports[0])
             run_report(Report, cmd_args, reports[0])
