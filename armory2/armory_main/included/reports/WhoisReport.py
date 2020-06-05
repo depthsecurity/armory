@@ -1,5 +1,6 @@
 #!/usr/bin/python
-from armory.database.repositories import ScopeCIDRRepository, BaseDomainRepository
+from armory2.armory_main.models import ScopeCIDRRepository, BaseDomainRepository
+rmory2.armory_main.models/g
 from armory.included.ReportTemplate import ReportTemplate
 
 

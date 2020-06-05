@@ -52,7 +52,7 @@ class Port(BaseModel):
     service_name = models.CharField(max_length=256)
     ip_address = models.ForeignKey(IPAddress, on_delete=models.CASCADE)
     
-    certs = models.TextField()
+    certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
 
     def __str__(self):
@@ -138,7 +138,7 @@ def pre_save_ip(sender, instance, *args, **kwargs):
             cidr = instance.cidr
         except CIDR.DoesNotExist:
             cidr_data, org_name = get_cidr_info(instance.ip_address)
-            cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':'org_name'})
+            cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':org_name})
             instance.cidr = cidr
         display_new("New IP added: {}  Active Scope: {}    Passive Scope: {}".format(instance.ip_address, instance.active_scope, instance.passive_scope))
         

@@ -1,5 +1,6 @@
 #!/usr/bin/python
-from armory.database.repositories import PortRepository
+from armory2.armory_main.models import PortRepository
+rmory2.armory_main.models/g
 from armory.included.ReportTemplate import ReportTemplate
 
 

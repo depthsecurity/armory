@@ -1,5 +1,6 @@
 #!/usr/bin/python
-from armory.database.repositories import DomainRepository, IPRepository, CIDRRepository
+from armory2.armory_main.models import DomainRepository, IPRepository, CIDRRepository
+rmory2.armory_main.models/g
 from armory.included.ReportTemplate import ReportTemplate
 
 

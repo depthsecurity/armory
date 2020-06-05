@@ -1,5 +1,6 @@
 #!/usr/bin/python
-from armory.database.repositories import (
+from armory2.armory_main.models import (
+rmory2.armory_main.models/g
     BaseDomainRepository,
     UserRepository,
     CredRepository,
