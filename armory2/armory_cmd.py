@@ -445,7 +445,7 @@ def main():
             if custom_path:
                 for c in custom_path:
 
-                    custom_modules += [(r, c) for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
+                    custom_modules += [(r, c) for r in get_modules(c) if r.lower() == base_args.report.lower()]
 
                 if modules:
                     list_report_options(
@@ -473,7 +473,7 @@ def main():
         custom_reports = []
         if custom_path:
             for c in custom_path:
-                custom_reports += [(r, c) for r in get_modules(custom_path) if r.lower() == base_args.report.lower()]
+                custom_reports += [(r, c) for r in get_modules(c) if r.lower() == base_args.report.lower()]
 
         reports = [r for r in get_modules(os.path.join(PATH, "armory_main/included/reports")) if r.lower() == base_args.report.lower()]
 
