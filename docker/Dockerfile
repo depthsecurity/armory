@@ -86,7 +86,7 @@ RUN chmod +x /usr/local/bin/domLink.py
 WORKDIR /opt/src
 
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision54
+RUN touch /tmp/revision55
 
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
