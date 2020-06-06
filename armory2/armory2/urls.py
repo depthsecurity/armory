@@ -19,4 +19,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('armory2.armory_main.urls')),
+    path('host_summary/', include('armory2.armory_main.host_summary_urls')),
 ]

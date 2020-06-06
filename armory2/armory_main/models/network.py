@@ -6,7 +6,7 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from armory2.armory_main.included.utilities.color_display import display, display_warning, display_new, display_error
 from armory2.armory_main.included.utilities.network_tools import validate_ip, get_ips, private_subnets
-from netaddr import IPNetwork, IPAddress
+from netaddr import IPNetwork, IPAddress as IPAddr
 from ipwhois import IPWhois
 
 class BaseDomain(BaseModel):
@@ -44,6 +44,16 @@ class IPAddress(BaseModel):
     def __str__(self):
         return self.ip_address
         
+    @classmethod
+    def get_sorted(cls):
+        qry = cls.objects.all()
+        
+        res = []
+        for ip in qry:
+            res.append([int(IPAddr(ip.ip_address)), ip])
+
+        res2 = [r[1] for r in sorted(res)]
+        return res2
 class Port(BaseModel):
 
     port_number = models.IntegerField(unique=False)
@@ -55,9 +65,12 @@ class Port(BaseModel):
     certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
 
+
     def __str__(self):
         return "{} / {} / {}".format(self.proto, self.port_number, self.service_name)
-        
+    
+    class Meta:
+        ordering = ['port_number']
 # pre_save.connect(Domain.pre_save, sender=Domain)
 
 @receiver(pre_save, sender=BaseDomain)

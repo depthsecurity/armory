@@ -82,6 +82,7 @@ def add_tools_urls(tool, args="", scope_type=None):
 
     
 
+
 def sort_by_url(data):
     d_data = {}
 
@@ -116,4 +117,17 @@ def add_tool_url(url, tool, args):
         d, created = Domain.objects.get_or_create(name=host)
         d.add_tool_run(tool=tool, args="{}-{}".format(port, args))
     
+def get_port_object(url):
+    host = url.split("/")[2].split(":")[0]
+    
+    port = url.split(":")[2]
+    
+    try:
+        [int(i) for i in host.split('.')]
+        port = Port.objects.get(ip_address__ip_address=host, port_number=port)
+        
+    except:
+        port = Port.objects.get(ip_address__domain__name=host, port_number = port)
 
+    return port
+        

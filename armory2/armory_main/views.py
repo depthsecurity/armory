@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.conf import settings
-from armory2.armory_main.tools.utilities import get_all_modules, get_all_reports, list_module_options
+from armory2.armory_cmd import list_modules as list_all_modules, list_reports, list_module_options
 
 
 import json
@@ -10,7 +10,7 @@ import json
 
 def list_modules(request):
     
-    modules = get_all_modules()
+    modules = list_all_modules()
     return HttpResponse(json.dumps(modules))
 
 def list_reports(request):
