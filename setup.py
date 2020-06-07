@@ -90,6 +90,7 @@ setup(
         "console_scripts": [
             "armory2=armory2.armory_cmd:main",
             "armory2-manage=armory2.manage:main",
+            "armory2-shell=armory2.shell:main"
         ]
     },
 )

@@ -232,6 +232,8 @@
             {% for d in data|get_item:port.id %}
                 {% if d == "Nessus" %}
                     <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-info">{{d }}</a>
+                {% elif d == "Gowitness" %}
+                    <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_gowitness' port.id %}" class="loadunload btn btn-info">{{d }}</a>
                 {% else %}
                     <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
                 {% endif %}

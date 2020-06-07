@@ -105,6 +105,7 @@ def sort_by_url(data):
     return res
 
 def add_tool_url(url, tool, args):
+
     host = url.split("/")[2].split(":")[0]
     scheme = url.split(":")[0]
     port = url.split(":")[2]
@@ -118,6 +119,7 @@ def add_tool_url(url, tool, args):
         d.add_tool_run(tool=tool, args="{}-{}".format(port, args))
     
 def get_port_object(url):
+    # pdb.set_trace()
     host = url.split("/")[2].split(":")[0]
     
     port = url.split(":")[2]
