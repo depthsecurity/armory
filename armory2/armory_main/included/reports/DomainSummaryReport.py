@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from armory2.armory_main.models import DomainRepository
-from armory.included.ReportTemplate import ReportTemplate
+from armory2.armory_main.included.ReportTemplate import ReportTemplate
 import pdb
 
 class Report(ReportTemplate):

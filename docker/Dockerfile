@@ -31,6 +31,8 @@ RUN git clone https://github.com/anshumanbh/tko-subs.git
 RUN git clone https://github.com/DanMcInerney/xsscrapy.git
 RUN git clone https://github.com/fang0654/Asnlookup.git
 RUN git clone https://github.com/fang0654/DomLink.git
+RUN git clone https://github.com/offensive-security/exploitdb.git
+
 # RUN go get github.com/ffuf/ffuf
 
 # Next couple of lines are to use custom version of ffuf until it gets updated
@@ -83,6 +85,11 @@ RUN ln -s /opt/src/Asnlookup/asnlookup.py /usr/local/bin/asnlookup.py
 RUN chmod +x /usr/local/bin/asnlookup.py
 RUN ln -s /opt/src/DomLink/domLink.py /usr/local/bin/domLink.py
 RUN chmod +x /usr/local/bin/domLink.py
+
+RUN sed -i 's/\/opt\/exploitdb/\/opt\/src\/exploitdb/g' /opt/src/exploitdb/.searchsploit_rc
+RUN cp /opt/src/exploitdb/.searchsploit_rc /root/
+RUN ln -s /opt/src/exploitdb/searchsploit /usr/local/bin/searchsploit
+
 WORKDIR /opt/src
 
 # Going to increment this everytime I want to update armory.

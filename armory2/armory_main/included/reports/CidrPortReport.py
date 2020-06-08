@@ -1,11 +1,11 @@
 #!/usr/bin/python
 from armory2.armory_main.models import (
-    DomainRepository,
-    IPRepository,
-    CIDRRepository,
-    BaseDomainRepository,
+    Domain,
+    IPAddress,
+    CIDR,
+    BaseDomain,
 )
-from armory.included.ReportTemplate import ReportTemplate
+from armory2.armory_main.included.ReportTemplate import ReportTemplate
 import pdb
 
 class Report(ReportTemplate):
@@ -18,32 +18,26 @@ class Report(ReportTemplate):
 
     name = ""
 
-    def __init__(self, db):
-        self.BaseDomain = BaseDomainRepository(db)
-        self.Domain = DomainRepository(db)
-        self.IPAddress = IPRepository(db)
-        self.CIDR = CIDRRepository(db)
-
     def run(self, args):
         # Cidrs = self.CIDR.
         results = {}
 
-        CIDRs = self.CIDR.all()
+        CIDRs = CIDR.objects.all()
         for c in CIDRs:
 
             if results.get(c.org_name, False):
-                if not results[c.org_name].get(c.cidr, False):
-                    results[c.org_name][c.cidr] = {}
+                if not results[c.org_name].get(c.name, False):
+                    results[c.org_name][c.name] = {}
             else:
-                results[c.org_name] = {c.cidr: {}}
-            for ip in c.ip_addresses:
+                results[c.org_name] = {c.name: {}}
+            for ip in c.ip_address_set.objects.all():
                 if (args.scope == "passive" and ip.passive_scope) or (
-                    args.scope == "active" and ip.in_scope) or (
+                    args.scope == "active" and ip.active_scope) or (
                     args.scope == "all"):
-                    results[c.org_name][c.cidr][ip.ip_address] = []
-                    for d in ip.domains:
+                    results[c.org_name][c.name][ip.ip_address] = []
+                    for d in ip.domain_set.objects.all():
                         if d.passive_scope:
-                            results[c.org_name][c.cidr][ip.ip_address].append(d.domain)
+                            results[c.org_name][c.name][ip.ip_address].append(d.name)
         pdb.set_trace()
         res = []
         if results.get(None, False):

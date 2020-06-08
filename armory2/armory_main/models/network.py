@@ -61,7 +61,7 @@ class Port(BaseModel):
     status = models.CharField(max_length=32, default="open")
     service_name = models.CharField(max_length=256)
     ip_address = models.ForeignKey(IPAddress, on_delete=models.CASCADE)
-    
+    cert = models.TextField(unique=False)
     certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
 

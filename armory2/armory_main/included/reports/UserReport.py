@@ -4,7 +4,7 @@ from armory2.armory_main.models import (
     UserRepository,
     CredRepository,
 )
-from armory.included.ReportTemplate import ReportTemplate
+from armory2.armory_main.included.ReportTemplate import ReportTemplate
 import pdb
 
 class Report(ReportTemplate):

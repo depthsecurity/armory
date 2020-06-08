@@ -1,5 +1,5 @@
 from armory.included.utilities import get_urls
-from armory.included.ReportTemplate import ReportTemplate
+from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
 
 class Report(ReportTemplate):
