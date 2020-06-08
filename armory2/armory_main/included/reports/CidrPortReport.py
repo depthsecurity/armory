@@ -30,15 +30,15 @@ class Report(ReportTemplate):
                     results[c.org_name][c.name] = {}
             else:
                 results[c.org_name] = {c.name: {}}
-            for ip in c.ip_address_set.objects.all():
+            for ip in c.ipaddress_set.all():
                 if (args.scope == "passive" and ip.passive_scope) or (
                     args.scope == "active" and ip.active_scope) or (
                     args.scope == "all"):
                     results[c.org_name][c.name][ip.ip_address] = []
-                    for d in ip.domain_set.objects.all():
+                    for d in ip.domain_set.all():
                         if d.passive_scope:
                             results[c.org_name][c.name][ip.ip_address].append(d.name)
-        pdb.set_trace()
+        
         res = []
         if results.get(None, False):
             results[""] = results.pop(None)

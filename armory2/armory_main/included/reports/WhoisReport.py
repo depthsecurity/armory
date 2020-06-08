@@ -12,30 +12,26 @@ class Report(ReportTemplate):
 
     markdown = ["##", "###", "`"]
 
-    def __init__(self, db):
-        self.BaseDomain = BaseDomainRepository(db)
-
-        self.ScopeCIDR = ScopeCIDRRepository(db)
 
     def run(self, args):
         # Cidrs = self.CIDR.
         results = []
         if args.scope != "all":
-            domains = self.BaseDomain.all(scope_type=args.scope)
+            domains = BaseDomain.get_set(scope_type=args.scope)
         else:
-            domains = self.BaseDomain.all()
+            domains = self.BaseDomain.get_set()
 
         domain_data = {}
         for d in domains:
             if d.meta.get("whois", False):
-                domain_data[d.domain] = d.meta["whois"]
+                domain_data[d.name] = d.meta["whois"]
 
         cidr_data = {}
 
-        CIDRs = self.ScopeCIDR.all()
+        CIDRs = CIDR.get_set(scope_type=args.scope)
         for c in CIDRs:
             if c.meta.get("whois", False):
-                cidr_data[c.cidr] = c.meta["whois"]
+                cidr_data[c.name] = c.meta["whois"]
         # pdb.set_trace()
 
         domain_blacklist = [

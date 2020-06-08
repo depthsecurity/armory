@@ -1,10 +1,10 @@
 #!/usr/bin/python
 from armory2.armory_main.models import (
 
-    IPRepository,
-    BaseDomainRepository,
-    DomainRepository,
-    CIDRRepository,
+    IPAddress,
+    BaseDomain,
+    Domain,
+    CIDR,
 )
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
@@ -18,12 +18,6 @@ class Report(ReportTemplate):
 
     name = "CertReport"
 
-    def __init__(self, db):
-
-        self.IPAddress = IPRepository(db)
-        self.Domains = DomainRepository(db)
-        self.BaseDomains = BaseDomainRepository(db)
-        self.CIDRs = CIDRRepository(db)
 
     def set_options(self):
         super(Report, self).set_options()
@@ -32,29 +26,29 @@ class Report(ReportTemplate):
 
         results = []
 
-        base_domains = self.BaseDomains.all()
+        base_domains = BaseDomain.objects.all()
 
         for b in base_domains:
             results.append(
                 "%s\tActive Scope: %s\tPassive Scope: %s"
-                % (b.domain, b.in_scope, b.passive_scope)
+                % (b.name, b.active_scope, b.passive_scope)
             )
 
-            for d in b.subdomains:
+            for d in b.domain_set.all():
                 results.append(
                     "\t%s\tActive Scope: %s\tPassive Scope: %s"
-                    % (d.domain, d.in_scope, d.passive_scope)
+                    % (d.name, d.active_scope, d.passive_scope)
                 )
 
-        cidrs = self.CIDRs.all()
+        cidrs = CIDR.objects.all()
 
         results.append("\n\n")
         for c in cidrs:
-            results.append("%s - %s" % (c.cidr, c.org_name))
-            for ip in c.ip_addresses:
+            results.append("%s - %s" % (c.name, c.org_name))
+            for ip in c.ipaddress_set.all():
                 results.append(
                     "\t%s\tActive Scope: %s\tPassive Scope: %s"
-                    % (ip.ip_address, ip.in_scope, ip.passive_scope)
+                    % (ip.ip_address, ip.active_scope, ip.passive_scope)
                 )
 
         self.process_output(results, args)

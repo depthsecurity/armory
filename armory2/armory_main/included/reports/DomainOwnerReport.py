@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory2.armory_main.models import DomainRepository, IPRepository, CIDRRepository
+from armory2.armory_main.models import Domain
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
 
@@ -10,23 +10,18 @@ class Report(ReportTemplate):
 
     name = "DomainOwner"
 
-    def __init__(self, db):
-
-        self.Domain = DomainRepository(db)
-        self.IPAddress = IPRepository(db)
-        self.CIDR = CIDRRepository(db)
-
+    
     def run(self, args):
         # Cidrs = self.CIDR.
         results = []
 
-        domains = self.Domain.all()
+        domains = Domain.objects.all()
         for d in domains:
 
-            if len(d.ip_addresses) > 0:
-                owner = d.ip_addresses[0].cidr.org_name
+            if len(d.ip_addresses.all()) > 0:
+                owner = d.ip_addresses.all()[0].cidr.org_name
 
-                results.append("%s,%s" % (owner, d.domain))
+                results.append("%s,%s" % (owner, d.name))
 
         res = sorted(results)
 

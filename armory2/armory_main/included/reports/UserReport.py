@@ -1,8 +1,8 @@
 #!/usr/bin/python
 from armory2.armory_main.models import (
-    BaseDomainRepository,
-    UserRepository,
-    CredRepository,
+    BaseDomain,
+    User,
+    Cred,
 )
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 import pdb
@@ -15,11 +15,6 @@ class Report(ReportTemplate):
     name = "UserReport"
     markdown = ["-", "--"]
 
-    def __init__(self, db):
-
-        self.BaseDomain = BaseDomainRepository(db)
-        self.User = UserRepository(db)
-        self.Cred = CredRepository(db)
 
     def set_options(self):
 

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory2.armory_main.models import PortRepository
+from armory2.armory_main.models import Port
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
 
@@ -12,13 +12,11 @@ class Report(ReportTemplate):
 
     name = ""
 
-    def __init__(self, db):
-        self.Ports = PortRepository(db)
 
     def run(self, args):
         # Cidrs = self.CIDR.
 
-        ports = self.Ports.all()
+        ports = Port.objects.all()
         services = {}
 
         for p in ports:
@@ -38,7 +36,7 @@ class Report(ReportTemplate):
                     services[p.proto][p.port_number] = {}
 
                 services[p.proto][p.port_number][p.ip_address.ip_address] = {
-                    "domains": [d.domain for d in p.ip_address.domains],
+                    "domains": [d.name for d in p.ip_address.domain_set.all()],
                     "svc": p.service_name,
                 }
 

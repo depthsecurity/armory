@@ -1,6 +1,5 @@
 #!/usr/bin/python
-from armory2.armory_main.models import UserRepository
-
+from armory2.armory_main.models import User
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
 
@@ -12,9 +11,6 @@ class Report(ReportTemplate):
     name = "EmailReport"
     markdown = ["####", "-"]
 
-    def __init__(self, db):
-        self.User = UserRepository(db)
-
     def set_options(self):
         super(Report, self).set_options()
         self.options.add_argument("-t", "--tool", help="Source tool")
@@ -24,7 +20,7 @@ class Report(ReportTemplate):
         results = {}
         res = []
 
-        users = self.User.all()
+        users = User.objects.all()
 
         for u in users:
             if u.email is not None and u.email is not "None":
@@ -33,7 +29,7 @@ class Report(ReportTemplate):
                     if not u.meta.get(args.tool, False):
                         continue
                 if u.domain:
-                    domain = u.domain.domain
+                    domain = u.domain.name
                 else:
                     domain = u.email.split("@")[1]
                 if not results.get(domain, False):

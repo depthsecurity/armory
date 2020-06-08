@@ -16,7 +16,7 @@ class User(BaseModel):
 
 
 class Cred(BaseModel):
-    password = models.CharField(max_length=64)
-    passhash = models.CharField(max_length=128)
+    password = models.CharField(max_length=64, null=True)
+    passhash = models.CharField(max_length=128, null=True)
     source = models.CharField(max_length=128)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
