@@ -71,7 +71,7 @@ RUN apt-get build-dep openssl -y
 # RUN sed -i 's/fPIE/fPIC/g' Makefile
 RUN make static
 
-RUN ln -s /opt/src/sslscan/sslscan /usr/local/bin/sslscan
+RUN ln -s /opt/src/sslscan/sslscan /usr/local/bin/sslscan3
 WORKDIR /opt/src/Sublist3r
 RUN pip install -r requirements.txt
 RUN ln -s /opt/src/Sublist3r/sublist3r.py /usr/local/bin/sublist3r
@@ -95,7 +95,7 @@ RUN ln -s /opt/src/exploitdb/searchsploit /usr/local/bin/searchsploit
 WORKDIR /opt/src
 
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision63
+RUN touch /tmp/revision64
 
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
