@@ -24,6 +24,6 @@ class Vulnerability(BaseModel):
 
 
 class Url(BaseModel):
-    name = models.CharField(max_length=256, unique=True)
+    name = models.CharField(max_length=256, unique=False)
     method = models.CharField(max_length=32, unique=False, default="get")
     port = models.ForeignKey(Port, on_delete=models.CASCADE)
