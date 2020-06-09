@@ -1,13 +1,11 @@
 #!/usr/bin/python
 
-from ...database.repositories import IPRepository, DomainRepository
-from .get_domain_ip import run as get_ip
+from armory2.armory_main.models import IPAddress, Domain
+from .network_tools import get_ips as get_ip
 
 
-def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
+def run(hosts, proto="tcp", svc="ssl", lookup_domains=False):
 
-    IPAddress = IPRepository(db)
-    Domain = DomainRepository(db)
 
     ips = {}
 
@@ -27,7 +25,7 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
                 ips[host]["ports"].append((port, svc))
 
         except Exception:
-            domains = Domain.all(domain=host)
+            domains = Domain.all(name=host)
             if domains:
                 domain = domains[0]
                 for ip in domain.ip_addresses:
@@ -51,8 +49,8 @@ def run(hosts, db, proto="tcp", svc="ssl", lookup_domains=False):
 
             # print("Checking %s" % ip)
             try:
-                ip_obj = IPAddress.all(ip_address=ip)[0]
-                domains = [d.domain for d in ip_obj.domains]
+                ip_obj = IPAddress.objects.filter(ip_address=ip)[0]
+                domains = [d.name for d in ip_obj.domains]
                 if domains:
                     results.append(
                         "%s / %s: %s"
