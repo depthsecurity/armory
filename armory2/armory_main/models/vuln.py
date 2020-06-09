@@ -23,7 +23,7 @@ class Vulnerability(BaseModel):
     cves = models.ManyToManyField(CVE)
 
 
-class URL(BaseModel):
+class Url(BaseModel):
     name = models.CharField(max_length=256, unique=True)
     method = models.CharField(max_length=32, unique=False, default="get")
     port = models.ForeignKey(Port, on_delete=models.CASCADE)
