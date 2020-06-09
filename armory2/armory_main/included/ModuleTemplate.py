@@ -10,9 +10,9 @@ import argparse
 import sys
 
 if sys.version_info[0] < 3:
-    from subprocess32 import Popen
+    from subprocess32 import Popen, STDOUT
 else:
-    from subprocess import Popen
+    from subprocess import Popen, STDOUT
 
 
 class ModuleTemplate(object):
