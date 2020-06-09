@@ -2,7 +2,7 @@
 
 from armory2.armory_main.models import IPAddress, Domain
 from .network_tools import get_ips as get_ip
-
+import pdb
 
 def run(hosts, proto="tcp", svc="ssl", lookup_domains=False):
 
@@ -10,6 +10,7 @@ def run(hosts, proto="tcp", svc="ssl", lookup_domains=False):
     ips = {}
 
     for h in hosts:
+        
         if h.count(":") == 2:
             host, port, svc = h.split(":")
         else:
@@ -25,7 +26,7 @@ def run(hosts, proto="tcp", svc="ssl", lookup_domains=False):
                 ips[host]["ports"].append((port, svc))
 
         except Exception:
-            domains = Domain.all(name=host)
+            domains = Domain.objects.filter(name=host)
             if domains:
                 domain = domains[0]
                 for ip in domain.ip_addresses:
@@ -50,7 +51,7 @@ def run(hosts, proto="tcp", svc="ssl", lookup_domains=False):
             # print("Checking %s" % ip)
             try:
                 ip_obj = IPAddress.objects.filter(ip_address=ip)[0]
-                domains = [d.name for d in ip_obj.domains]
+                domains = [d.name for d in ip_obj.domain_set.all()]
                 if domains:
                     results.append(
                         "%s / %s: %s"
