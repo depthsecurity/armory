@@ -49,6 +49,8 @@ RUN ln -s /root/go/bin/subfinder /usr/local/bin/subfinder
 # Run this to create the subfinder config, so it doesn't create a race condition causing others to error out as multiple threads try to create it at once
 RUN /usr/local/bin/subfinder -d domainthatdoesnotexits.biz -sources shodan
 
+RUN go get github.com/hakluke/hakrawler
+RUN ln -s /root/go/bin/hakrawler /usr/local/bin/hakrawler
 WORKDIR /opt/src/jexboss
 RUN pip install -r requires.txt
 RUN ln -s /opt/src/jexboss/jexboss.py /usr/local/bin/jexboss.py
