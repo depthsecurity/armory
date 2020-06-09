@@ -29,7 +29,7 @@ def run(hosts, proto="tcp", svc="ssl", lookup_domains=False):
             domains = Domain.objects.filter(name=host)
             if domains:
                 domain = domains[0]
-                for ip in domain.ip_addresses:
+                for ip in domain.ip_addresses.all():
                     if not ips.get(ip.ip_address, False):
                         ips[ip.ip_address] = {"domains": [], "ports": []}
 
