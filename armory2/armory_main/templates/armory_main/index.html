@@ -223,7 +223,7 @@
           </div>
           <div class="col-md-2">
             {% if 'http' in port.service_name %}
-            <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#">{{ port.service_name }}</button>
+            <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#http-{{ port.id }}">{{ port.service_name }}</button>
             {% else %}
             {{ port.service_name }}
             {% endif %}
@@ -234,6 +234,8 @@
                     <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-info">{{d }}</a>
                 {% elif d == "Gowitness" %}
                     <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_gowitness' port.id %}" class="loadunload btn btn-info">{{d }}</a>
+                {% elif d == "FFuF" %}
+                    <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_ffuf' port.id %}" class="loadunload btn btn-info">{{d }}</a>
                 {% else %}
                     <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
                 {% endif %}
@@ -241,18 +243,18 @@
           </div>
         </div>
       {% if 'http' in port.service_name %}
-        <div id="http-{{ port.service_name }}" class="collapse list-group">
+        <div id="http-{{ port.id }}" class="collapse list-group">
           <div class="card">
             <div class="card-body">
               <div class="row">
                 <div class="col-md-12">
-                  <a class="list-group-item list-group-item-action" href="{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}">{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}</a>
+                  <a class="list-group-item list-group-item-action" href="{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}" target="_blank">{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}</a>
                 </div>
               </div>
-            {% for domain in ips.domain_set.all %}
+            {% for domain in ip.domain_set.all %}
               <div class="row">
                 <div class="col-md-12">
-                  <a class="list-group-item list-group-item-action" href="{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}">{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}</a>
+                  <a class="list-group-item list-group-item-action" href="{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}" target="_blank">{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}</a>
                 </div>
               </div>
             {% endfor %}

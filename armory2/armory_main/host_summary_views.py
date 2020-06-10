@@ -6,6 +6,7 @@ from django.template.defaulttags import register
 import pdb
 import os
 from base64 import b64encode
+import json
 
 # from armory2.
 
@@ -64,6 +65,32 @@ def get_gowitness(request, port_id):
 
     return render(request, 'host_summary/gowitness.html', {'port':port})
 
+def get_ffuf(request, port_id):
+
+    max_status = 10
+    port = Port.objects.get(id=port_id)
+
+    ffuf_data = {}
+
+    for f in port.meta['FFuF']:
+        if os.path.exists(f):
+            data = json.loads(open(f).read())
+            # pdb.set_trace()
+            for r in data['results']:
+                if not ffuf_data.get(r['host']):
+                    ffuf_data[r['host']] = {}
+                if not ffuf_data[r['host']].get(data['config']['url']):
+                    ffuf_data[r['host']][data['config']['url']] = {}
+
+                if not ffuf_data[r['host']][data['config']['url']].get(r['status']):
+                    ffuf_data[r['host']][data['config']['url']][r['status']] = []
+
+                if len(ffuf_data[r['host']][data['config']['url']][r['status']]) < max_status:
+                    ffuf_data[r['host']][data['config']['url']][r['status']].append(r)
+    # pdb.set_trace()
+    return render(request, 'host_summary/ffuf.html', {'ffuf_data':ffuf_data})
+
+                
 
 def get_cidr_ips(request):
     pass

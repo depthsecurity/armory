@@ -28,10 +28,10 @@
         </thead>
         <tbody>
 
-          {% for header, value in gw.headers.items %}
+          {% for header_data in gw.headers %}
           <tr>
-            <td>{{ header }}</td>
-            <td style="word-wrap: break-word;min-width: 160px;max-width: 260px;">{{ value }}</td>
+            <td>{{ header_data.key }}</td>
+            <td style="word-wrap: break-word;min-width: 160px;max-width: 260px;">{{ header_data.value }}</td>
           </tr>
           
           {% endfor %}
