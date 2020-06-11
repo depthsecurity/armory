@@ -33,7 +33,7 @@ def get_words(txt):
 class Module(ModuleTemplate):
 
     name = "LinkedInt"
-    binary_name = "linkedint.py"
+    binary_name = "LinkedInt.py"
 
     def set_options(self):
         super(Module, self).set_options()
@@ -213,11 +213,11 @@ class Module(ModuleTemplate):
 
         current_dir = os.getcwd()
         # pdb.set_trace()
-        new_dir = "/".join(self.binary.split("/")[:-1])
+        # new_dir = "/".join(self.binary.split("/")[:-1])
 
-        os.chdir(new_dir)
+        os.chdir(output_path)
 
-        cmd = shlex.split("python " + self.binary + command_args)
+        cmd = shlex.split("python3 " + self.binary + command_args)
         print("Executing: %s" % " ".join(cmd))
 
         subprocess.Popen(cmd).wait()

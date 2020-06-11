@@ -21,7 +21,7 @@ WORKDIR /opt/src
 
 CMD ["echo", "Cloning various repos"]
 RUN git clone https://github.com/joaomatosf/jexboss.git
-RUN git clone https://github.com/fang0654/linkedint
+RUN git clone https://github.com/fang0654/LinkedInt
 RUN git clone https://github.com/robertdavidgraham/masscan
 RUN git clone https://github.com/sullo/nikto
 RUN git clone https://github.com/m8r0wn/pymeta
@@ -56,7 +56,8 @@ RUN pip install -r requires.txt
 RUN ln -s /opt/src/jexboss/jexboss.py /usr/local/bin/jexboss.py
 WORKDIR /opt/src/LinkedInt
 RUN pip install thready http
-RUN ln -s /opt/src/linkedint/LinkedInt.py /usr/local/bin/LinkedInt.py
+RUN chmod +x /opt/src/LinkedInt/LinkedInt.py
+RUN ln -s /opt/src/LinkedInt/LinkedInt.py /usr/local/bin/LinkedInt.py
 WORKDIR /opt/src/masscan
 RUN make -j
 RUN make install
@@ -95,7 +96,7 @@ RUN ln -s /opt/src/exploitdb/searchsploit /usr/local/bin/searchsploit
 WORKDIR /opt/src
 
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision73
+RUN touch /tmp/revision75
 
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
