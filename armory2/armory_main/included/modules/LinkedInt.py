@@ -245,7 +245,7 @@ class Module(ModuleTemplate):
                     "New user: %s %s"
                     % (remove_binary(row[0]), remove_binary(row[1]))
                 )
-
+                user.meta['LinkedInt'] = "run"
                 user.save()
 
         print("%s found and imported" % count)

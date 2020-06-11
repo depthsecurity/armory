@@ -21,6 +21,7 @@ WORKDIR /opt/src
 
 CMD ["echo", "Cloning various repos"]
 RUN git clone https://github.com/joaomatosf/jexboss.git
+RUN touch /tmp/linkedint2
 RUN git clone https://github.com/fang0654/LinkedInt
 RUN git clone https://github.com/robertdavidgraham/masscan
 RUN git clone https://github.com/sullo/nikto
@@ -96,7 +97,7 @@ RUN ln -s /opt/src/exploitdb/searchsploit /usr/local/bin/searchsploit
 WORKDIR /opt/src
 
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision77
+RUN touch /tmp/revision80
 
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
