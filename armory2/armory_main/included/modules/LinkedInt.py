@@ -217,7 +217,7 @@ class Module(ModuleTemplate):
 
         os.chdir(output_path)
 
-        cmd = shlex.split("python3 " + self.binary + command_args)
+        cmd = shlex.split(self.binary + command_args)
         print("Executing: %s" % " ".join(cmd))
 
         subprocess.Popen(cmd).wait()
