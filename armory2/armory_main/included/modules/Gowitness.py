@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-from armory2.armory_main.models import IPAddress
+from armory2.armory_main.models import IPAddress, Domain
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
-from armory2.armory_main.included.utilities.get_urls import run, add_tools_urls
+from armory2.armory_main.included.utilities.get_urls import run, add_tools_urls, get_port_object
 import os
 import re
 import subprocess
@@ -10,6 +10,8 @@ import tempfile
 from distutils.version import LooseVersion
 from time import time
 import sys
+import json
+import pdb
 
 
 if sys.version[0] == "3":
@@ -153,7 +155,30 @@ class Module(ToolTemplate):
             cmd = [self.binary] + gen_command
             os.chdir(output)
 
+
+
             subprocess.Popen(cmd, shell=False).wait()
+
+            data = open(os.path.join(output, 'gowitness.db')).read().split('\n')
+            for d in data:
+                if '{"url"' in d:
+                    
+                    j = json.loads(d)
+                    
+                    port = get_port_object(j['url'])
+                    
+                    if not port.meta.get('Gowitness'):
+                        port.meta['Gowitness'] = []
+
+                    port.meta['Gowitness'].append(j)
+                    port.save()
+
+                    if j.get('ssl_certificate') and 'peer_certificates' in j['ssl_certificate'] and j['ssl_certificate']['peer_certificates'] != None:
+                        for cert in j['ssl_certificate']['peer_certificates']:
+                            if cert and cert.get('dns_names') and cert['dns_names'] != None:
+                                for name in cert['dns_names']:
+                                    domain, created = Domain.objects.get_or_create(name=name)
+
             os.chdir(cwd)
 
         add_tools_urls(scope_type="active", tool=self.name, args=self.args.tool_args)

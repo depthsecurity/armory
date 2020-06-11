@@ -11,7 +11,7 @@ from armory2.armory_main.included.utilities import get_urls
 from armory2.armory_main.included.utilities.color_display import display_warning, display
 import os
 import time
-
+import pdb
 
 class Module(ToolTemplate):
     '''
@@ -134,6 +134,17 @@ class Module(ToolTemplate):
                 display("Domain found: {}".format(url))
                 domain, created = Domain.objects.get_or_create(name=url)
                 domain.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args))
+
+            
+            port = get_urls.get_port_object("blah://{}:{}".format(url, port_num))
+
+            if not port.meta.get('FFuF'):
+                port.meta['FFuF'] = []
+
+            port.meta['FFuF'].append(cmd['output'])
+
+            port.save()
+
             
 
         
