@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory2.armory_main.models import ScopeCIDRRepository, BaseDomainRepository
+from armory2.armory_main.models import CIDR, BaseDomain
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
 
