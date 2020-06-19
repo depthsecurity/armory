@@ -19,7 +19,7 @@ class Report(ReportTemplate):
         if args.scope != "all":
             domains = BaseDomain.get_set(scope_type=args.scope)
         else:
-            domains = self.BaseDomain.get_set()
+            domains = BaseDomain.objects.all()
 
         domain_data = {}
         for d in domains:
