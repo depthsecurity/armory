@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory2.armory_main.models import PortRepository
+from armory2.armory_main.models import Port
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
 
@@ -13,9 +13,7 @@ class Report(ReportTemplate):
 
     name = "CertReport"
 
-    def __init__(self, db):
-        self.Port = PortRepository(db)
-
+    
     def set_options(self):
         super(Report, self).set_options()
         self.options.add_argument("-t", "--tool", help="Source tool")
@@ -23,13 +21,13 @@ class Report(ReportTemplate):
     def run(self, args):
 
         results = []
-        services = self.Port.all(service_name="https")
+        services = Port.objects.filter(service_name="https")
         certs = {}
         for s in services:
 
             if (
                 (args.scope == "passive" and s.ip_address.passive_scope)
-                or (args.scope == "active" and s.ip_address.in_scope)  # noqa: W503
+                or (args.scope == "active" and s.ip_address.active_scope)  # noqa: W503
                 or (args.scope == "all")  # noqa: W503
             ):
                 if s.cert:
@@ -38,9 +36,9 @@ class Report(ReportTemplate):
                     # pdb.set_trace()
                     if not certs.get(cert, False):
                         certs[cert] = []
-                    if s.ip_address.domains:
+                    if s.ip_address.domain_set.all():
                         certs[cert].append(
-                            s.ip_address.domains[0].domain + ":" + str(s.port_number)
+                            s.ip_address.domain_set.all()[0].name + ":" + str(s.port_number)
                         )
                     else:
                         certs[cert].append(
