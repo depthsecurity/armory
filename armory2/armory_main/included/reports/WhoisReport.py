@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from armory2.armory_main.models import ScopeCIDRRepository, BaseDomainRepository
+from armory2.armory_main.models import CIDR, BaseDomain
 from armory2.armory_main.included.ReportTemplate import ReportTemplate
 
 
@@ -19,7 +19,7 @@ class Report(ReportTemplate):
         if args.scope != "all":
             domains = BaseDomain.get_set(scope_type=args.scope)
         else:
-            domains = self.BaseDomain.get_set()
+            domains = BaseDomain.objects.all()
 
         domain_data = {}
         for d in domains:

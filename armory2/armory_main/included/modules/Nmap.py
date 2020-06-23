@@ -285,8 +285,8 @@ class Module(ToolTemplate):
 
                                 for hostname in cert_domains:
                                     hostname = hostname.lower().replace("www.", "")
-                                    created, domain = self.Domain.objects.get_or_create(
-                                        domain=hostname
+                                    created, domain = Domain.objects.get_or_create(
+                                        name=hostname
                                     )
                                     if created:
                                         print("New domain found: %s" % hostname)
@@ -354,7 +354,7 @@ class Module(ToolTemplate):
                     else:
                         severity = int(cvss) / 2
 
-                    if not self.Vulnerability.objects.all().filter(name=findingName):
+                    if not Vulnerability.objects.filter(name=findingName):
                         # print "Creating", findingName
                         db_vuln, created = Vulnerability.objects.get_or_create(
                             name=findingName,
@@ -393,7 +393,7 @@ class Module(ToolTemplate):
 
                         db_vuln.save()
 
-                    if not CVE.objects.all().filter(name=cve):
+                    if not CVE.objects.filter(name=cve):
                         db_cve, created = CVE.objects.get_or_create(
                             name=cve, description=cveDescription, temporal_score=cvss
                         )
