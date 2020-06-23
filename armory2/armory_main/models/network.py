@@ -201,8 +201,10 @@ def get_cidr_info(ip_address):
         for cd in net['cidr'].split(', '):
             
             cidr_data.append([len(IPNetwork(cd)), cd, net['description']])
-
-    cidr_data.sort()
+    try:
+        cidr_data.sort()
+    except Exception as e:
+        pdb.set_trace()
     return  cidr_data[0][1], cidr_data[0][2]
     
     
