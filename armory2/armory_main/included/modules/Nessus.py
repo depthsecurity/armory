@@ -97,7 +97,7 @@ class Module(ModuleTemplate):
                 cidrs = [cidr.name for cidr in CIDR.get_set(tool=self.name, scope_type="active")]
                 domains = [
                     domain.name
-                    for domain in Domain.all(scope_type="active", tool=self.name)
+                    for domain in Domain.get_set(scope_type="active", tool=self.name)
                 ]
                 targets = ", ".join(merge_ranges(ips + cidrs) + domains)
 

@@ -212,13 +212,13 @@
           <div class="col-md-10">{{ ips[ip_address]['domains']|join(', ')}}</div>
         </div>
         <div class="row border-top  font-weight-bold">
-          <div class="col-md-1">Port</div>
+          <div class="col-md-2">Port</div>
           <div class="col-md-2">Service</div>
-          <div class="col-md-9">Data Sources</div>
+          <div class="col-md-8">Data Sources</div>
         </div>
         {% for port in ips[ip_address]['ports'].keys()|sort %}  
         <div class="row border-top">
-          <div class="col-md-1">{{ port|e }}
+          <div class="col-md-2">{{ port|e }}
           </div>
           <div class="col-md-2">
             {% if 'http' in ips[ip_address]['ports'][port]['service'] %}
@@ -227,7 +227,7 @@
             {{ ips[ip_address]['ports'][port]['service']}}
             {% endif %}
           </div>
-          <div class="col-md-9">
+          <div class="col-md-8">
             {% for data in ips[ip_address]['ports'][port]['data'] %}
             <a href="#" id="a-{{ data }}-{{ ip_address | replace('.', '_')}}-{{ port }}" class="loadunload btn btn-info">{{data }}</a>
             {% endfor %}

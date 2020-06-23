@@ -110,6 +110,7 @@ class Module(ModuleTemplate):
                 for line in ips:
 
                     if line.strip():
+                        pdb.set_trace()
                         if "/" in line or "-" in line:
                             self.process_cidr(line, args.label)
 
