@@ -25,7 +25,7 @@ def get_file_data(file_name):
 def index(request):
 
     ips_object = {}
-    ips = IPAddress.get_sorted(scope_type=active)
+    ips = IPAddress.get_sorted(scope_type='active')
 
     data = {}
 
