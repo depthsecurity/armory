@@ -40,8 +40,8 @@ class IPAddress(BaseModel):
     os = models.CharField(max_length=512)
     whois = models.TextField()
     version = models.IntegerField()
-    notes = models.TextField()
-    
+    notes = models.TextField(null=True)
+
     def __str__(self):
         return self.ip_address
         
