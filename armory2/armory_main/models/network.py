@@ -40,13 +40,19 @@ class IPAddress(BaseModel):
     os = models.CharField(max_length=512)
     whois = models.TextField()
     version = models.IntegerField()
+    notes = models.TextField()
     
     def __str__(self):
         return self.ip_address
         
     @classmethod
-    def get_sorted(cls):
-        qry = cls.objects.all()
+    def get_sorted(cls, scope_type=None):
+        if scope_type == 'active':
+            qry = cls.objects.filter(active_scope=True)
+        elif scope_type == 'passive':
+            qry = cls.objects.filter(passive_scope=True)
+        else:
+            qry = cls.objects.all()
         
         res = []
         for ip in qry:

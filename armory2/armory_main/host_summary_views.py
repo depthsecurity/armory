@@ -25,7 +25,7 @@ def get_file_data(file_name):
 def index(request):
 
     ips_object = {}
-    ips = IPAddress.get_sorted()
+    ips = IPAddress.get_sorted(scope_type=active)
 
     data = {}
 
@@ -42,7 +42,19 @@ def index(request):
                 data[p.id].append('Gowitness')
 
             if p.meta.get('FFuF'):
-                data[p.id].append('FFuF')
+                ffuf_good = False
+
+                for f in p.meta.get('FFuF'):
+                    if os.path.exists(f):
+                        res = json.load(open(f))
+                        if len(res['results']) > 0:
+                            ffuf_good = True
+
+                if ffuf_good:
+                    data[p.id].append('FFuF')
+                else:
+                    data[p.id].append('FFuF-empty')
+
 
 
 

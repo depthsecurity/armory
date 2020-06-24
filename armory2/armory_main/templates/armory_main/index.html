@@ -213,13 +213,13 @@
           <div class="col-md-10">{{ ip.domain_set.all|join:', '}}</div>
         </div>
         <div class="row border-top  font-weight-bold">
-          <div class="col-md-1">Port</div>
+          <div class="col-md-2">Port</div>
           <div class="col-md-2">Service</div>
-          <div class="col-md-9">Data Sources</div>
+          <div class="col-md-8">Data Sources</div>
         </div>
         {% for port in ip.port_set.all %}  
         <div class="row border-top">
-          <div class="col-md-1">{{ port.port_number }}/{{ port.proto }}
+          <div class="col-md-2">{{ port.port_number }}/{{ port.proto }}
           </div>
           <div class="col-md-2">
             {% if 'http' in port.service_name %}
@@ -228,7 +228,7 @@
             {{ port.service_name }}
             {% endif %}
           </div>
-          <div class="col-md-9">
+          <div class="col-md-8">
             {% for d in data|get_item:port.id %}
                 {% if d == "Nessus" %}
                     <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-info">{{d }}</a>
@@ -236,6 +236,8 @@
                     <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_gowitness' port.id %}" class="loadunload btn btn-info">{{d }}</a>
                 {% elif d == "FFuF" %}
                     <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_ffuf' port.id %}" class="loadunload btn btn-info">{{d }}</a>
+                {% elif d == 'FFuF-empty' %}
+                    <a id="" href="#" class="btn btn-danger" title='FFuF was run, but no results were found'/>
                 {% else %}
                     <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
                 {% endif %}
