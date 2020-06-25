@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from armory2.armory_main.models import *
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.template.defaulttags import register
+from django.views.decorators.csrf import csrf_exempt
 import pdb
 import os
 from base64 import b64encode
@@ -28,39 +29,61 @@ def index(request):
     ips = IPAddress.get_sorted(scope_type='active')
 
     data = {}
-
+    good_ips = []
     for ip in ips:
+        
         for p in ip.port_set.all():
-            data[p.id] = []
+            if p.port_number > 0:
+                if ip not in good_ips:
+                    good_ips.append(ip)
+                data[p.id] = []
 
-            if len(p.vulnerability_set.all()) > 0:
-                data[p.id].append("Nessus")
+                if len(p.vulnerability_set.all()) > 0:
+                    highest_severity = 0
 
-            # Look for FFuF and Gowitness - these should be done by the tools themselves and have the data stored in meta
+                    for v in p.vulnerability_set.all():
+                        if v.severity > highest_severity:
+                            highest_severity = v.severity
 
-            if p.meta.get('Gowitness'):
-                data[p.id].append('Gowitness')
+                    
 
-            if p.meta.get('FFuF'):
-                ffuf_good = False
-
-                for f in p.meta.get('FFuF'):
-                    if os.path.exists(f):
-                        res = json.load(open(f))
-                        if len(res['results']) > 0:
-                            ffuf_good = True
-
-                if ffuf_good:
-                    data[p.id].append('FFuF')
-                else:
-                    data[p.id].append('FFuF-empty')
+                    data[p.id].append("Nessus{}".format(highest_severity))
 
 
+                # Look for FFuF and Gowitness - these should be done by the tools themselves and have the data stored in meta
+
+                if p.meta.get('Gowitness'):
+                    data[p.id].append('Gowitness')
+
+                if p.meta.get('FFuF'):
+                    ffuf_good = False
+
+                    for f in p.meta.get('FFuF'):
+                        if os.path.exists(f):
+                            res = json.load(open(f))
+                            if len(res['results']) > 0:
+                                ffuf_good = True
+
+                    if ffuf_good:
+                        data[p.id].append('FFuF')
+                    else:
+                        if 'FFuF-empty' not in data[p.id]:
+                            data[p.id].append('FFuF-empty')
 
 
-    return render(request, 'armory_main/index.html', {'ips':ips, 'data':data})
 
 
+    return render(request, 'armory_main/index.html', {'ips':good_ips, 'data':data})
+
+@csrf_exempt
+def save_notes(request, ip_id):
+
+    data = request.POST['data']
+    ip = get_object_or_404(IPAddress, pk=ip_id)
+    ip.notes = data
+    ip.save()
+
+    return HttpResponse("Success")
 def get_nessus(request, port_id):
 
     vulns = Vulnerability.objects.filter(ports__id=port_id).order_by('severity')[::-1]

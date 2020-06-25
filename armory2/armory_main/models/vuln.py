@@ -22,6 +22,7 @@ class Vulnerability(BaseModel):
     exploit_reference = PickledObjectField(default=dict)
     cves = models.ManyToManyField(CVE)
 
+    
 
 class Url(BaseModel):
     name = models.CharField(max_length=256, unique=False)

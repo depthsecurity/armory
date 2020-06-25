@@ -73,7 +73,7 @@ RUN apt-get build-dep openssl -y
 # RUN sed -i 's/fPIE/fPIC/g' Makefile
 RUN make static
 
-RUN ln -s /opt/src/sslscan/sslscan /usr/local/bin/sslscan3
+RUN ln -s /opt/src/sslscan/sslscan /usr/local/bin/sslscan
 WORKDIR /opt/src/Sublist3r
 RUN pip install -r requirements.txt
 RUN ln -s /opt/src/Sublist3r/sublist3r.py /usr/local/bin/sublist3r
