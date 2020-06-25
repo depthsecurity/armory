@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from armory2.armory_main.models import *
 from django.shortcuts import render, get_object_or_404
 from django.template.defaulttags import register
+from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
 import pdb
 import os
@@ -25,55 +26,107 @@ def get_file_data(file_name):
 
 def index(request):
 
+    return render(request, 'host_summary/index.html', {})
+
+def get_hosts(request):
+
+    scope_type = request.POST.get('scope', 'active')
+
+    search = request.POST.get('search')
+
+    if request.POST.get('display_notes'):
+        display_notes = "collapse show"
+    else:
+        display_notes = "collapse"
+
+
+    ffuf = False
+    gowitness = False
+    nessus = False
+
+    if request.POST.get('display_all'):
+        ffuf = True
+        gowitness = True
+        nessus = True
+
+    else:
+        if request.POST.get('display_ffuf'):
+            ffuf = True
+        if request.POST.get('display_gowitness'):
+            gowitness = True
+        if request.POST.get('display_nessus'):
+            nessus = True
+
+    display_zero = request.POST.get('display_zero')
+
+    display_complete = request.POST.get('display_completed')
+
     ips_object = {}
-    ips = IPAddress.get_sorted(scope_type='active')
+    ips = IPAddress.get_sorted(scope_type=scope_type, search=search)
 
     data = {}
     good_ips = []
     for ip in ips:
-        
-        for p in ip.port_set.all():
-            if p.port_number > 0:
-                if ip not in good_ips:
-                    good_ips.append(ip)
-                data[p.id] = []
+        if display_complete or not ip.completed:
 
-                if len(p.vulnerability_set.all()) > 0:
-                    highest_severity = 0
+            for p in ip.port_set.all():
+                if p.port_number > 0 or display_zero:
+                    if ip not in good_ips:
+                        good_ips.append(ip)
+                    data[p.id] = []
 
-                    for v in p.vulnerability_set.all():
-                        if v.severity > highest_severity:
-                            highest_severity = v.severity
+                    if nessus and len(p.vulnerability_set.all()) > 0:
+                        highest_severity = 0
 
-                    
+                        for v in p.vulnerability_set.all():
+                            if v.severity > highest_severity:
+                                highest_severity = v.severity
 
-                    data[p.id].append("Nessus{}".format(highest_severity))
+                        
 
-
-                # Look for FFuF and Gowitness - these should be done by the tools themselves and have the data stored in meta
-
-                if p.meta.get('Gowitness'):
-                    data[p.id].append('Gowitness')
-
-                if p.meta.get('FFuF'):
-                    ffuf_good = False
-
-                    for f in p.meta.get('FFuF'):
-                        if os.path.exists(f):
-                            res = json.load(open(f))
-                            if len(res['results']) > 0:
-                                ffuf_good = True
-
-                    if ffuf_good:
-                        data[p.id].append('FFuF')
-                    else:
-                        if 'FFuF-empty' not in data[p.id]:
-                            data[p.id].append('FFuF-empty')
+                        data[p.id].append("Nessus{}".format(highest_severity))
 
 
+                    # Look for FFuF and Gowitness - these should be done by the tools themselves and have the data stored in meta
+
+                    if gowitness and p.meta.get('Gowitness'):
+                        data[p.id].append('Gowitness')
+
+                    if ffuf and p.meta.get('FFuF'):
+                        ffuf_good = False
+
+                        for f in p.meta.get('FFuF'):
+                            if os.path.exists(f):
+                                res = json.load(open(f))
+                                if len(res['results']) > 0:
+                                    ffuf_good = True
+
+                        if ffuf_good:
+                            data[p.id].append('FFuF')
+                        else:
+                            if 'FFuF-empty' not in data[p.id]:
+                                data[p.id].append('FFuF-empty')
 
 
-    return render(request, 'armory_main/index.html', {'ips':good_ips, 'data':data})
+    host_html = loader.get_template('host_summary/host_summary_data.html').render({'ips':good_ips, 'data':data, 'display_notes':display_notes, 'display_zero': display_zero})
+    sidebar_html = loader.get_template('host_summary/sidebar.html').render({'ips':good_ips})
+
+    return HttpResponse(json.dumps({'hostdata':host_html, 'sidebardata': sidebar_html}))
+
+
+def toggle_completed(request, ip_id):
+
+    
+    ip = get_object_or_404(IPAddress, pk=ip_id)
+    if ip.completed:
+        ip.completed = False
+    else:
+        ip.completed = True
+
+    ip.save()
+
+    return HttpResponse("IP address completed: {}".format(ip.completed))
+
 
 @csrf_exempt
 def save_notes(request, ip_id):

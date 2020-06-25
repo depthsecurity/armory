@@ -1,0 +1,15 @@
+  <div id="sidebar-wrapper">
+    <ul id="sidebar_menu" class="sidebar-nav">
+      <li class="sidebar-brand"><a id="menu-toggle" href="#">IP Address</a></li>
+    </ul>
+    <ul id="sidebar" class="sidebar-nav">
+
+
+    {% for ip in ips %}
+      <li>
+        <a href="#{{ ip.ip_address }}">{{ ip.ip_address }}</a>
+      </li>
+
+    {% endfor %}
+    </ul>
+  </div>

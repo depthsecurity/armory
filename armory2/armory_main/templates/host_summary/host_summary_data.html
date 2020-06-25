@@ -1,0 +1,130 @@
+
+
+
+
+  
+  <div class="container">
+    {% for ip in ips %}
+
+    <div id="{{ ip.ip_address }}"></div>
+    <div class="row sticky-top">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+
+            <div class="row">
+              <div class="col-md-9">
+                <h1 ><a href="#{{ ip.ip_address }}">{{ ip.ip_address }}   </a></h1>
+              </div>
+              <div class="col-md-1">
+                <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#notes-{{ ip.id }}">Notes</button>
+              </div>
+              <div class="col-md-2">
+                {% if ip.completed %}
+                <button class="completed btn btn-success" id="completed-{{ ip.id }}">Unmark Done</button>
+                {% else %}
+                <button class="completed btn btn-info" id="completed-{{ ip.id }}">Mark Done</button>
+                {% endif %}
+                
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="notes-{{ ip.id }}" class=" {{ display_notes }} ">
+      <div class="card">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-12 font-weight-bold">Notes</div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <textarea id="notes-text-{{ ip.id }}" class="notesave col-md-12">{{ip.notes }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+
+        <div class="row">
+          <div class="col-md-2 font-weight-bold">Domains</div>
+          <div class="col-md-10">{{ ip.domain_set.all|join:', '}}</div>
+        </div>
+        <div class="row border-top  font-weight-bold">
+          <div class="col-md-2">Port</div>
+          <div class="col-md-2">Service</div>
+          <div class="col-md-8">Data Sources</div>
+        </div>
+        {% for port in ip.port_set.all %}  
+          {% if port.port_number > 0 or display_zero %}
+          <div class="row border-top">
+            <div class="col-md-2">{{ port.port_number }}/{{ port.proto }}
+            </div>
+            <div class="col-md-2">
+              {% if 'http' in port.service_name %}
+              <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#http-{{ port.id }}">{{ port.service_name }}</button>
+              {% else %}
+              {{ port.service_name }}
+              {% endif %}
+            </div>
+            <div class="col-md-8">
+              {% for d in data|get_item:port.id %}
+                  {% if d == "Nessus0" %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-light">Nessus</a>
+                  {% elif d == "Nessus1" %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-info">Nessus</a>
+                  {% elif d == "Nessus2" %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-warning">Nessus</a>
+                  {% elif d == "Nessus3" %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-danger">Nessus</a>
+                  {% elif d == "Nessus4" %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-outline-danger">Nessus</a>
+
+                  {% elif d == "Gowitness" %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_gowitness' port.id %}" class="loadunload btn btn-info">{{d }}</a>
+                  {% elif d == "FFuF" %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_ffuf' port.id %}" class="loadunload btn btn-info">{{d }}</a>
+                  {% elif d == 'FFuF-empty' %}
+                      <a id="" class="btn btn-light" title='FFuF was run, but no results were found'>FFuF</a>
+                  {% else %}
+                      <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
+                  {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% if 'http' in port.service_name %}
+          <div id="http-{{ port.id }}" class="collapse list-group">
+            <div class="card">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12">
+                    <a class="list-group-item list-group-item-action" href="{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}" target="_blank">{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}</a>
+                  </div>
+                </div>
+              {% for domain in ip.domain_set.all %}
+                <div class="row">
+                  <div class="col-md-12">
+                    <a class="list-group-item list-group-item-action" href="{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}" target="_blank">{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}</a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% for d in data|get_item:port.id %}
+        <div  id="{{ d }}-{{ port.id }}"></div>
+        {% endfor %}
+        {% endif %}
+      {% endfor %}
+      </div>
+    </div>
+  {% endfor %} 
+
+  
+  </div>
+
+

@@ -41,12 +41,13 @@ class IPAddress(BaseModel):
     whois = models.TextField()
     version = models.IntegerField()
     notes = models.TextField(default="")
+    completed = models.BooleanField(default=False)
 
     def __str__(self):
         return self.ip_address
         
     @classmethod
-    def get_sorted(cls, scope_type=None):
+    def get_sorted(cls, scope_type=None, search=None):
         if scope_type == 'active':
             qry = cls.objects.filter(active_scope=True)
         elif scope_type == 'passive':
@@ -56,7 +57,20 @@ class IPAddress(BaseModel):
         
         res = []
         for ip in qry:
-            res.append([int(IPAddr(ip.ip_address)), ip])
+            valid = False
+            if not search:
+                valid = True
+
+            elif search in ip.ip_address:
+                valid = True
+
+            for d in ip.domain_set.all():
+                if search.lower() in d.name.lower():
+                    valid = True
+
+                    
+            if valid == True:
+                res.append([int(IPAddr(ip.ip_address)), ip])
 
         res2 = [r[1] for r in sorted(res)]
         return res2
