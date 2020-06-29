@@ -41,7 +41,7 @@ class IPAddress(BaseModel):
     whois = models.TextField()
     version = models.IntegerField()
     notes = models.TextField(default="")
-    completed = models.BooleanField(default=False)
+    completed = models.BooleanField(default=False, null=True)
 
     def __str__(self):
         return self.ip_address
