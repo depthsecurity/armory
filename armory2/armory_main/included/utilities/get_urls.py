@@ -126,10 +126,12 @@ def get_port_object(url):
     
     try:
         [int(i) for i in host.split('.')]
-        port = Port.objects.get(ip_address__ip_address=host, port_number=port)
+        port = Port.objects.get(ip_address__ip_address=host, port_number=port, proto='tcp')
         
     except:
-        port = Port.objects.get(ip_address__domain__name=host, port_number = port)
+        ips = IPAddress.objects.filter(domain__name=host)
+
+        port = ips[0].port_set.get(port_number=443, proto='tcp')
 
     return port
         
