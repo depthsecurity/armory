@@ -24,6 +24,21 @@ def file_exists(file_name):
 def get_file_data(file_name):
     return "data:image/png;base64," + b64encode(open(file_name, 'rb').read()).decode()
 
+@register.filter
+def unique_ffuf(l):
+    res = []
+
+    endpoints = []
+
+    for item in l:
+        endpoint = item['input']['FUZZ']
+
+        if endpoint not in endpoints:
+            res.append(item)
+            endpoints.append(endpoint)
+
+    return res
+
 def index(request):
 
     return render(request, 'host_summary/index.html', {})
@@ -173,9 +188,9 @@ def get_ffuf(request, port_id):
                 if not ffuf_data[r['host']][data['config']['url']].get(r['status']):
                     ffuf_data[r['host']][data['config']['url']][r['status']] = []
 
-                if len(ffuf_data[r['host']][data['config']['url']][r['status']]) < max_status:
+                if len(ffuf_data[r['host']][data['config']['url']][r['status']]) < max_status and r not in ffuf_data[r['host']][data['config']['url']][r['status']]:
                     ffuf_data[r['host']][data['config']['url']][r['status']].append(r)
-    # pdb.set_trace()
+                    # pdb.set_trace()
     return render(request, 'host_summary/ffuf.html', {'ffuf_data':ffuf_data})
 
                 

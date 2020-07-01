@@ -185,11 +185,11 @@ class Module(ModuleTemplate):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        output_path = os.path.join(
+        file_path = os.path.join(
             output_path, "%s-linkedint" % domain.replace(".", "_")
         )
 
-        command_args = " -o %s" % output_path
+        command_args = " -o %s" % file_path
 
         command_args += " -e %s" % domain
         if args.keywords:

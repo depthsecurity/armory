@@ -36,7 +36,7 @@
             </div>
           </div>
 
-           {% for result in status_info %}
+           {% for result in status_info|unique_ffuf %}
           <div class="row">
             <div class="col-md-8">
               <a href="{{ result.url }}">{{ result.input.FUZZ }}</a>
