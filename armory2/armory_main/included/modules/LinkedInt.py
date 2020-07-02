@@ -224,7 +224,7 @@ class Module(ModuleTemplate):
 
         os.chdir(current_dir)
         count = 0
-        with open(output_path + ".csv") as csvfile:
+        with open(file_path + ".csv") as csvfile:
             csvreader = csv.reader(csvfile, delimiter=",", quotechar='"')
 
             for row in csvreader:
