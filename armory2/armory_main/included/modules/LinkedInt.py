@@ -182,12 +182,12 @@ class Module(ModuleTemplate):
                 self.base_config["ARMORY_BASE_PATH"], args.output_path
             )
 
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-
         file_path = os.path.join(
             output_path, "%s-linkedint" % domain.replace(".", "_")
         )
+        
+        if not os.path.exists(file_path):
+            os.makedirs(file_path)
 
         command_args = " -o %s" % file_path
 
@@ -224,7 +224,7 @@ class Module(ModuleTemplate):
 
         os.chdir(current_dir)
         count = 0
-        with open(file_path + ".csv") as csvfile:
+        with open(file_path + ".csv", "w+") as csvfile:
             csvreader = csv.reader(csvfile, delimiter=",", quotechar='"')
 
             for row in csvreader:
