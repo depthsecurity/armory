@@ -114,7 +114,7 @@ class Module(ModuleTemplate):
             if args.top:
                 titles = [
                     user.job_title.split(" at ")[0]
-                    for user in domain.users
+                    for user in domain.user_set.all()
                     if user.job_title
                 ]
                 words = []
