@@ -374,6 +374,7 @@ class Module(ModuleTemplate):
                     description=description,
                     remediation=solution,
                 )
+                pdb.set_trace()
                 db_vuln.ports.add(db_port)
                 db_vuln.exploitable = exploitable
                 if exploitable:
@@ -403,17 +404,25 @@ class Module(ModuleTemplate):
             if tag.find("plugin_output") is not None:
                 
                 plugin_output = tag.find("plugin_output").text
-                if not db_vuln.meta.get('plugin_output', False):
-                    db_vuln.meta['plugin_output'] = {}
-                if not db_vuln.meta['plugin_output'].get(ip.ip_address, False):
-                    db_vuln.meta['plugin_output'][ip.ip_address] = {}
 
-                if not db_vuln.meta['plugin_output'][ip.ip_address].get(port, False):
-                    db_vuln.meta['plugin_output'][ip.ip_address][port] = []
+                db_output, created = VulnOutput.objects.get_or_create(port = db_port, vulnerability=db_vuln)
 
-                if plugin_output not in db_vuln.meta['plugin_output'][ip.ip_address][port]:
+                if created:
+                    print("Plugin output added to database")
+                    db_output.data = plugin_output
+                    db_output.save()
+                      
+                # if not db_vuln.meta.get('plugin_output', False):
+                #     db_vuln.meta['plugin_output'] = {}
+                # if not db_vuln.meta['plugin_output'].get(ip.ip_address, False):
+                #     db_vuln.meta['plugin_output'][ip.ip_address] = {}
+
+                # if not db_vuln.meta['plugin_output'][ip.ip_address].get(port, False):
+                #     db_vuln.meta['plugin_output'][ip.ip_address][port] = []
+
+                # if plugin_output not in db_vuln.meta['plugin_output'][ip.ip_address][port]:
                 
-                    db_vuln.meta['plugin_output'][ip.ip_address][port].append(plugin_output)
+                #     db_vuln.meta['plugin_output'][ip.ip_address][port].append(plugin_output)
                 
 
             if not self.args.disable_mitre:
