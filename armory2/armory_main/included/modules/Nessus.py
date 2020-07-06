@@ -375,7 +375,7 @@ class Module(ModuleTemplate):
                     description=description,
                     remediation=solution,
                 )
-                pdb.set_trace()
+                
                 db_vuln.ports.add(db_port)
                 db_vuln.exploitable = exploitable
                 if exploitable:
