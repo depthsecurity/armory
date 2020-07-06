@@ -488,7 +488,7 @@ class Module(ModuleTemplate):
 
                 ip, created = IPAddress.objects.get_or_create(ip_address=hostIP, defaults={'active_scope':True, 'passive_scope':True})
 
-                if hostname:
+                if hostname and '.' in hostname: # Filter out the random hostnames that aren't fqdns
                     domain, created = Domain.objects.get_or_create(name=hostname)
 
                     if ip not in domain.ip_addresses.all():
