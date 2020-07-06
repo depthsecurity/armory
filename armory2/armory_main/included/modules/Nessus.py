@@ -7,6 +7,7 @@ from armory2.armory_main.models import (
     Vulnerability,
     CVE,
     CIDR,
+    VulnOutput,
 )
 from armory2.armory_main.included.utilities.color_display import display, display_new, display_error
 from armory2.armory_main.included.utilities.nessus import NessusRequest
