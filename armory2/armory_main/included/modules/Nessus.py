@@ -409,7 +409,7 @@ class Module(ModuleTemplate):
                 db_output, created = VulnOutput.objects.get_or_create(port = db_port, vulnerability=db_vuln)
 
                 if created:
-                    print("Plugin output added to database")
+                    # print("Plugin output added to database")
                     db_output.data = plugin_output
                     db_output.save()
                       
