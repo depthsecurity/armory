@@ -48,17 +48,12 @@ class Report(ReportTemplate):
     def run(self, args):
 
         results = []
-        qry, model = self.BaseDomain.get_query()
-        if args.scope == 'active':
-            domains = qry.filter_by(in_scope=True).order_by(model.domain).all()
-        elif args.scope == 'passive':
-            domains = qry.filter_by(passive_scope=True).order_by(model.domain).all()
-        else:
-            domains = qry.order_by(model.domain).all()
+        domains = BaseDomain.get_set(scope_type=args.scope)
+        
         
         for d in domains:
             if args.title and d.users:
-                results.append('{}'.format(d.domain))
+                results.append('{}'.format(d.name))
             
             if args.emails:
                 emails = sorted([u.email.lower() for u in d.users if u.email])
