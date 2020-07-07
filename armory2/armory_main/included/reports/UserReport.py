@@ -56,28 +56,28 @@ class Report(ReportTemplate):
                 results.append('{}'.format(d.name))
             
             if args.emails:
-                emails = sorted([u.email.lower() for u in d.users if u.email])
+                emails = sorted([u.email.lower() for u in d.user_set.all() if u.email])
                 if args.title:
                     results += ['\t{}'.format(e) for e in emails]
                 else:
                     results += ['{}'.format(e) for e in emails]
             elif args.accounts:
-                emails = sorted([u.email.lower() for u in d.users if u.email])
+                emails = sorted([u.email.lower() for u in d.user_set.all() if u.email])
                 if args.title:
                     results += ['\t{}'.format(e.split("@")[0]) for e in emails]
                 else:
                     results += ['{}'.format(e.split("@")[0]) for e in emails]
 
             elif args.full:
-                for user in d.users:
+                for user in d.user_set.all():
                     results.append(
                         "{}|{}|{}|{}".format(
                             user.first_name, user.last_name, user.email, user.job_title
                     )
                 )
             else:
-                 for user in d.users:
-                    for cred in user.creds:
+                 for user in d.user_set.all():
+                    for cred in user.cred_set.all():
                         if cred.password and cred.password != "None":
                             if args.emails_passwords:
                                 txt = "%s:%s" % (user.email, cred.password)
