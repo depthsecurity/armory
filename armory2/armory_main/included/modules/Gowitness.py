@@ -177,7 +177,8 @@ class Module(ToolTemplate):
                         for cert in j['ssl_certificate']['peer_certificates']:
                             if cert and cert.get('dns_names') and cert['dns_names'] != None:
                                 for name in cert['dns_names']:
-                                    domain, created = Domain.objects.get_or_create(name=name)
+                                    if '.' in name:
+                                        domain, created = Domain.objects.get_or_create(name=name)
 
             os.chdir(cwd)
 
