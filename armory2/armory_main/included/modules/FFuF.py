@@ -8,7 +8,7 @@ from armory2.armory_main.models import (
 )
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities import get_urls
-from armory2.armory_main.included.utilities.color_display import display_warning, display
+from armory2.armory_main.included.utilities.color_display import display_warning, display, display_error
 import os
 import time
 import pdb
