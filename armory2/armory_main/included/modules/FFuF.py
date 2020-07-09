@@ -137,13 +137,13 @@ class Module(ToolTemplate):
 
             
             port = get_urls.get_port_object("blah://{}:{}".format(url, port_num))
+            if port:
+                if not port.meta.get('FFuF'):
+                    port.meta['FFuF'] = []
 
-            if not port.meta.get('FFuF'):
-                port.meta['FFuF'] = []
+                port.meta['FFuF'].append(cmd['output'])
 
-            port.meta['FFuF'].append(cmd['output'])
-
-            port.save()
+                port.save()
 
             
 
