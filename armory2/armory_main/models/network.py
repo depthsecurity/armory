@@ -102,22 +102,22 @@ def pre_save_basedomain(sender, instance, *args, **kwargs):
 def pre_save_domain(sender, instance, *args, **kwargs):
     if not instance.id:
         domain_name = ''.join([i for i in instance.name.lower() if i in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
-        if domain_name.count('.') > 0:
-            base_domain = '.'.join(domain_name.split('.')[-2:])
+        if domain_name.count('.') < 1:
+            domain_name = domain_name + '.badfqdn.local'
+        base_domain = '.'.join(domain_name.split('.')[-2:])
 
-            bd, created = BaseDomain.objects.get_or_create(name=base_domain, defaults={"active_scope":instance.active_scope, "passive_scope":instance.passive_scope})
+        bd, created = BaseDomain.objects.get_or_create(name=base_domain, defaults={"active_scope":instance.active_scope, "passive_scope":instance.passive_scope})
 
-            if not created:
-                instance.passive_scope = bd.passive_scope
-                instance.active_scope = bd.active_scope
+        if not created:
+            instance.passive_scope = bd.passive_scope
+            instance.active_scope = bd.active_scope
 
 
-            instance.basedomain = bd
+        instance.basedomain = bd
 
-            
-            display_new("New domain added: {}  Active Scope: {}    Passive Scope: {}".format(instance.name, instance.active_scope, instance.passive_scope))
-        else:
-            raise Exception("Invalid domain name provided: {}".format(domain_name))
+        
+        display_new("New domain added: {}  Active Scope: {}    Passive Scope: {}".format(instance.name, instance.active_scope, instance.passive_scope))
+
 
 
 @receiver(post_save, sender=Domain)
