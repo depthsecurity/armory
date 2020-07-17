@@ -9,21 +9,28 @@ from armory2.armory_main.models import (
     CIDR,
     VulnOutput,
 )
+
+from armory2.armory_main.models.network import get_cidr_info
 from armory2.armory_main.included.utilities.color_display import display, display_new, display_error
 from armory2.armory_main.included.utilities.nessus import NessusRequest
 from armory2.armory_main.included.utilities.sort_ranges import merge_ranges
+from armory2.armory_main.included.utilities.network_tools import validate_ip
+
 import json
 import os
 import requests
 import time
 import xml.etree.cElementTree as ET
 import pdb
+from netaddr import IPNetwork, IPAddress as IPAddr
 from datetime import datetime
+
 
 def gd(orig):
     now = datetime.now()
     diff = now - orig
     print(f"{diff.seconds}.{diff.microseconds}")
+
 
 class Module(ModuleTemplate):
 
@@ -295,7 +302,8 @@ class Module(ModuleTemplate):
     def getVulns(self, ip, ReportHost):
         """Gets vulns and associated services"""
         for tag in ReportHost.iter("ReportItem"):
-            
+            self.ip_data[ip] = {}
+
             exploitable = False
             cves = []
             vuln_refs = {}
@@ -317,21 +325,18 @@ class Module(ModuleTemplate):
                     portName = "http"
             else:
                 portName = svc_name
- 
             
+            if not self.ip_data[ip].get([port, proto, ip]):
+                self.ip_data[ip][(port, proto, ip)] = {'service_name':""}
 
-            if self.ports.get(ip) and self.ports[ip].get(port) and self.ports[ip][port].get(proto):
-                db_port = self.ports[ip][port][proto]
- 
-            else:
-                db_port, created = Port.objects.get_or_create(
-                    port_number=port, status="open", proto=proto, ip_address_id=ip.id
-                )
-                if not self.ports.get(ip):
-                    self.ports[ip] = {}
-                if not self.ports[ip].get(port):
-                    self.ports[ip][port] = {}
-                
+            # db_port, created = Port.objects.get_or_create(
+            #     port_number=port, status="open", proto=proto, ip_address_id=ip
+            # )
+            if not self.ports.get(ip):
+                self.ports[ip] = {}
+            if not self.ports[ip].get(port):
+                self.ports[ip][port] = {}
+            
                 self.ports[ip][port][proto] = db_port
             if db_port.service_name == "http":
                 if portName == "https":
@@ -496,12 +501,21 @@ class Module(ModuleTemplate):
         display("Reading " + nFile)
         tree = ET.parse(nFile)
         root = tree.getroot()
-        
+        current_ips = set([i.ip_address for i in IPAddress.objects.all()])
+        current_domains = set([d.name for d in Domain.objects.all()])
+
+        new_ips = []
+        new_ip_list = []
+        new_domains = {}
+        just_domains = []
+
         self.args = args
+        print("Preprocessing IPs/Domains")
         for ReportHost in root.iter("ReportHost"):
-            os = []
             hostname = ""
             hostIP = ""
+            os = ""
+
             for HostProperties in ReportHost.iter("HostProperties"):
                 for tag in HostProperties:
                     if tag.get("name") == "host-ip":
@@ -512,37 +526,108 @@ class Module(ModuleTemplate):
                         hostname = hostname.replace("www.", "")
 
                     if tag.get("name") == "operating-system":
-                        os = tag.text.split("\n")
+                        os = " OR ".join(tag.text.split("\n"))
+            # pdb.set_trace()
 
+
+            if hostIP and hostIP not in current_ips:
+                res = validate_ip(hostIP)
+                if res == "ipv4":
+                    v = 4
+                else:
+                
+                    v = 6
+                new_ips.append(IPAddress(ip_address=hostIP, active_scope=True, passive_scope=True, version=v, os=os))
+                new_ip_list.append(hostIP)
+              
+            if hostIP and hostname and '.' in hostname: # Filter out the random hostnames that aren't fqdns
+                if not new_domains.get(hostIP):
+                    new_domains[hostIP] = []
+
+                hostname = ''.join([i for i in hostname.lower() if i in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
+                
+                if hostname not in current_domains:
+                    new_domains[hostIP].append(hostname)
+                    if hostname not in just_domains:
+                        just_domains.append(hostname)
+           
+                
+        cidrs = {c.name: c.id for c in CIDR.objects.all()}
+
+        for instance in new_ips:
+            found = False
+            for c, v in cidrs.items():
+                if instance.ip_address in IPNetwork(c):
+                    
+                    instance.cidr__id = v
+                    found = True
+                    break
+            
+            cidr_data, org_name = get_cidr_info(instance.ip_address)
+            cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':org_name})
+            instance.cidr = cidr
+            cidrs[cidr.name] = cidr.id
+
+        
+        display("Bulk creating IPs...")
+        IPAddress.objects.bulk_create(new_ips)
+        domain_objs = []
+
+        base_domains = { bd.name: bd.id for bd in BaseDomain.objects.all()}
+
+        for d in just_domains:
+            
+            base_domain = '.'.join(d.split('.')[-2:])
+
+            if not base_domains.get(base_domain):
+                bd = BaseDomain(name=base_domain, active_scope = False, passive_scope = True)
+                bd.save()
+
+                bd_id = bd.id
+                base_domains[bd.name: bd.id]
+
+            else:
+                bd_id = base_domains[base_domain]
+
+            domain_objs.append(Domain(name=d, basedomain_id=bd_id))
+        display("Bulk creating domains...")
+        Domain.objects.bulk_create(domain_objs)
+
+        current_ips = {i.ip_address:i.id for i in IPAddress.objects.all()}
+        current_domains = {d.name:d.id for d in Domain.objects.all()}
+
+        ThroughModel = Domain.ip_addresses.through
+
+        many_objs = []
+
+        for i, v in new_domains.items():
+
+            ip_id = current_ips[i]
+
+            for d in v:
+                if d in just_domains or i in new_ip_list:
+                    d_id = current_domains[d]
+
+                    many_objs.append(ThroughModel(domain_id=d_id, ipaddress_id=ip_id))
+
+        display("Bulk gluing them together")
+        ThroughModel.objects.bulk_create(many_objs)
+
+        pdb.set_trace()
+        for ReportHost in root.iter("ReportHost"):
+            
+            for HostProperties in ReportHost.iter("HostProperties"):
+                for tag in HostProperties:
+                    if tag.get("name") == "host-ip":
+                        hostIP = tag.text
+
+            
             if hostIP:  # apparently nessus doesn't always have an IP to work with...
 
-                if hostname:
-                    display(
-                        "Gathering Nessus info for {} ( {} )".format(hostIP, hostname)
-                    )
-                else:
-                    display("Gathering Nessus info for {}".format(hostIP))
+                ip_id = current_ips[hostIP]
 
-                ip, created = IPAddress.objects.get_or_create(ip_address=hostIP, defaults={'active_scope':True, 'passive_scope':True})
-
-                if hostname and '.' in hostname: # Filter out the random hostnames that aren't fqdns
-                    domain, created = Domain.objects.get_or_create(name=hostname)
-
-                    if ip not in domain.ip_addresses.all():
-                        ip.add_tool_run(tool=self.name)
-                        domain.ip_addresses.add(ip)
-                        domain.add_tool_run(tool=self.name)
-
-
-                if os:
-                    for o in os:
-                        if not ip.os:
-                            ip.os = o
-                        else:
-                            if o not in ip.os.split(" OR "):
-                                ip.os += " OR " + o
                 
-                self.getVulns(ip, ReportHost)
+                self.getVulns(ip_id, ReportHost)
                 
 
         return
