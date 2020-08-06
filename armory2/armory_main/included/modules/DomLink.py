@@ -39,6 +39,7 @@ class Module(ModuleTemplate):
         )
 
         self.options.add_argument("-d", "--domain", help="Domain to search.")
+        self.options.add_argument("-a", "--api", help="API key to use.", required=True)
         self.options.add_argument('-s', '--scope', help="How to scope results (Default passive)", choices=["active", "passive", "none"], default="passive")
         self.options.add_argument(
             "--no_binary",
@@ -77,7 +78,7 @@ class Module(ModuleTemplate):
         output_path = os.path.join(output_path, "{}.txt".format(args.domain))
         
         
-        command_args = " {} -o {} ".format(args.domain, output_path)
+        command_args = " {} -o {} -A {} ".format(args.domain, output_path, args.api)
         if args.tool_args:
             command_args += ' '.join(args.tool_args)
 
@@ -114,11 +115,11 @@ class Module(ModuleTemplate):
                     if cur_type == "domain":
 
                         if args.scope == "active":
-                            d, created = Domain.objects.get_or_create(name=r, active_scope=True, passive_scope=True)
+                            d, created = Domain.objects.get_or_create(name=r, defaults={"active_scope":True, "passive_scope":True})
                         elif args.scope == "passive":
-                            d, created = Domain.objects.get_or_create(name=r, active_scope=False, passive_scope=True)
+                            d, created = Domain.objects.get_or_create(name=r, defaults={"active_scope":False, "passive_scope":True})
                         else:
-                            d, created = Domain.objects.get_or_create(name=r, active_scope=False, passive_scope=False)
+                            d, created = Domain.objects.get_or_create(name=r, defaults={"active_scope":False, "passive_scope":False})
                 
 
         
