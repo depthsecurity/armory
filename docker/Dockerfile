@@ -31,6 +31,9 @@ RUN git clone https://github.com/aboul3la/Sublist3r.git
 RUN git clone https://github.com/anshumanbh/tko-subs.git
 RUN git clone https://github.com/DanMcInerney/xsscrapy.git
 RUN git clone https://github.com/fang0654/Asnlookup.git
+
+RUN touch /tmp/update1
+
 RUN git clone https://github.com/fang0654/DomLink.git
 RUN git clone https://github.com/offensive-security/exploitdb.git
 
