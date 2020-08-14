@@ -100,7 +100,7 @@ RUN ln -s /opt/src/exploitdb/searchsploit /usr/local/bin/searchsploit
 WORKDIR /opt/src
 
 # Going to increment this everytime I want to update armory.
-RUN touch /tmp/revision106
+RUN touch /tmp/revision107
 
 
 RUN git clone https://github.com/depthsecurity/armory.git
