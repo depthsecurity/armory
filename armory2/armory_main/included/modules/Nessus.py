@@ -9,21 +9,28 @@ from armory2.armory_main.models import (
     CIDR,
     VulnOutput,
 )
+
+from armory2.armory_main.models.network import get_cidr_info
 from armory2.armory_main.included.utilities.color_display import display, display_new, display_error
 from armory2.armory_main.included.utilities.nessus import NessusRequest
 from armory2.armory_main.included.utilities.sort_ranges import merge_ranges
+from armory2.armory_main.included.utilities.network_tools import validate_ip
+
 import json
 import os
 import requests
 import time
 import xml.etree.cElementTree as ET
 import pdb
+from netaddr import IPNetwork, IPAddress as IPAddr
 from datetime import datetime
+
 
 def gd(orig):
     now = datetime.now()
     diff = now - orig
     print(f"{diff.seconds}.{diff.microseconds}")
+
 
 class Module(ModuleTemplate):
 
@@ -32,9 +39,12 @@ class Module(ModuleTemplate):
 
     # Mappings to cache db ids for ports and vulns - makes it quicker later
 
-    ports = {}
+    ports = []
     vulns = {}
+    vulnobjects = {}
     ip_data = {}
+    cve_map = []
+    cve_data = {}
 
     def set_options(self):
         super(Module, self).set_options()
@@ -294,6 +304,9 @@ class Module(ModuleTemplate):
 
     def getVulns(self, ip, ReportHost):
         """Gets vulns and associated services"""
+        # display("Processing IP: {}".format(ip))
+        ip_data = {}
+        vuln_data = []
         for tag in ReportHost.iter("ReportItem"):
             
             exploitable = False
@@ -317,30 +330,22 @@ class Module(ModuleTemplate):
                     portName = "http"
             else:
                 portName = svc_name
- 
-            
+            port_id = f"{port}|{proto}"
 
-            if self.ports.get(ip) and self.ports[ip].get(port) and self.ports[ip][port].get(proto):
-                db_port = self.ports[ip][port][proto]
- 
-            else:
-                db_port, created = Port.objects.get_or_create(
-                    port_number=port, status="open", proto=proto, ip_address_id=ip.id
-                )
-                if not self.ports.get(ip):
-                    self.ports[ip] = {}
-                if not self.ports[ip].get(port):
-                    self.ports[ip][port] = {}
-                
-                self.ports[ip][port][proto] = db_port
-            if db_port.service_name == "http":
+            if not ip_data.get(port_id):
+                ip_data[port_id] = {'service_name':""}
+
+            # db_port, created = Port.objects.get_or_create(
+            #     port_number=port, status="open", proto=proto, ip_address_id=ip
+            # )
+            if ip_data[port_id]['service_name'] == "http":
                 if portName == "https":
-                    db_port.service_name = portName
-            elif db_port.service_name == "https":
+                    ip_data[port_id]['service_name'] = portName
+            elif ip_data[port_id]['service_name'] == "https":
                 pass
             else:
-                db_port.service_name = portName
-            db_port.save()
+                ip_data[port_id]['service_name'] = portName
+            
 
             if tag.get("pluginID") == "56984":
                 severity = 1
@@ -362,12 +367,12 @@ class Module(ModuleTemplate):
             nessCheck = self.nessCheckPlugin(tag)
             
             if nessCheck:
-                if not db_port.info:
-                    db_port.info = {findingName: nessCheck}
+                if not ip_data[port_id].get('info'):
+                    ip_data[port_id]['info'] = {findingName: nessCheck}
                 else:
-                    db_port.info[findingName] = nessCheck
+                    ip_data[port_id]['info'][findingName] = nessCheck
 
-                db_port.save()
+                
 
             if tag.find("exploit_available") is not None:
                 exploitable = True
@@ -407,11 +412,15 @@ class Module(ModuleTemplate):
                         }
                     )
                 self.vulns[findingName] = db_vuln
-                    
-            db_vuln.ports.add(db_port)
+                # if exploitable:
+                #     display_new("exploit available for " + findingName)
+
+            if [f"{ip}|{port}|{proto}", db_vuln.id] not in vuln_data:
+
+                vuln_data.append([f"{ip}|{port}|{proto}", db_vuln.id])
+            #db_vuln.ports.add(db_port)
             
-            if exploitable:
-                display_new("exploit available for " + findingName)
+            
 
             if vuln_refs:
                 if db_vuln.exploit_reference is not None:
@@ -431,12 +440,14 @@ class Module(ModuleTemplate):
                 
                 plugin_output = tag.find("plugin_output").text
 
-                db_output, created = VulnOutput.objects.get_or_create(port = db_port, vulnerability=db_vuln)
+                self.vulnobjects[f"{ip}|{port}|{proto}|{db_vuln.id}"] = plugin_output
 
-                if created:
-                    # print("Plugin output added to database")
-                    db_output.data = plugin_output
-                    db_output.save()
+                # db_output, created = VulnOutput.objects.get_or_create(port = db_port, vulnerability=db_vuln)
+
+                # if created:
+                #     # print("Plugin output added to database")
+                #     db_output.data = plugin_output
+                #     db_output.save()
                       
                 # if not db_vuln.meta.get('plugin_output', False):
                 #     db_vuln.meta['plugin_output'] = {}
@@ -453,7 +464,9 @@ class Module(ModuleTemplate):
 
             if not self.args.disable_mitre:
                 for cve in cves:
-                    if not CVE.objects.all().filter(name=cve):
+                    if not self.cve_data.get(cve):
+
+                    # if not CVE.objects.all().filter(name=cve):
                         try:
                             
                             url = 'https://nvd.nist.gov/vuln/detail/{}/'
@@ -473,35 +486,45 @@ class Module(ModuleTemplate):
                             cveDescription = ""
                             cvss = 0.0
 
-                        if not CVE.objects.all().filter(name=cve):
-                            db_cve, created = CVE.objects.get_or_create(
-                                name=cve,
-                                description=cveDescription,
-                                temporal_score=cvss,
-                            )
-                            db_cve.vulnerability_set.add(db_vuln)
-                        else:
-                            db_cve = CVE.objects.get(name=cve)
-                            if (
-                                db_cve.description is None
-                                and cveDescription is not None  # noqa: W503
-                            ):
-                                db_cve.description = cveDescription
-                            if db_cve.temporal_score is None and cvss is not None:
-                                db_cve.temporal_score = cvss
-                            db_cve.vulnerability_set.add(db_vuln)
+                        # if not CVE.objects.all().filter(name=cve):
+                        self.cve_data[cve] = [cveDescription, cvss]
+
+                    self.cve_map.append(f"{cve}|{db_vuln.id}")
+                            # db_cve.vulnerability_set.add(db_vuln)
+                        # else:
+                        #     db_cve = CVE.objects.get(name=cve)
+                        #     if (
+                        #         db_cve.description is None
+                        #         and cveDescription is not None  # noqa: W503
+                        #     ):
+                        #         db_cve.description = cveDescription
+                        #     if db_cve.temporal_score is None and cvss is not None:
+                        #         db_cve.temporal_score = cvss
+                        #     db_cve.vulnerability_set.add(db_vuln)
+
+        self.ip_data[ip] = ip_data
+        self.ports += vuln_data
 
     def process_data(self, nFile, args):
         
         display("Reading " + nFile)
         tree = ET.parse(nFile)
         root = tree.getroot()
-        
+        current_ips = set([i.ip_address for i in IPAddress.objects.all()])
+        current_domains = set([d.name for d in Domain.objects.all()])
+
+        new_ips = []
+        new_ip_list = []
+        new_domains = {}
+        just_domains = []
+
         self.args = args
+        print("Preprocessing IPs/Domains")
         for ReportHost in root.iter("ReportHost"):
-            os = []
             hostname = ""
             hostIP = ""
+            os = ""
+
             for HostProperties in ReportHost.iter("HostProperties"):
                 for tag in HostProperties:
                     if tag.get("name") == "host-ip":
@@ -512,37 +535,189 @@ class Module(ModuleTemplate):
                         hostname = hostname.replace("www.", "")
 
                     if tag.get("name") == "operating-system":
-                        os = tag.text.split("\n")
+                        os = " OR ".join(tag.text.split("\n"))
+            # pdb.set_trace()
 
+
+            if hostIP and hostIP not in current_ips:
+                res = validate_ip(hostIP)
+                if res == "ipv4":
+                    v = 4
+                else:
+                
+                    v = 6
+                new_ips.append(IPAddress(ip_address=hostIP, active_scope=True, passive_scope=True, version=v, os=os))
+                new_ip_list.append(hostIP)
+              
+            if hostIP and hostname and '.' in hostname: # Filter out the random hostnames that aren't fqdns
+                if not new_domains.get(hostIP):
+                    new_domains[hostIP] = []
+
+                hostname = ''.join([i for i in hostname.lower() if i in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
+                
+                if hostname not in current_domains:
+                    new_domains[hostIP].append(hostname)
+                    if hostname not in just_domains:
+                        just_domains.append(hostname)
+           
+                
+        cidrs = {c.name: c.id for c in CIDR.objects.all()}
+
+        for instance in new_ips:
+            found = False
+            for c, v in cidrs.items():
+                if instance.ip_address in IPNetwork(c):
+                    
+                    instance.cidr__id = v
+                    found = True
+                    break
+            
+            cidr_data, org_name = get_cidr_info(instance.ip_address)
+            cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':org_name})
+            instance.cidr = cidr
+            cidrs[cidr.name] = cidr.id
+
+        
+        display("Bulk creating IPs...")
+        IPAddress.objects.bulk_create(new_ips)
+        domain_objs = []
+
+        base_domains = { bd.name: bd.id for bd in BaseDomain.objects.all()}
+
+        for d in just_domains:
+            
+            base_domain = '.'.join(d.split('.')[-2:])
+
+            if not base_domains.get(base_domain):
+                bd = BaseDomain(name=base_domain, active_scope = False, passive_scope = True)
+                bd.save()
+
+                bd_id = bd.id
+                base_domains[bd.name] = bd.id
+
+            else:
+                bd_id = base_domains[base_domain]
+
+            domain_objs.append(Domain(name=d, basedomain_id=bd_id))
+        display("Bulk creating domains...")
+        Domain.objects.bulk_create(domain_objs)
+
+        current_ips = {i.ip_address:i.id for i in IPAddress.objects.all()}
+        current_domains = {d.name:d.id for d in Domain.objects.all()}
+
+        ThroughModel = Domain.ip_addresses.through
+
+        many_objs = []
+
+        for i, v in new_domains.items():
+
+            ip_id = current_ips[i]
+
+            for d in v:
+                if d in just_domains or i in new_ip_list:
+                    d_id = current_domains[d]
+
+                    many_objs.append(ThroughModel(domain_id=d_id, ipaddress_id=ip_id))
+
+        display("Bulk gluing them together")
+        ThroughModel.objects.bulk_create(many_objs)
+
+        
+        for ReportHost in root.iter("ReportHost"):
+            
+            for HostProperties in ReportHost.iter("HostProperties"):
+                for tag in HostProperties:
+                    if tag.get("name") == "host-ip":
+                        hostIP = tag.text
+
+            
             if hostIP:  # apparently nessus doesn't always have an IP to work with...
 
-                if hostname:
-                    display(
-                        "Gathering Nessus info for {} ( {} )".format(hostIP, hostname)
-                    )
-                else:
-                    display("Gathering Nessus info for {}".format(hostIP))
+                ip_id = current_ips[hostIP]
 
-                ip, created = IPAddress.objects.get_or_create(ip_address=hostIP, defaults={'active_scope':True, 'passive_scope':True})
-
-                if hostname and '.' in hostname: # Filter out the random hostnames that aren't fqdns
-                    domain, created = Domain.objects.get_or_create(name=hostname)
-
-                    if ip not in domain.ip_addresses.all():
-                        ip.add_tool_run(tool=self.name)
-                        domain.ip_addresses.add(ip)
-                        domain.add_tool_run(tool=self.name)
-
-
-                if os:
-                    for o in os:
-                        if not ip.os:
-                            ip.os = o
-                        else:
-                            if o not in ip.os.split(" OR "):
-                                ip.os += " OR " + o
                 
-                self.getVulns(ip, ReportHost)
+                self.getVulns(ip_id, ReportHost)
                 
+
+        
+        ports = []
+
+        current_ports = [f"{p.ip_address_id}|{p.port_number}|{p.proto}" for p in Port.objects.all()]
+
+        
+
+        for i, v in self.ip_data.items():
+            for k, data in v.items():
+                if f"{i}|{k}" not in current_ports:
+                    ports.append(Port(ip_address_id=i, port_number=k.split('|')[0], proto=k.split('|')[1], service_name=data['service_name']))
+        display(f"Bulk loading {len(ports)} Ports")            
+        Port.objects.bulk_create(ports)
+
+        all_ports = {f"{p.ip_address_id}|{p.port_number}|{p.proto}":p.id for p in Port.objects.all()}
+        
+        display("Gluing in Vulnerabilities")
+
+        ThroughModel = Vulnerability.ports.through
+
+        vuln_port_current = [f"{v.vulnerability_id}|{v.port_id}" for v in ThroughModel.objects.all()]
+        port_vuln_data = []
+
+        for p, v in self.ports:
+            if f"{v}|{all_ports[p]}" not in vuln_port_current:
+                
+                port_vuln_data.append(ThroughModel(port_id=all_ports[p], vulnerability_id=v))
+        
+
+        ThroughModel.objects.bulk_create(port_vuln_data)
+
+        
+
+        vuln_outputs = []
+
+        vulnobject_data = set([f"{v.port.ip_address_id}|{v.port.port_number}|{v.port.proto}|{v.vulnerability_id}" for v in VulnOutput.objects.all()])
+
+
+        for k, v in self.vulnobjects.items():
+            if k not in vulnobject_data:
+                port_id = all_ports['|'.join(k.split('|')[:3])]
+                vuln_id = k.split('|')[-1]
+
+                vuln_outputs.append(VulnOutput(port_id=port_id, vulnerability_id=vuln_id, data=v))
+
+        display(f"Adding in {len(vuln_outputs)} output data")
+        VulnOutput.objects.bulk_create(vuln_outputs)
+
+        display("Attaching CVEs")
+
+        cve_current = [c.name for c in CVE.objects.all()]
+        new_cves = []
+
+        for k, v in self.cve_data.items():
+            if k not in cve_current:
+                new_cves.append(CVE(name=k, description=v[0], temporal_score=v[1]))
+
+        CVE.objects.bulk_create(new_cves)
+
+        display("And finally gluing them to the vulns")
+
+        cve_current = {c.name :c.id for c in CVE.objects.all()}
+        ThroughModel = Vulnerability.cves.through
+
+        cve_through = set([f"{c.cve_id}|{c.vulnerability_id}" for c in ThroughModel.objects.all()])
+
+        cve_glue = []
+        for m in list(set(self.cve_map)):
+
+            cve_id = cve_current[m.split('|')[0]]
+            vuln_id = m.split('|')[1]
+            if f"{cve_id}|{vuln_id}" not in cve_through:
+
+                cve_glue.append(ThroughModel(cve_id=cve_id, vulnerability_id=vuln_id))
+
+        ThroughModel.objects.bulk_create(cve_glue)
+
+
+        # Now to add all of this data into the database
+
 
         return
