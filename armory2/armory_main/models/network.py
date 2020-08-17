@@ -19,7 +19,7 @@ class BaseDomain(BaseModel):
 class CIDR(BaseModel):
 
     name = models.CharField(max_length=44, unique=True)
-    org_name = models.CharField(max_length=256, unique=False)
+    org_name = models.CharField(max_length=256, unique=False, null=True)
 
     def __str__(self):
         return "{}: {}".format(self.name, self.org_name)
