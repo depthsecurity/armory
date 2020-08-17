@@ -39,7 +39,7 @@ class Module(ModuleTemplate):
 
     # Mappings to cache db ids for ports and vulns - makes it quicker later
 
-    ports = []
+    ports = set()
     vulns = {}
     vulnobjects = {}
     ip_data = {}
@@ -306,7 +306,7 @@ class Module(ModuleTemplate):
         """Gets vulns and associated services"""
         # display("Processing IP: {}".format(ip))
         ip_data = {}
-        vuln_data = []
+        vuln_data = set()
         for tag in ReportHost.iter("ReportItem"):
             
             exploitable = False
@@ -415,9 +415,7 @@ class Module(ModuleTemplate):
                 # if exploitable:
                 #     display_new("exploit available for " + findingName)
 
-            if [f"{ip}|{port}|{proto}", db_vuln.id] not in vuln_data:
-
-                vuln_data.append([f"{ip}|{port}|{proto}", db_vuln.id])
+            vuln_data.add(f"{ip}|{port}|{proto}|{db_vuln.id}")
             #db_vuln.ports.add(db_port)
             
             
@@ -503,7 +501,7 @@ class Module(ModuleTemplate):
                         #     db_cve.vulnerability_set.add(db_vuln)
 
         self.ip_data[ip] = ip_data
-        self.ports += vuln_data
+        self.ports.update(vuln_data)
 
     def process_data(self, nFile, args):
         
@@ -548,6 +546,7 @@ class Module(ModuleTemplate):
                     v = 6
                 new_ips.append(IPAddress(ip_address=hostIP, active_scope=True, passive_scope=True, version=v, os=os))
                 new_ip_list.append(hostIP)
+                current_ips.add(hostIP)
               
             if hostIP and hostname and '.' in hostname: # Filter out the random hostnames that aren't fqdns
                 if not new_domains.get(hostIP):
@@ -579,6 +578,7 @@ class Module(ModuleTemplate):
 
         
         display("Bulk creating IPs...")
+
         IPAddress.objects.bulk_create(new_ips)
         domain_objs = []
 
@@ -642,7 +642,7 @@ class Module(ModuleTemplate):
         
         ports = []
 
-        current_ports = [f"{p.ip_address_id}|{p.port_number}|{p.proto}" for p in Port.objects.all()]
+        current_ports = set([f"{p.ip_address_id}|{p.port_number}|{p.proto}" for p in Port.objects.all()])
 
         
 
@@ -650,6 +650,7 @@ class Module(ModuleTemplate):
             for k, data in v.items():
                 if f"{i}|{k}" not in current_ports:
                     ports.append(Port(ip_address_id=i, port_number=k.split('|')[0], proto=k.split('|')[1], service_name=data['service_name']))
+                    current_ports.add(f"{i}|{k}")
         display(f"Bulk loading {len(ports)} Ports")            
         Port.objects.bulk_create(ports)
 
@@ -659,15 +660,18 @@ class Module(ModuleTemplate):
 
         ThroughModel = Vulnerability.ports.through
 
-        vuln_port_current = [f"{v.vulnerability_id}|{v.port_id}" for v in ThroughModel.objects.all()]
+        vuln_port_current = set([f"{v.vulnerability_id}|{v.port_id}" for v in ThroughModel.objects.all()])
         port_vuln_data = []
 
-        for p, v in self.ports:
+        for d in self.ports:
+            p = '|'.join(d.split('|')[:3])
+            v = d.split('|')[-1]
             if f"{v}|{all_ports[p]}" not in vuln_port_current:
                 
                 port_vuln_data.append(ThroughModel(port_id=all_ports[p], vulnerability_id=v))
+                vuln_port_current.add(f"{v}|{all_ports[p]}")
         
-
+        
         ThroughModel.objects.bulk_create(port_vuln_data)
 
         
