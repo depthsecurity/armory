@@ -460,11 +460,16 @@ class Module(ModuleTemplate):
                 #     db_vuln.meta['plugin_output'][ip.ip_address][port].append(plugin_output)
                 
 
-            if not self.args.disable_mitre:
-                for cve in cves:
-                    if not self.cve_data.get(cve):
+            # if not self.args.disable_mitre:
+            for cve in cves:
+                if not self.cve_data.get(cve):
 
-                    # if not CVE.objects.all().filter(name=cve):
+                # if not CVE.objects.all().filter(name=cve):
+                    if self.args.disable_mitre:
+                        cveDescription = ""
+                        cvss = 0.0
+                    else:
+
                         try:
                             
                             url = 'https://nvd.nist.gov/vuln/detail/{}/'
@@ -484,21 +489,21 @@ class Module(ModuleTemplate):
                             cveDescription = ""
                             cvss = 0.0
 
-                        # if not CVE.objects.all().filter(name=cve):
-                        self.cve_data[cve] = [cveDescription, cvss]
+                    # if not CVE.objects.all().filter(name=cve):
+                    self.cve_data[cve] = [cveDescription, cvss]
 
-                    self.cve_map.append(f"{cve}|{db_vuln.id}")
-                            # db_cve.vulnerability_set.add(db_vuln)
-                        # else:
-                        #     db_cve = CVE.objects.get(name=cve)
-                        #     if (
-                        #         db_cve.description is None
-                        #         and cveDescription is not None  # noqa: W503
-                        #     ):
-                        #         db_cve.description = cveDescription
-                        #     if db_cve.temporal_score is None and cvss is not None:
-                        #         db_cve.temporal_score = cvss
-                        #     db_cve.vulnerability_set.add(db_vuln)
+                self.cve_map.append(f"{cve}|{db_vuln.id}")
+                        # db_cve.vulnerability_set.add(db_vuln)
+                    # else:
+                    #     db_cve = CVE.objects.get(name=cve)
+                    #     if (
+                    #         db_cve.description is None
+                    #         and cveDescription is not None  # noqa: W503
+                    #     ):
+                    #         db_cve.description = cveDescription
+                    #     if db_cve.temporal_score is None and cvss is not None:
+                    #         db_cve.temporal_score = cvss
+                    #     db_cve.vulnerability_set.add(db_vuln)
 
         self.ip_data[ip] = ip_data
         self.ports.update(vuln_data)
