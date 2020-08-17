@@ -434,7 +434,7 @@ class Module(ModuleTemplate):
             db_vuln.meta['CWEs'] = cwe_ids
             db_vuln.meta['Refs'] = references
             
-            if tag.find("plugin_output") is not None:
+            if tag.find("plugin_output") is not None and tag.find("plugin_output").text is not None:
                 
                 plugin_output = tag.find("plugin_output").text
 
