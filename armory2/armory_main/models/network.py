@@ -8,6 +8,7 @@ from armory2.armory_main.included.utilities.color_display import display, displa
 from armory2.armory_main.included.utilities.network_tools import validate_ip, get_ips, private_subnets
 from netaddr import IPNetwork, IPAddress as IPAddr
 from ipwhois import IPWhois
+import tld
 
 class BaseDomain(BaseModel):
     name = models.CharField(max_length=64)
@@ -104,7 +105,9 @@ def pre_save_domain(sender, instance, *args, **kwargs):
         domain_name = ''.join([i for i in instance.name.lower() if i in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
         if domain_name.count('.') < 1:
             domain_name = domain_name + '.badfqdn.local'
-        base_domain = '.'.join(domain_name.split('.')[-2:])
+        
+        base_domain = tld.get_fld(f"http://{domain_name}")
+        
 
         bd, created = BaseDomain.objects.get_or_create(name=base_domain, defaults={"active_scope":instance.active_scope, "passive_scope":instance.passive_scope})
 
