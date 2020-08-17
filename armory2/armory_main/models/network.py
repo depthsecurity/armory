@@ -213,7 +213,7 @@ def get_cidr_info(ip_address):
         #     time.sleep(5)
         # else:
     
-        return '{}.0/24'.format('.'.join(ip_str.split('.')[:3])), "Whois failed to resolve."
+        return '{}.0/24'.format('.'.join(ip_address.split('.')[:3])), "Whois failed to resolve."
         
     cidr_data = []
 
