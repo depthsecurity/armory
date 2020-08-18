@@ -396,7 +396,7 @@ class Module(ModuleTemplate):
 
             cwe_ids = [c.text for c in tag.findall("cwe")]
             references = [c.text for c in tag.findall("see_also")]
-                    
+            
             if self.vulns.get(findingName):
                 db_vuln = self.vulns[findingName]
 
@@ -433,7 +433,8 @@ class Module(ModuleTemplate):
                     db_vuln.exploit_reference = vuln_refs
             db_vuln.meta['CWEs'] = cwe_ids
             db_vuln.meta['Refs'] = references
-            
+            db_vuln.save()
+
             if tag.find("plugin_output") is not None and tag.find("plugin_output").text is not None:
                 
                 plugin_output = tag.find("plugin_output").text
@@ -476,14 +477,11 @@ class Module(ModuleTemplate):
                             res = requests.get(url.format(cve)).text
 
                             cveDescription = res.split('<p data-testid="vuln-description">')[1].split('</p>')[0]
-                            if 'vuln-cvssv3-base-score' in res:
-                                cvss = float(res.split('<span data-testid="vuln-cvssv3-base-score">')[1].split('</span>')[0].strip()) 
-                            else:
-                                cvss = float(res.split('<span data-testid="vuln-cvssv2-base-score">')[1].split('</span>')[0].strip()) 
-
                         
-                            cveDescription = res["summary"]
-                            cvss = float(res["cvss"])
+                            cvss = float(res.split('Base Score:')[1].split(' ')[3].split(';')[-1])
+                        
+                            # cveDescription = res["summary"]
+                            # cvss = float(res["cvss"])
 
                         except Exception:
                             cveDescription = ""
