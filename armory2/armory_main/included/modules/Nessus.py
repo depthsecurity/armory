@@ -358,7 +358,7 @@ class Module(ModuleTemplate):
             description = tag.find("description").text
             
             
-            
+            # print("Processing " + findingName)
             if tag.find("solution") is not None and tag.find("solution") != "n/a":
                 solution = tag.find("solution").text
             else:
@@ -411,6 +411,22 @@ class Module(ModuleTemplate):
                         'exploitable' : exploitable,
                         }
                     )
+                db_vuln.meta['CWEs'] = cwe_ids
+                db_vuln.meta['Refs'] = references
+
+                if vuln_refs:
+                    if db_vuln.exploit_reference is not None:
+                        for key in vuln_refs.keys():
+                            if key not in db_vuln.exploit_reference.keys():
+                                db_vuln.exploit_reference[key] = vuln_refs[key]
+                            else:
+                                for ref in vuln_refs[key]:
+                                    if ref not in db_vuln.exploit_reference[key]:
+                                        db_vuln.exploit_reference[key].append(ref)
+                    else:
+                        db_vuln.exploit_reference = vuln_refs
+                db_vuln.save()
+
                 self.vulns[findingName] = db_vuln
                 # if exploitable:
                 #     display_new("exploit available for " + findingName)
@@ -420,20 +436,8 @@ class Module(ModuleTemplate):
             
             
 
-            if vuln_refs:
-                if db_vuln.exploit_reference is not None:
-                    for key in vuln_refs.keys():
-                        if key not in db_vuln.exploit_reference.keys():
-                            db_vuln.exploit_reference[key] = vuln_refs[key]
-                        else:
-                            for ref in vuln_refs[key]:
-                                if ref not in db_vuln.exploit_reference[key]:
-                                    db_vuln.exploit_reference[key].append(ref)
-                else:
-                    db_vuln.exploit_reference = vuln_refs
-            db_vuln.meta['CWEs'] = cwe_ids
-            db_vuln.meta['Refs'] = references
-            db_vuln.save()
+
+            
 
             if tag.find("plugin_output") is not None and tag.find("plugin_output").text is not None:
                 
