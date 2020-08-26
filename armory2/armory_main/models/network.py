@@ -227,7 +227,7 @@ def get_cidr_info(ip_address):
     try:
         cidr_data.sort()
     except Exception as e:
-        pdb.set_trace()
+        display_error("Error occured: {}".format(e))
     return  cidr_data[0][1], cidr_data[0][2]
     
     
