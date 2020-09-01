@@ -48,7 +48,7 @@ class IPAddress(BaseModel):
         return self.ip_address
         
     @classmethod
-    def get_sorted(cls, scope_type=None, search=None):
+    def get_sorted(cls, scope_type=None, search=None, display_zero=False, page_num=1, entries=50):
         if scope_type == 'active':
             qry = cls.objects.filter(active_scope=True)
         elif scope_type == 'passive':
@@ -56,8 +56,12 @@ class IPAddress(BaseModel):
         else:
             qry = cls.objects.all()
         
+        if not display_zero:
+            qry = qry.filter(port__port_number__gt=0).distinct()
+
+
         res = []
-        for ip in qry:
+        for ip in qry.order_by('ip_address')[(page_num-1)*entries:page_num*entries]:
             valid = False
             if not search:
                 valid = True

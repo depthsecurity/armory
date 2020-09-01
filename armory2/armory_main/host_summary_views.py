@@ -49,6 +49,10 @@ def get_hosts(request):
 
     search = request.POST.get('search')
 
+    page = int(request.POST.get('page', '0'))
+
+    entries = 50
+
     if request.POST.get('display_notes'):
         display_notes = "collapse show"
     else:
@@ -77,7 +81,7 @@ def get_hosts(request):
     display_complete = request.POST.get('display_completed')
 
     ips_object = {}
-    ips = IPAddress.get_sorted(scope_type=scope_type, search=search)
+    ips = IPAddress.get_sorted(scope_type=scope_type, search=search, display_zero=display_zero, page_num=page, entries=entries)
 
     data = {}
     good_ips = []
@@ -122,7 +126,7 @@ def get_hosts(request):
                             if 'FFuF-empty' not in data[p.id]:
                                 data[p.id].append('FFuF-empty')
 
-
+    # pdb.set_trace()
     host_html = loader.get_template('host_summary/host_summary_data.html').render({'ips':good_ips, 'data':data, 'display_notes':display_notes, 'display_zero': display_zero})
     sidebar_html = loader.get_template('host_summary/sidebar.html').render({'ips':good_ips})
 

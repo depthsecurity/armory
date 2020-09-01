@@ -14,8 +14,17 @@
       <div class="card">
         <div class="card-body">
           <div class="row">
-            <div class="col-md-12">
-              <button class="btn btn-info" data-toggle="collapse" data-target="#options_form">Options</button>
+            <div class="col-md-3">
+              <button class="btn btn-info" data-toggle="collapse" data-target="#options_form">Search Options</button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-info" data-toggle="collapse" data-target="#data_options_form">Data Options</button>
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-info" data-toggle="collapse" data-target="#page_options_form">Page Options</button>
+            </div>
+            <div class="col-md-3">
+              <button class="submitbutton btn btn-info">Search</button>
             </div>
           </div>
         </div>
@@ -27,92 +36,115 @@
   
   <div class="row">
     <div class="col-md-12">
-      <div id="options_form" class="collapse show" >
-        <div class="card">
-          <div class="card-body">
-            <form action="#" id="search_form">
-              {% csrf_token %}
-              <div class="row">
-                <div class="col-md-3">
-                  Search
+      <form action="#" id="search_form">
+        <div id="options_form" class="collapse show" >
+          <div class="card">
+            <div class="card-body">
+              
+                {% csrf_token %}
+                <div class="row">
+                  <div class="col-md-3">
+                    Search
+                  </div>
+                  <div class="col-md-9">
+                    <input type="text" id="search_terms" name="search">
+                  </div>
                 </div>
-                <div class="col-md-9">
-                  <input type="text" id="search_terms" name="search">
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-3">
-                  Scope Type
-                </div>
-                <div class="col-md-3">
-                  <select name="scope" id="search_scope">
-                    <option value="active">Active</option>
-                    <option value="passive">Passive</option>
-                    <option value="all">All</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  Display All Notes
-                </div>
-                <div class="col-md-3">
-                  <input type="checkbox" name="display_notes">
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-3">
-                  Display Port 0
-                </div>
-                <div class="col-md-3">
-                  <input type="checkbox" name="display_zero">
-                </div>
-                <div class="col-md-3">
-                  Display All Data
-                </div>
-                <div class="col-md-3">
-                  <input type="checkbox" checked name="display_all">
+                <div class="row">
+                  <div class="col-md-3">
+                    Scope Type
+                  </div>
+                  <div class="col-md-3">
+                    <select name="scope" id="search_scope">
+                      <option value="active">Active</option>
+                      <option value="passive">Passive</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    Display All Notes
+                  </div>
+                  <div class="col-md-3">
+                    <input type="checkbox" name="display_notes">
+                  </div>
                 </div>
               </div>
-              <div class="row">
-                <div class="col-md-3">
-                  Display Nessus
-                </div>
-                <div class="col-md-3">
-                  <input type="checkbox" name="display_nessus">
-                </div>
-                <div class="col-md-3">
-                  Display Gowitness
-                </div>
-                <div class="col-md-3">
-                  <input type="checkbox" name="display_gowitness">
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-3">
-                  Display FFuF
-                </div>
-                <div class="col-md-3">
-                  <input type="checkbox" name="display_ffuf">
-                </div>
-                <div class="col-md-3">
-                  Display Completed
-                </div>
-                <div class="col-md-3">
-                  <input type="checkbox" name="display_completed">
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-md-9">
-                </div>
-                <div class="col-md-3">
-                  <button class="btn btn-info">Search</button>
-                </div>
-              </div>
-            </form>
-
+            </div>
           </div>
+          <div id="data_options_form" class="collapse show">
+            <div class="card">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3">
+                    Display Port 0
+                  </div>
+                  <div class="col-md-3">
+                    <input type="checkbox" name="display_zero">
+                  </div>
+                  <div class="col-md-3">
+                    Display All Data
+                  </div>
+                  <div class="col-md-3">
+                    <input type="checkbox" checked name="display_all">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-3">
+                    Display Nessus
+                  </div>
+                  <div class="col-md-3">
+                    <input type="checkbox" name="display_nessus">
+                  </div>
+                  <div class="col-md-3">
+                    Display Gowitness
+                  </div>
+                  <div class="col-md-3">
+                    <input type="checkbox" name="display_gowitness">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-3">
+                    Display FFuF
+                  </div>
+                  <div class="col-md-3">
+                    <input type="checkbox" name="display_ffuf">
+                  </div>
+                  <div class="col-md-3">
+                    Display Completed
+                  </div>
+                  <div class="col-md-3">
+                    <input type="checkbox" name="display_completed">
+                  </div>
+                </div>
+              </div>
+            </div> 
+          </div>
+          <div id="page_options_form" class="collapse show">
+            <div class="card">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3">
+                    Items Per Page
+                  </div>
+                  <div class="col-md-3">
+                    <input type="input" id="entries" name="entries" value="50" />
+                  </div>
+                  <div class="col-md-3">
+                    Page Number
+                  </div>
+                  <div class="col-md-3">
+                    <input type="input" id="page" name="page" value="1" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          
+
+          
+          
+
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </div>
@@ -150,7 +182,7 @@
           $.post('save_notes/' + pkid, { data: e.target.value}, function(result) {});
         })
 
-        $(document).on('submit', '#search_form', function(e) {
+        $(document).on('click', '.submitbutton', function(e) {
           var form = $('#search_form');
           var data = form.serialize();
           
@@ -172,6 +204,38 @@
 
         });
 
+        $(document).on('click', '.pagenav', function(e) {
+          e.preventDefault();
+          id = e.target.id;
+          page_field = $('#page');
+
+          if (id == 'next') {
+            page_field[0].value = parseInt(page_field[0].value) + 1;
+          } else if (id == 'previous') {
+            page_field[0].value = parseInt(page.value) - 1;
+          
+          } else {
+            page_field[0].value = id;
+          };
+          var form = $('#search_form');
+          var data = form.serialize();
+          
+          $.ajax({
+            method:"post",
+            url:"host_data",
+            data: data,
+            dataType: "json",
+            beforeSend:function() {
+              $('#host_results').html("<h1>Loading data, please wait...</h1>");
+            },
+            success:function(json){
+              $('#host_results').html(json.hostdata);
+              $('#sidebar_results').html(json.sidebardata);
+            }
+          })
+
+          return false;
+        });
         $(document).on('click','.loadunload',function(e){
           e.preventDefault();
           id = e.target.id;
