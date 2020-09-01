@@ -50,8 +50,8 @@ def get_hosts(request):
     search = request.POST.get('search')
 
     page = int(request.POST.get('page', '0'))
-
-    entries = 50
+    entries = int(request.POST.get('entries', '50'))
+    # entries = 50
 
     if request.POST.get('display_notes'):
         display_notes = "collapse show"
@@ -81,7 +81,23 @@ def get_hosts(request):
     display_complete = request.POST.get('display_completed')
 
     ips_object = {}
-    ips = IPAddress.get_sorted(scope_type=scope_type, search=search, display_zero=display_zero, page_num=page, entries=entries)
+    ips, total = IPAddress.get_sorted(scope_type=scope_type, search=search, display_zero=display_zero, page_num=page, entries=entries)
+
+    total_pages = int((total - 1) / entries) + 1
+
+    
+
+    page_data = {'prev': True if page > 1 else False,
+                 'next': True if page < total_pages else False,
+                 'pages_high': [i for i in range(page+1, page+6) if i <= total_pages],
+                 'pages_low':  [i for i in range(page - 5, page) if i >= 1],
+                 'current_page': page,
+                 'last_page':total_pages,
+                 'prev_page': page - 1 if page > 1 else 1,
+                 'next_page': page + 1 if page < total_pages else total_pages,
+                 }
+
+
 
     data = {}
     good_ips = []
@@ -127,7 +143,7 @@ def get_hosts(request):
                                 data[p.id].append('FFuF-empty')
 
     # pdb.set_trace()
-    host_html = loader.get_template('host_summary/host_summary_data.html').render({'ips':good_ips, 'data':data, 'display_notes':display_notes, 'display_zero': display_zero})
+    host_html = loader.get_template('host_summary/host_summary_data.html').render({'ips':good_ips, 'data':data, 'display_notes':display_notes, 'display_zero': display_zero, 'page_data':page_data})
     sidebar_html = loader.get_template('host_summary/sidebar.html').render({'ips':good_ips})
 
     return HttpResponse(json.dumps({'hostdata':host_html, 'sidebardata': sidebar_html}))

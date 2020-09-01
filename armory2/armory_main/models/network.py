@@ -3,6 +3,7 @@ from picklefield.fields import PickledObjectField
 from .base_model import BaseModel
 import pdb
 from django.db.models.signals import pre_save, post_save
+from django.db.models import Q
 from django.dispatch import receiver
 from armory2.armory_main.included.utilities.color_display import display, display_warning, display_new, display_error
 from armory2.armory_main.included.utilities.network_tools import validate_ip, get_ips, private_subnets
@@ -59,26 +60,14 @@ class IPAddress(BaseModel):
         if not display_zero:
             qry = qry.filter(port__port_number__gt=0).distinct()
 
+        if search:
+            qry = qry.filter(Q(ip_address__icontains=search)|Q(domain__name__icontains=search))
 
         res = []
-        for ip in qry.order_by('ip_address')[(page_num-1)*entries:page_num*entries]:
-            valid = False
-            if not search:
-                valid = True
-
-            elif search in ip.ip_address:
-                valid = True
-
-            for d in ip.domain_set.all():
-                if search.lower() in d.name.lower():
-                    valid = True
-
-                    
-            if valid == True:
-                res.append([int(IPAddr(ip.ip_address)), ip])
-
-        res2 = [r[1] for r in sorted(res)]
-        return res2
+        total = qry.count()
+        
+        
+        return qry.order_by('ip_address')[(page_num-1)*entries:page_num*entries], total
 class Port(BaseModel):
 
     port_number = models.IntegerField(unique=False)

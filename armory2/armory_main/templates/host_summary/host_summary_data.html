@@ -5,11 +5,27 @@
   <div class="container">
     <nav aria-label="Page navigation">
       <ul class="pagination">
-        <li class="page-item"><a class="pagenav page-link" id='previous' href="#">Previous</a></li>
-        <li class="page-item"><a class="pagenav page-link" id='1' href="#">1</a></li>
-        <li class="page-item"><a class="pagenav page-link" id='2' href="#">2</a></li>
-        <li class="page-item"><a class="pagenav page-link" id='3' href="#">3</a></li>
-        <li class="page-item"><a class="pagenav page-link" id='next' href="#">Next</a></li>
+        {% if page_data.prev %}
+        <li class="page-item"><a class="pagenav page-link" id='1' href="#">First</a></li>
+        <li class="page-item"><a class="pagenav page-link" id='{{ page_data.previous_page}}' href="#">Previous</a></li>
+        {% else %}
+        <li class="page-item disabled"><a class="pagenav page-link" id='1' tabindex="-1" href="#">First</a></li>
+        <li class="page-item disabled"><a class="pagenav page-link" id='1' tabindex="-1" href="#">Previous</a></li>
+        {% endif %}
+        {% for p in page_data.pages_low %}
+        <li class="page-item"><a class="pagenav page-link" id='{{ p }}' href="#">{{ p }}</a></li>
+        {% endfor %}
+        <li class="page-item active"><a class="pagenav page-link" id='{{ page_data.current_page }}' href="#">{{ page_data.current_page }}</a></li>
+        {% for p in page_data.pages_high %}
+        <li class="page-item"><a class="pagenav page-link" id='{{ p }}' href="#">{{ p }}</a></li>
+        {% endfor %}
+        {% if page_data.next %}
+        <li class="page-item"><a class="pagenav page-link" id='{{ page_data.next_page }}' href="#">Next</a></li>
+        <li class="page-item"><a class="pagenav page-link" id='{{ page_data.last_page }}' href="#">Last</a></li>
+        {% else %}
+        <li class="page-item disabled"><a class="pagenav page-link" tabindex="-1" id='{{ page_data.next_page }}' href="#">Next</a></li>
+        <li class="page-item disabled"><a class="pagenav page-link" tabindex="-1" id='{{ page_data.last_page }}' href="#">Last</a></li>
+        {% endif %}
       </ul>
     </nav>
   </div>
