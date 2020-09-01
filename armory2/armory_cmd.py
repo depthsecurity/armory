@@ -8,6 +8,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "armory2.armory2.settings")
 ### Have to do this for it to work in 1.9.x!
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
+from django.core.management import call_command
+
 #############
 
 # Your application specific imports
@@ -33,10 +35,12 @@ else:
 if os.getenv("ARMORY_CONFIG"):
     CONFIG_FILE = os.getenv("ARMORY_CONFIG")
 else:
-    CONFIG_FILE = "settings.ini"
+    CONFIG_FILE = "settings.py"
 
 
 DEFAULTS_DIR = os.path.join(os.path.dirname(__file__), "default_configs")
+
+# call_command('migrate')
 
 def check_and_create_configs():
     """
