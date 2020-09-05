@@ -83,6 +83,9 @@ RUN ln -s /opt/src/Sublist3r/sublist3r.py /usr/local/bin/sublist3r
 RUN go get github.com/anshumanbh/tko-subs
 RUN ln -s /root/go/bin/tko-subs /usr/local/bin/tko-subs
 RUN ln -s /root/go/src/github.com/anshumanbh/tko-subs/providers-data.csv /usr/local/bin/providers-data.csv
+ENV GO111MODULE on
+RUN go get -v github.com/OWASP/Amass/v3...
+RUN ln -s /root/go/bin/amass /usr/local/bin/amass
 WORKDIR /opt/src/xsscrapy
 RUN pip install -r requirements.txt
 ENV PATH="${PATH}:/opt/src/xsscrapy"

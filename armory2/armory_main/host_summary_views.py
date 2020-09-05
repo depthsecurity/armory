@@ -174,7 +174,15 @@ def save_notes(request, ip_id):
     return HttpResponse("Success")
 def get_nessus(request, port_id):
 
+    vuln_data = []
     vulns = Vulnerability.objects.filter(ports__id=port_id).order_by('severity')[::-1]
+
+    # for v in vulns:
+    #     vuln_output_item = v.vulnoutput_set.filter(port__id=port_id)
+    #     vo = "" if not vuln_output_item else vuln_output_item[0].data
+
+    #     vuln_data.append( {"id": v.id, "name": v.name, "severity": v.severity, "description": v.description, "vulnoutput": vo })
+
     sev_map = {0: 'Informational', 1: 'Low', 2:'Medium', 3:'High', 4:'Critical'}
 
     return render(request, 'host_summary/nessus.html', {'vulns':vulns, 'sev_map':sev_map})

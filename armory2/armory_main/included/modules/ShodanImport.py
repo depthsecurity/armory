@@ -154,7 +154,7 @@ class Module(ModuleTemplate):
             self.get_shodan(s, args)
 
             if s[:4] == "net:":
-                cd = CIDR.objects.objects.all().filter(name=s[4:])
+                cd = CIDR.objects.filter(name=s[4:])
                 if cd:
                     cd[0].add_tool_run(tool=self.name)
                 
