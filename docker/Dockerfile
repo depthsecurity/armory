@@ -84,6 +84,7 @@ RUN go get github.com/anshumanbh/tko-subs
 RUN ln -s /root/go/bin/tko-subs /usr/local/bin/tko-subs
 RUN ln -s /root/go/src/github.com/anshumanbh/tko-subs/providers-data.csv /usr/local/bin/providers-data.csv
 
+
 # Install amass - for whatever reason, I haven't been able to get the go get to work
 #ENV GO111MODULE on
 #RUN go get -v github.com/OWASP/Amass/v3
