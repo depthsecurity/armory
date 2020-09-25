@@ -182,10 +182,13 @@ class Module(ModuleTemplate):
                     domain.basedomain.save()
 
     def process_ip(self, ip_str, force_scope=True):
+        
         ip, created = IPAddress.objects.get_or_create(
             ip_address=ip_str, defaults={'active_scope':self.active_scope,
                         'passive_scope':self.passive_scope}
         )
+        
+
         if not created:
             if ip.active_scope != self.active_scope or ip.passive_scope != self.passive_scope:
                 display(
@@ -196,6 +199,17 @@ class Module(ModuleTemplate):
                 ip.active_scope = self.active_scope
                 ip.passive_scope = self.passive_scope
                 ip.save()
+        else:
+            if (self.active_scope and not ip.active_scope) or (self.passive_scope and not ip.passive_scope):
+                if self.active_scope:
+                    ip.active_scope = self.active_scope
+                if self.passive_scope:
+                    ip.passive_scope = self.passive_scope
+                display_new(
+                    "Updating %s to match forced scope. Updating to Active Scope: %s Passive Scope: %s"
+                    % (ip_str, self.active_scope, self.passive_scope)
+                )                    
+
         return ip
 
     def process_cidr(self, line, label=None):

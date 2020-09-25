@@ -153,7 +153,7 @@ def pre_save_ip(sender, instance, *args, **kwargs):
 
 
         # addr = IPAddress(instance.ip_address)
-
+        
         cidrs = CIDR.objects.all()
 
         for c in cidrs:
