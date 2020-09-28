@@ -55,7 +55,9 @@ RUN ln -s /root/go/bin/gobuster /usr/local/bin/gobuster
 RUN wget https://github.com/sensepost/gowitness/releases/download/2.1.1/gowitness-2.1.1-linux-amd64 -O /usr/local/bin/gowitness
 RUN chmod +x /usr/local/bin/gowitness
 
-RUN go get github.com/projectdiscovery/subfinder/cmd/subfinder
+#RUN go get github.com/projectdiscovery/subfinder/cmd/subfinder
+
+RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
 RUN ln -s /root/go/bin/subfinder /usr/local/bin/subfinder
 # Run this to create the subfinder config, so it doesn't create a race condition causing others to error out as multiple threads try to create it at once
 RUN /usr/local/bin/subfinder -d domainthatdoesnotexits.biz -sources shodan
