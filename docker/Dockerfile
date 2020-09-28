@@ -46,8 +46,15 @@ RUN ln -s /root/go/bin/ffuf /usr/local/bin/ffuf
 RUN gem install aquatone
 RUN go get github.com/OJ/gobuster
 RUN ln -s /root/go/bin/gobuster /usr/local/bin/gobuster
-RUN go get github.com/sensepost/gowitness
-RUN ln -s /root/go/bin/gowitness /usr/local/bin/gowitness
+
+# Gowitness doesn't seem to be building right now - will just use the latest (at the time) release
+
+# RUN go get github.com/sensepost/gowitness
+# RUN ln -s /root/go/bin/gowitness /usr/local/bin/gowitness
+
+RUN wget https://github.com/sensepost/gowitness/releases/download/2.1.1/gowitness-2.1.1-linux-amd64 -O /usr/local/bin/gowitness
+RUN chmod +x /usr/local/bin/gowitness
+
 RUN go get github.com/projectdiscovery/subfinder/cmd/subfinder
 RUN ln -s /root/go/bin/subfinder /usr/local/bin/subfinder
 # Run this to create the subfinder config, so it doesn't create a race condition causing others to error out as multiple threads try to create it at once
