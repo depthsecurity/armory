@@ -127,7 +127,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         command = (
-            self.binary + " file -D {output}/gowitness.db -d {output} -s {target} "
+            self.binary + " file -f {target} -P {output}/gowitness.db -d {output}  "
         )
 
         if args.tool_args:
