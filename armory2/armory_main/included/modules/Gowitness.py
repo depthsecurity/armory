@@ -160,28 +160,60 @@ class Module(ToolTemplate):
 
             subprocess.Popen(cmd, shell=False).wait()
 
-            data = open(os.path.join(output, 'gowitness.db')).read().split('\n')
-            for d in data:
-                if '{"url"' in d:
-                    
-                    j = json.loads(d)
-                    
-                    port = get_port_object(j['url'])
+            conn = sqlite3.connect(os.path.join(output, 'gowitness.db'))
+
+            cr = conn.cursor()
+
+            domains = [d[0] for d in cr.execute('select distinct name from tls_certificate_dns_names').fetchall()]
+            for d in domains:
+                if '.' in name:
+                    domain, created = Domain.objects.get_or_create(name=name.lower())
+
+
+            for u in cr.execute('select id, url, filename, final_url, response_code from urls').fetchall():
+                port = get_port_object(u[0])
                     if not port:
-                        display_error("Port not found: {}".format(j['url']))
+                        display_error("Port not found: {}".format(u[0]))
                     else:
                         if not port.meta.get('Gowitness'):
+
                             port.meta['Gowitness'] = []
 
-                        port.meta['Gowitness'].append(j)
-                        port.save()
+                        
 
-                        if j.get('ssl_certificate') and 'peer_certificates' in j['ssl_certificate'] and j['ssl_certificate']['peer_certificates'] != None:
-                            for cert in j['ssl_certificate']['peer_certificates']:
-                                if cert and cert.get('dns_names') and cert['dns_names'] != None:
-                                    for name in cert['dns_names']:
-                                        if '.' in name:
-                                            domain, created = Domain.objects.get_or_create(name=name)
+                        data = {
+                            'screenshot_file':os.path.join(output, u[2]),
+                            'final_url': u[3],
+                            'response_code_string': str(u[4]),
+                            'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
+                            'cert': {'dns_names':[ k[0] for k in cr.execute('select name from tls_certificate_dns_names where url_id = ?', (u[0],))]}
+                            }
+
+
+
+                        port.meta['Gowitness'].append(data)
+
+                        port.save()
+            # for d in data:
+            #     if '{"url"' in d:
+                    
+            #         j = json.loads(d)
+                    
+            #         port = get_port_object(j['url'])
+            #         if not port:
+            #             display_error("Port not found: {}".format(j['url']))
+            #         else:
+            #             if not port.meta.get('Gowitness'):
+            #                 port.meta['Gowitness'] = []
+
+            #             port.meta['Gowitness'].append(j)
+            #             port.save()
+
+            #             if j.get('ssl_certificate') and 'peer_certificates' in j['ssl_certificate'] and j['ssl_certificate']['peer_certificates'] != None:
+            #                 for cert in j['ssl_certificate']['peer_certificates']:
+            #                     if cert and cert.get('dns_names') and cert['dns_names'] != None:
+            #                         for name in cert['dns_names']:
+            
 
             os.chdir(cwd)
 
