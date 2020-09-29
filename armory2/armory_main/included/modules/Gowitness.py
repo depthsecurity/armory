@@ -171,29 +171,29 @@ class Module(ToolTemplate):
 
 
             for u in cr.execute('select id, url, filename, final_url, response_code from urls').fetchall():
-                port = get_port_object(u[0])
-                    if not port:
-                        display_error("Port not found: {}".format(u[0]))
-                    else:
-                        if not port.meta.get('Gowitness'):
+                port = get_port_object(u[1])
+                if not port:
+                    display_error("Port not found: {}".format(u[1]))
+                else:
+                    if not port.meta.get('Gowitness'):
 
-                            port.meta['Gowitness'] = []
+                        port.meta['Gowitness'] = []
 
-                        
+                    
 
-                        data = {
-                            'screenshot_file':os.path.join(output, u[2]),
-                            'final_url': u[3],
-                            'response_code_string': str(u[4]),
-                            'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
-                            'cert': {'dns_names':[ k[0] for k in cr.execute('select name from tls_certificate_dns_names where url_id = ?', (u[0],))]}
-                            }
+                    data = {
+                        'screenshot_file':os.path.join(output, u[2]),
+                        'final_url': u[3],
+                        'response_code_string': str(u[4]),
+                        'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
+                        'cert': {'dns_names':[ k[0] for k in cr.execute('select name from tls_certificate_dns_names where url_id = ?', (u[0],))]}
+                        }
 
 
 
-                        port.meta['Gowitness'].append(data)
+                    port.meta['Gowitness'].append(data)
 
-                        port.save()
+                    port.save()
             # for d in data:
             #     if '{"url"' in d:
                     
