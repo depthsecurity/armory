@@ -142,23 +142,23 @@ class Module(ToolTemplate):
         """
 
         cwd = os.getcwd()
-        ver_pat = re.compile("gowitness:\s?(?P<ver>\d+\.\d+\.\d+)")
-        version = subprocess.getoutput("gowitness version")
-        command_change = LooseVersion("1.0.8")
-        gen_command = ["report", "generate"]
-        m = ver_pat.match(version)
-        if m:
-            if LooseVersion(m.group("ver")) <= command_change:
-                gen_command = ["generate"]
+        # ver_pat = re.compile("gowitness:\s?(?P<ver>\d+\.\d+\.\d+)")
+        # version = subprocess.getoutput("gowitness version")
+        # command_change = LooseVersion("1.0.8")
+        # gen_command = ["report", "generate"]
+        # m = ver_pat.match(version)
+        # if m:
+        #     if LooseVersion(m.group("ver")) <= command_change:
+        #         gen_command = ["generate"]
         for cmd in cmds:
             output = cmd["output"]
 
-            cmd = [self.binary] + gen_command
+            # cmd = [self.binary] + gen_command
             os.chdir(output)
 
 
 
-            subprocess.Popen(cmd, shell=False).wait()
+            # subprocess.Popen(cmd, shell=False).wait()
 
             conn = sqlite3.connect(os.path.join(output, 'gowitness.db'))
 
