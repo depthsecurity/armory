@@ -165,7 +165,7 @@ class Module(ToolTemplate):
             cr = conn.cursor()
 
             domains = [d[0] for d in cr.execute('select distinct name from tls_certificate_dns_names').fetchall()]
-            for d in domains:
+            for name in domains:
                 if '.' in name:
                     domain, created = Domain.objects.get_or_create(name=name.lower())
 
