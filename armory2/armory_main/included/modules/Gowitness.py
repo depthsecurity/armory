@@ -186,7 +186,7 @@ class Module(ToolTemplate):
                         'final_url': u[3],
                         'response_code_string': str(u[4]),
                         'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
-                        'cert': {'dns_names':[ k[0] for k in cr.execute('select name from tls_certificate_dns_names where url_id = ?', (u[0],))]}
+                        'cert': {'dns_names':[ k[0] for k in cr.execute('select d.name from tls_certificate_dns_names as d inner join tls_certificates as tc on tc.id = d.tls_certificate_id inner join tls on tls.id = tc.tls_id where tls.url_id = ?', (u[0],))]}
                         }
 
 
