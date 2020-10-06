@@ -18,7 +18,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('armory2.armory_main.urls')),
-    path('host_summary/', include('armory2.armory_main.host_summary_urls')),
-    path('scoping/', include('armory2.armory_main.scoping_urls')),
+    # path('api/', include('armory2.armory_main.urls')),
+    path('host_summary/', include('armory2.armory_main.urls.host_summary_urls')),
+    path('scoping/', include('armory2.armory_main.urls.scoping_urls')),
 ]
