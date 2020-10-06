@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import host_summary_views as views
+from armory2.armory_main.views import host_summary_views as views
 
 urlpatterns = [
     path('', views.index, name="index"),
