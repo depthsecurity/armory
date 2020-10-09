@@ -1,0 +1,23 @@
+          {% for domain in domains %}
+            <div class="row">
+              <div class="col-md-1"></div>
+              <div class="col-md-4">
+                <p>{{ domain.name }}</p>
+              </div>
+              <div class="col-md-1">
+                {% if domain.ip_addresses.all %}
+                  <button type="button" class="btn btn-info loadips text-nowrap" id="button-ips-{{ domain.id }}">
+                    IPs ({{ domain.ip_addresses.all | length }})
+                  </button>
+                  {% endif %}
+                </div>
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="domain-active-{{ domain.id }}" {% if domain.active_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="domain-passive-{{ domain.id }}" {% if domain.passive_scope %} checked {% endif %} >
+              </div>
+
+            </div>
+            <div id="ips-{{ domain.id }}-list" ></div>
+          {% endfor %}
