@@ -66,6 +66,12 @@ def clear_scope(request, act, item_type, scope_type, pkid):
             for dom in obj.domain_set.all():
                 dom.active_scope = setting
                 dom.save()
+                
+                for i in dom.ip_addresses.all():
+                    
+                    i.active_scope = setting
+                    i.save()
+
 
         else:
             obj.passive_scope = setting
@@ -75,7 +81,13 @@ def clear_scope(request, act, item_type, scope_type, pkid):
             for dom in obj.domain_set.all():
                 dom.passive_scope = setting
                 dom.save()
-        
+                
+                for i in dom.ip_addresses.all():
+                    
+                    i.passive_scope = setting
+                    i.save()
+    
+
         return render(request, 'domain_scoping/basedomain.html', {'bd':obj})
 
     elif item_type == 'domain':
@@ -92,12 +104,23 @@ def clear_scope(request, act, item_type, scope_type, pkid):
             obj.active_scope = setting
 
             obj.save()
+
+            for i in dom.ip_addresses.all():
+                    
+                    i.active_scope = setting
+                    i.save()
+    
             
         else:
             obj.passive_scope = setting
 
             obj.save()
-            
+
+            for i in obj.ip_addresses.all():
+                    
+                    i.passive_scope = setting
+                    i.save()
+                
         return render(request, 'domain_scoping/domain.html', {'domain':obj})
 
 

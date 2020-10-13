@@ -4,10 +4,10 @@
       <div class="card">
         <div class="card-body">
             <div class="row">
-              <div class="col-md-3">
+              <div class="col-md-5">
                 <p data-toggle="tooltip" data-html="true" title="{{ bd.meta.whois }}">{{ bd.name }}</p>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-1">
 
                 {% if bd.domain_set.all %}
                 <button type="button" class="btn btn-info loaddomains" href="{% url 'domain_scoping.get_domains' bd.id %}"  id="button-domains-{{ bd.id }}">
