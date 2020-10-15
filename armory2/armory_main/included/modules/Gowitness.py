@@ -4,6 +4,7 @@ from armory2.armory_main.models import IPAddress, Domain
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities.get_urls import run, add_tools_urls, get_port_object
 from armory2.armory_main.included.utilities.color_display import display_error
+from armory2.armory_main.included.utilities.validate_ip import is_ip
 import os
 import re
 import subprocess
