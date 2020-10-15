@@ -4,12 +4,12 @@
         <div class="card-body">
             <div class="row">
               <div class="col-md-2">
-                <p>{{ cidr.name }}</p>
+                <p data-toggle="tooltip" data-html="true" title="<pre>{{ cidr.meta.whois }}</pre>">{{ cidr.name }}</p>
               </div>
               <div class="col-md-2">
 
                 {% if cidr.ipaddress_set.all %}
-                <button type="button" class="btn btn-info loadips" href="{% url 'scoping.get_ips' cidr.id %}"  id="button-ips-{{ cidr.id }}">
+                <button type="button" class="btn btn-info loadips" href="{% url 'scoping.get_ips' cidr.id %}"  id="button-ips-{{ cidr.id }}" >
                   IP Addresses
                 </button>
                 {% endif %}

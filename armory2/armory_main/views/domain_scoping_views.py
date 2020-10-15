@@ -12,20 +12,17 @@ import json
 
 # from armory2.
 
-# register.filter
-# def clean_whois(dictionary, key):
-#     return dictionary.get(key)
 
 def index(request):
 
-    cidrs = CIDR.objects.all().order_by('name')
+    basedomains = BaseDomain.objects.all().order_by('name')
 
-    return render(request, 'scoping/index.html', {'cidrs': cidrs})
+    return render(request, 'domain_scoping/index.html', {'basedomains': basedomains})
 
 def change_scope(request, item_type, scope_type, pkid):
 
-    if item_type == 'cidr':
-        obj = get_object_or_404(CIDR, pk=pkid)
+    if item_type == 'bd':
+        obj = get_object_or_404(BaseDomain, pk=pkid)
     elif item_type == 'ip':
         obj = get_object_or_404(IPAddress, pk=pkid)
     elif item_type == 'domain':
@@ -52,8 +49,8 @@ def change_scope(request, item_type, scope_type, pkid):
 
 def clear_scope(request, act, item_type, scope_type, pkid):
 
-    if item_type == 'cidr':
-        obj = get_object_or_404(CIDR, pk=pkid)
+    if item_type == 'bd':
+        obj = get_object_or_404(BaseDomain, pk=pkid)
     
         if act == 'set':
             setting = True
@@ -65,30 +62,36 @@ def clear_scope(request, act, item_type, scope_type, pkid):
             obj.active_scope = setting
 
             obj.save()
-            for i in obj.ipaddress_set.all():
-                i.active_scope = setting
 
-                i.save()
+            for dom in obj.domain_set.all():
+                dom.active_scope = setting
+                dom.save()
+                
+                for i in dom.ip_addresses.all():
+                    
+                    i.active_scope = setting
+                    i.save()
 
-                for dom in i.domain_set.all():
-                    dom.active_scope = setting
-                    dom.save()
+
         else:
             obj.passive_scope = setting
 
             obj.save()
-            for i in obj.ipaddress_set.all():
-                i.passive_scope = setting
+    
+            for dom in obj.domain_set.all():
+                dom.passive_scope = setting
+                dom.save()
+                
+                for i in dom.ip_addresses.all():
+                    
+                    i.passive_scope = setting
+                    i.save()
+    
 
-                i.save()
+        return render(request, 'domain_scoping/basedomain.html', {'bd':obj})
 
-                for dom in i.domain_set.all():
-                    dom.passive_scope = setting
-                    dom.save()
-        return render(request, 'scoping/cidr.html', {'cidr':obj})
-
-    elif item_type == 'ip':
-        obj = get_object_or_404(IPAddress, pk=pkid)
+    elif item_type == 'domain':
+        obj = get_object_or_404(Domain, pk=pkid)
     
         
         if act == 'set':
@@ -101,33 +104,37 @@ def clear_scope(request, act, item_type, scope_type, pkid):
             obj.active_scope = setting
 
             obj.save()
+
+            for i in dom.ip_addresses.all():
+                    
+                    i.active_scope = setting
+                    i.save()
+    
             
-            for dom in obj.domain_set.all():
-                dom.active_scope = setting
-                dom.save()
         else:
             obj.passive_scope = setting
 
             obj.save()
-            
-            for dom in obj.domain_set.all():
-                dom.passive_scope = setting
-                dom.save()
 
-        return render(request, 'scoping/ip.html', {'ip':obj})
+            for i in obj.ip_addresses.all():
+                    
+                    i.passive_scope = setting
+                    i.save()
+                
+        return render(request, 'domain_scoping/domain.html', {'domain':obj})
 
 
 def get_ips(request, pkid):
-    obj = get_object_or_404(CIDR, pk=pkid)
+    obj = get_object_or_404(Domain, pk=pkid)
 
-    ips = obj.ipaddress_set.all().order_by('ip_address')
+    ips = obj.ip_addresses.all().order_by('ip_address')
 
-    return render(request, 'scoping/ips.html', {'ips': ips})
+    return render(request, 'domain_scoping/ips.html', {'ips': ips})
 
 
 def get_domains(request, pkid):
-    obj = get_object_or_404(IPAddress, pk=pkid)
+    obj = get_object_or_404(BaseDomain, pk=pkid)
 
     domains = obj.domain_set.all().order_by('name')
 
-    return render(request, 'scoping/domains.html', {'domains': domains})
+    return render(request, 'domain_scoping/domains.html', {'domains': domains})

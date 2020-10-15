@@ -1,0 +1,42 @@
+<div id="bd-{{ bd.id }}-item">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+            <div class="row">
+              <div class="col-md-5">
+                <p data-toggle="tooltip" data-html="true" title="{{ bd.meta.whois }}">{{ bd.name }}</p>
+              </div>
+              <div class="col-md-1">
+
+                {% if bd.domain_set.all %}
+                <button type="button" class="btn btn-info loaddomains" href="{% url 'domain_scoping.get_domains' bd.id %}"  id="button-domains-{{ bd.id }}">
+                  Domains
+                </button>
+                {% endif %}
+              </div>  
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="bd-active-{{ bd.id }}" {% if bd.active_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="bd-passive-{{ bd.id }}" {% if bd.passive_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-info clearscope" id="bd-clear-active-{{ bd.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-info clearscope" id="bd-set-active-{{ bd.id }}" title="Sets all active scoping for this item and all child items">Set</button>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-info clearscope" id="bd-clear-passive-{{ bd.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-info clearscope" id="bd-set-passive-{{ bd.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
+              </div>
+            </div>
+            <div id="domains-{{ bd.id }}-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>

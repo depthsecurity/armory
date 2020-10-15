@@ -14,6 +14,20 @@ import requests
 import time
 import re
 
+def is_ip(domain):
+    
+    nums = "0123456789."
+
+    res = ""
+
+    for d in domain:
+        if d in nums:
+            res += d
+
+    return res == domain and res.count(".") == 3
+
+
+
 def only_valid(txt):
     res = ''
 
@@ -137,7 +151,7 @@ class Module(ModuleTemplate):
 
                 self.get_shodan(r, args)
 
-            cd = CIDR.objects.all().filter(name=c)
+            cd = CIDR.objects.filter(name=c)
             if cd:
                 cd[0].add_tool_run(tool=self.name)
             
@@ -330,7 +344,7 @@ class Module(ModuleTemplate):
                         domains += res['hostnames']
 
                 for d in list(set(domains)):
-                    if d.count('.') > 0:
+                    if d.count('.') > 0 and not is_ip(d):
                         display("Adding discovered domain {}".format(d))
                         domain, created = Domain.objects.get_or_create(name=d)
                     else:

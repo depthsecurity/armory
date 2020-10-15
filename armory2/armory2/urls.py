@@ -21,4 +21,5 @@ urlpatterns = [
     # path('api/', include('armory2.armory_main.urls')),
     path('host_summary/', include('armory2.armory_main.urls.host_summary_urls')),
     path('scoping/', include('armory2.armory_main.urls.scoping_urls')),
+    path('domain_scoping/', include('armory2.armory_main.urls.domain_scoping_urls')),
 ]

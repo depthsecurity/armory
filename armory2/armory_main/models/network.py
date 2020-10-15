@@ -99,8 +99,10 @@ def pre_save_domain(sender, instance, *args, **kwargs):
         if domain_name.count('.') < 1:
             domain_name = domain_name + '.badfqdn.local'
         
-        base_domain = tld.get_fld(f"http://{domain_name}")
-        
+        try:
+            base_domain = tld.get_fld(f"http://{domain_name}")
+        except Exception as e:
+            base_domain = 'local'
 
         bd, created = BaseDomain.objects.get_or_create(name=base_domain, defaults={"active_scope":instance.active_scope, "passive_scope":instance.passive_scope})
 

@@ -37,18 +37,18 @@
       <div class="card">
         <div class="card-body">
           <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-6">
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1"  align="center">
               Active
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1" align="center">
               Passive
             </div>
-            <div class="col-md-2">
+            <div class="col-md-2" align="center">
               Active
             </div>
-            <div class="col-md-2">
+            <div class="col-md-2" align="center">
               Passive
             </div>
           </div>
@@ -57,44 +57,44 @@
     </div>
   </div>
 
-          {% for cidr in cidrs %}
-  <div id="cidr-{{ cidr.id }}-item">
+          {% for bd in basedomains %}
+  <div id="bd-{{ bd.id }}-item">
   <div class="row">
     <div class="col-md-12">
       <div class="card">
         <div class="card-body">
             <div class="row">
-              <div class="col-md-2">
-                <p data-toggle="tooltip" data-html="true" title="<pre>{{ cidr.meta.whois }}</pre>">{{ cidr.name }}</p>
+              <div class="col-md-5">
+                <p data-toggle="tooltip" data-html="true" title="<pre>{{ bd.meta.whois }}</pre>">{{ bd.name }}</p>
               </div>
-              <div class="col-md-2">
+              <div class="col-md-1">
 
-                {% if cidr.ipaddress_set.all %}
-                <button type="button" class="btn btn-info loadips" href="{% url 'scoping.get_ips' cidr.id %}"  id="button-ips-{{ cidr.id }}">
-                  IP Addresses
+                {% if bd.domain_set.all %}
+                <button type="button" class="btn btn-info loaddomains" href="{% url 'domain_scoping.get_domains' bd.id %}"  id="button-domains-{{ bd.id }}">
+                  Domains
                 </button>
                 {% endif %}
               </div>  
-              <div class="col-md-2">
-                <input type="checkbox" class = "changescope" id="cidr-active-{{ cidr.id }}" {% if cidr.active_scope %} checked {% endif %} >
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="bd-active-{{ bd.id }}" {% if bd.active_scope %} checked {% endif %} >
               </div>
-              <div class="col-md-2">
-                <input type="checkbox" class = "changescope" id="cidr-passive-{{ cidr.id }}" {% if cidr.passive_scope %} checked {% endif %} >
-              </div>
-              <div class="col-md-1">
-                <button class="btn btn-info clearscope" id="cidr-clear-active-{{ cidr.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="bd-passive-{{ bd.id }}" {% if bd.passive_scope %} checked {% endif %} >
               </div>
               <div class="col-md-1">
-                <button class="btn btn-info clearscope" id="cidr-set-active-{{ cidr.id }}" title="Sets all active scoping for this item and all child items">Set</button>
+                <button class="btn btn-info clearscope" id="bd-clear-active-{{ bd.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
               </div>
               <div class="col-md-1">
-                <button class="btn btn-info clearscope" id="cidr-clear-passive-{{ cidr.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
+                <button class="btn btn-info clearscope" id="bd-set-active-{{ bd.id }}" title="Sets all active scoping for this item and all child items">Set</button>
               </div>
               <div class="col-md-1">
-                <button class="btn btn-info clearscope" id="cidr-set-passive-{{ cidr.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
+                <button class="btn btn-info clearscope" id="bd-clear-passive-{{ bd.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-info clearscope" id="bd-set-passive-{{ bd.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
               </div>
             </div>
-            <div id="ips-{{ cidr.id }}-list"></div>
+            <div id="domains-{{ bd.id }}-list"></div>
         </div>
       </div>
     </div>
@@ -140,10 +140,10 @@
 
           if ( confirm('Are you sure you want to ' + act + ' ' + s + ' scoping on all of the child objects?' )) {
             $.get('clear_scope/' + act + '/' + t + '/' + s + '/' + pkid, { }, function(result) {
-              if ( t == 'cidr') {
-                $( '#cidr-' + pkid + '-item' ).html(result);
+              if ( t == 'bd') {
+                $( '#bd-' + pkid + '-item' ).html(result);
               } else {
-                $( '#ip-' + pkid + '-item').html(result);
+                $( '#domain-' + pkid + '-item').html(result);
               }
             });  
             
