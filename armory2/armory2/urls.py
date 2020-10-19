@@ -15,6 +15,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+import pdb
+import glob
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,3 +26,23 @@ urlpatterns = [
     path('scoping/', include('armory2.armory_main.urls.scoping_urls')),
     path('domain_scoping/', include('armory2.armory_main.urls.domain_scoping_urls')),
 ]
+# pdb.set_trace()
+
+if settings.ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
+
+    for module_template in settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
+
+        for module_path in glob.glob(f"{module_template}/*/"):
+
+            module_name = module_path.split("/")[-2]
+            
+            
+            import importlib.util
+
+            spec = importlib.util.spec_from_file_location(
+                module_name, module_path + "urls.py"
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            urlpatterns.append(path(f"{module_name}/", include(module)))

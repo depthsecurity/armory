@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 
 import os
 import sys
+import glob
+import pdb
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -149,3 +151,16 @@ ARMORY_CONFIG = module.ARMORY_CONFIG
 
 if not os.path.exists(ARMORY_CONFIG['ARMORY_BASE_PATH']):
     os.makedirs(ARMORY_CONFIG['ARMORY_BASE_PATH'])
+
+# pdb.set_trace()
+if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
+
+    templates = ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']
+
+    for p in templates:
+        template_paths = [f"{url}templates" for url in glob.glob(f"{p}/*/")]
+
+        TEMPLATES[0]['DIRS'] += template_paths
+
+
+

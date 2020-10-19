@@ -218,11 +218,12 @@ def get_cidr_info(ip_address):
     for net in res['nets']:
         for cd in net['cidr'].split(', '):
             
-            cidr_data.append([len(IPNetwork(cd)), cd, net['description']])
+            cidr_data.append([len(IPNetwork(cd)), cd, net['description'] if net['description'] else ""])
     try:
         cidr_data.sort()
     except Exception as e:
         display_error("Error occured: {}".format(e))
+        pdb.set_trace()
     return  cidr_data[0][1], cidr_data[0][2]
     
     
