@@ -1,0 +1,17 @@
+          {% for domain in domains %}
+            <div class="row">
+              <div class="col-md-1"></div>
+              <div class="col-md-5">
+                <p>{{ domain.name }}</p>
+              </div>
+              
+
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="domain-active-{{ domain.id }}" {% if domain.active_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="domain-passive-{{ domain.id }}" {% if domain.passive_scope %} checked {% endif %} >
+              </div>
+
+            </div>
+          {% endfor %}

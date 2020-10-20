@@ -15,11 +15,51 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from armory2.armory_main.views import main_view
+
+import pdb
+import glob
+import os
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('/', admin.site.urls),
     # path('api/', include('armory2.armory_main.urls')),
-    path('host_summary/', include('armory2.armory_main.urls.host_summary_urls')),
-    path('scoping/', include('armory2.armory_main.urls.scoping_urls')),
-    path('domain_scoping/', include('armory2.armory_main.urls.domain_scoping_urls')),
+    path('', main_view.index, name="armory_main.index")
 ]
+# pdb.set_trace()
+
+for module_path in glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-2])}/armory_main/included/webapps/*/"):
+
+    module_name = module_path.split("/")[-2]
+    
+    
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        module_name, module_path + "urls.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    urlpatterns.append(path(f"{module_name}/", include(module)))
+
+
+if settings.ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
+
+    for module_template in settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
+
+        for module_path in glob.glob(f"{module_template}/*/"):
+
+            module_name = module_path.split("/")[-2]
+            
+            
+            import importlib.util
+
+            spec = importlib.util.spec_from_file_location(
+                module_name, module_path + "urls.py"
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            urlpatterns.append(path(f"{module_name}/", include(module)))

@@ -1,0 +1,245 @@
+{% extends 'armory_main/main_template.html' %}
+{% block 'title' %}
+<title>Armory - Scoping</title>
+{% endblock %}
+
+{% block 'body' %}
+
+<div id="wrapper" class="active">
+<div id="sidebar_results">
+</div>
+<style>
+    .tooltip-inner {
+    max-width: 1000px;
+    /* If max-width does not work, try using width instead */
+    /*width: 600px; */
+    text-align: left;
+    color: #fff !important;
+
+}
+    pre {
+        text-align: left;
+        color: #fff !important;
+    
+}
+.tooltip.show {
+    opacity: 1;
+    color: #fff !important;
+}
+</style>
+
+
+<div id="host_results">
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+      <div class="card">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+            </div>
+            <div class="col-md-1" align="center">
+              Active
+            </div>
+            <div class="col-md-1" align="center">
+              Passive
+            </div>
+            <div class="col-md-2" align="center">
+              Active
+            </div>
+            <div class="col-md-2" align="center">
+              Passive
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+          {% for cidr in cidrs %}
+  <div id="cidr-{{ cidr.id }}-item">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+            <div class="row">
+              <div class="col-md-5">
+                <p data-toggle="tooltip" data-html="true" title="<pre>{{ cidr.meta.whois }}</pre>">{{ cidr.name }}</p>
+              </div>
+              <div class="col-md-1" align="center">
+
+                {% if cidr.ipaddress_set.all %}
+                <button type="button" class="btn btn-info loadips" href="{% url 'scoping.get_ips' cidr.id %}"  id="button-ips-{{ cidr.id }}">
+                  IPs
+                </button>
+                {% endif %}
+              </div>  
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="cidr-active-{{ cidr.id }}" {% if cidr.active_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="cidr-passive-{{ cidr.id }}" {% if cidr.passive_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-clear-active-{{ cidr.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-set-active-{{ cidr.id }}" title="Sets all active scoping for this item and all child items">Set</button>
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-clear-passive-{{ cidr.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-set-passive-{{ cidr.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
+              </div>
+            </div>
+            <div id="ips-{{ cidr.id }}-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+          {% endfor %}
+
+
+
+
+
+</div>
+ 
+</div>
+
+<div id="scoping_results">
+
+</div>
+  <footer class="text-muted">
+    <div class="container">
+      <p class="float-right">
+        <a href="#">Back to top</a>
+      </p>
+    </div>
+  </footer>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+        $(document).on('change', '.changescope', function(e){
+          var pkid = e.target.id.split('-')[2];
+          var t = e.target.id.split('-')[0];
+          var s = e.target.id.split('-')[1];
+
+          $.get('change_scope/' + t + '/' + s + '/' + pkid, { }, function(result) {});
+        })
+
+        $(document).on('click', '.clearscope', function(e){
+          var pkid = e.target.id.split('-')[3];
+          var t = e.target.id.split('-')[0];
+          var s = e.target.id.split('-')[2];
+          var act = e.target.id.split('-')[1];
+
+          if ( confirm('Are you sure you want to ' + act + ' ' + s + ' scoping on all of the child objects?' )) {
+            $.get('clear_scope/' + act + '/' + t + '/' + s + '/' + pkid, { }, function(result) {
+              if ( t == 'cidr') {
+                $( '#cidr-' + pkid + '-item' ).html(result);
+              } else {
+                $( '#ip-' + pkid + '-item').html(result);
+              }
+            });  
+            
+              
+            
+          };
+          
+        })
+        
+
+        $(document).on('click','.loadips',function(e){
+          
+          var id = e.target.id;
+          
+          var i = id.split('-')[2];
+          var dest = "get_ips/" + i;
+
+          d = $( '#ips-' + i + '-list');
+          
+          if (d.is(':empty') ) {
+            $.get(dest, { }, function(result) {
+              d.html(result);
+            });  
+                  
+          } else {
+                d.html("");
+                
+          }
+                
+          
+          return false; 
+
+        });
+
+        $(document).on('click','.loaddomains',function(e){
+          
+          var id = e.target.id;
+          
+          var i = id.split('-')[2];
+          var dest = "get_domains/" + i;
+
+          d = $( '#domains-' + i + '-list');
+          
+          if (d.is(':empty') ) {
+            $.get(dest, { }, function(result) {
+              d.html(result);
+            });  
+                  
+          } else {
+                d.html("");
+                
+          }
+                
+          
+          return false; 
+
+        });
+
+        $(document).on('click','.httptoggle',function(e){
+          e.preventDefault();
+          id = e.target.id;
+          var ip = id.split('-')[2];
+          var port = id.split('-')[3];
+          d = $( '#http-' + ip + '-' + port);
+          d.toggle();
+          return false;
+
+        });
+
+        $(document).on('click', '.completed', function(e) {
+          e.preventDefault();
+          id = e.target.id;
+          var ip_id = id.split('-')[1];
+
+          $.ajax({
+            method:"get",
+            url:"toggle_completed/"+ip_id,
+            
+
+            success:function(res){
+              if ( e.target.classList.contains('btn-info')) {
+                e.target.classList.remove('btn-info');
+                e.target.classList.add('btn-success');
+                e.target.innerHTML = 'Unmark Done';
+              } else {
+                e.target.classList.remove('btn-success');
+                e.target.classList.add('btn-info');
+                e.target.innerHTML = 'Mark Done';
+              }; 
+            }
+          })
+        });
+
+        $("#menu-toggle").click(function(e) {
+          e.preventDefault();
+          $("#wrapper").toggleClass("active");
+        });
+    </script>
+{% endblock %}

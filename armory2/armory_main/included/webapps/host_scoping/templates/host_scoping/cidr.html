@@ -1,0 +1,40 @@
+ <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+            <div class="row">
+              <div class="col-md-5">
+                <p data-toggle="tooltip" data-html="true" title="<pre>{{ cidr.meta.whois }}</pre>">{{ cidr.name }}</p>
+              </div>
+              <div class="col-md-1" align="center">
+
+                {% if cidr.ipaddress_set.all %}
+                <button type="button" class="btn btn-info loadips" href="{% url 'scoping.get_ips' cidr.id %}"  id="button-ips-{{ cidr.id }}" >
+                  IPs
+                </button>
+                {% endif %}
+              </div>  
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="cidr-active-{{ cidr.id }}" {% if cidr.active_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1" align="center">
+                <input type="checkbox" class = "changescope" id="cidr-passive-{{ cidr.id }}" {% if cidr.passive_scope %} checked {% endif %} >
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-clear-active-{{ cidr.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-set-active-{{ cidr.id }}" title="Sets all active scoping for this item and all child items">Set</button>
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-clear-passive-{{ cidr.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
+              </div>
+              <div class="col-md-1" align="center">
+                <button class="btn btn-info clearscope" id="cidr-set-passive-{{ cidr.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
+              </div>
+            </div>
+            <div id="ips-{{ cidr.id }}-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
