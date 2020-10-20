@@ -1,0 +1,38 @@
+            <div id="ip-{{ ip.id }}-item">
+              <div class="row">
+                <div class="col-md-1"></div>
+                <div class="col-md-4">
+                  <p>{{ ip.ip_address }}</p>
+                </div>
+                <div class="col-md-1" align="center">
+                  {% if ip.domain_set.all %}
+                  <button type="button" class="btn btn-info loaddomains" id="button-domains-{{ ip.id }}">
+                    Domains
+                  </button>
+                  {% endif %}
+                </div>
+
+
+                <div class="col-md-1" align="center">
+                  <input type="checkbox" class = "changescope" id="ip-active-{{ ip.id }}" {% if ip.active_scope %} checked {% endif %} >
+                </div>
+                <div class="col-md-1" align="center">
+                  <input type="checkbox"  class = "changescope" id="ip-passive-{{ ip.id }}" {% if ip.passive_scope %} checked {% endif %} >
+                </div>
+                {% if ip.domain_set.all %}
+                <div class="col-md-1" align="center">
+                  <button class="btn btn-info clearscope" id="ip-clear-active-{{ ip.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
+                </div>
+                <div class="col-md-1" align="center">
+                  <button class="btn btn-info clearscope" id="ip-set-active-{{ ip.id }}" title="Sets all active scoping for this item and all child items">Set</button>
+                </div>
+                <div class="col-md-1" align="center">
+                  <button class="btn btn-info clearscope" id="ip-clear-passive-{{ ip.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
+                </div>
+                <div class="col-md-1" align="center">
+                  <button class="btn btn-info clearscope" id="ip-set-passive-{{ ip.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
+                </div>
+                {% endif %}
+              </div>
+              <div id="domains-{{ ip.id }}-list" ></div>
+            </div>

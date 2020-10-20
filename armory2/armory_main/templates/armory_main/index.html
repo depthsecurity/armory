@@ -7,7 +7,7 @@
   <meta name="description" content="">
   <meta name="author" content="Daniel Lawson @fang0654">
   <link rel="icon" href="favicon.ico">
-  <title>Armory Host Summary</title>
+  <title>Armory Web Applications</title>
   <!-- Bootstrap core CSS -->
 <!--     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
@@ -176,209 +176,30 @@
 <body>
 
 <div id="wrapper" class="active">
-  <div id="sidebar-wrapper">
-    <ul id="sidebar_menu" class="sidebar-nav">
-      <li class="sidebar-brand"><a id="menu-toggle" href="#">IP Address</a></li>
-    </ul>
-    <ul id="sidebar" class="sidebar-nav">
-
-
-    {% for ip in ips %}
-      <li>
-        <a href="#{{ ip.ip_address }}">{{ ip.ip_address }}</a>
-      </li>
-
-    {% endfor %}
-    </ul>
-  </div>
 
   
   <div class="container">
-    {% for ip in ips %}
+    <h1>Armory WebApps</h1>
 
-    <div id="{{ ip.ip_address }}"></div>
-    <div class="row sticky-top">
-      <div class="col-md-12">
-        <div class="card">
-          <div class="card-body">
-            <h1 ><a href="#{{ ip.ip_address }}">{{ ip.ip_address }}   </a><button type="button" class="btn btn-info" data-toggle="collapse" data-target="#notes-{{ ip.id }}">Notes</button></h1>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="notes-{{ ip.id }}" class="collapse list-group">
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-12 font-weight-bold">Notes</div>
-          </div>
-          <div class="row">
-            <div class="col-md-12">
-              <textarea id="notes-text-{{ ip.id }}" class="notesave col-md-12">{{ip.notes }}</textarea>
+
+
+    {% for app in apps %}
+
+    <div id="{{ app }}">
+      <div class="row sticky-top">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-body">
+              <h1 ><a href="{{ app }}">{{ app | title_item }}</a></h1>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-body">
-
-        <div class="row">
-          <div class="col-md-2 font-weight-bold">Domains</div>
-          <div class="col-md-10">{{ ip.domain_set.all|join:', '}}</div>
-        </div>
-        <div class="row border-top  font-weight-bold">
-          <div class="col-md-2">Port</div>
-          <div class="col-md-2">Service</div>
-          <div class="col-md-8">Data Sources</div>
-        </div>
-        {% for port in ip.port_set.all %}  
-          {% if port.port_number > 0 %}
-          <div class="row border-top">
-            <div class="col-md-2">{{ port.port_number }}/{{ port.proto }}
-            </div>
-            <div class="col-md-2">
-              {% if 'http' in port.service_name %}
-              <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#http-{{ port.id }}">{{ port.service_name }}</button>
-              {% else %}
-              {{ port.service_name }}
-              {% endif %}
-            </div>
-            <div class="col-md-8">
-              {% for d in data|get_item:port.id %}
-                  {% if d == "Nessus0" %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-light">Nessus</a>
-                  {% elif d == "Nessus1" %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-info">Nessus</a>
-                  {% elif d == "Nessus2" %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-warning">Nessus</a>
-                  {% elif d == "Nessus3" %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-danger">Nessus</a>
-                  {% elif d == "Nessus4" %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nessus' port.id %}" class="loadunload btn btn-outline-danger">Nessus</a>
-
-                  {% elif d == "Gowitness" %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_gowitness' port.id %}" class="loadunload btn btn-info">{{d }}</a>
-                  {% elif d == "FFuF" %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_ffuf' port.id %}" class="loadunload btn btn-info">{{d }}</a>
-                  {% elif d == 'FFuF-empty' %}
-                      <a id="" class="btn btn-light" title='FFuF was run, but no results were found'>FFuF</a>
-                  {% else %}
-                      <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
-                  {% endif %}
-              {% endfor %}
-            </div>
-          </div>
-        {% if 'http' in port.service_name %}
-          <div id="http-{{ port.id }}" class="collapse list-group">
-            <div class="card">
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-12">
-                    <a class="list-group-item list-group-item-action" href="{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}" target="_blank">{{ port.service_name}}://{{ ip.ip_address }}:{{port.port_number}}</a>
-                  </div>
-                </div>
-              {% for domain in ip.domain_set.all %}
-                <div class="row">
-                  <div class="col-md-12">
-                    <a class="list-group-item list-group-item-action" href="{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}" target="_blank">{{ port.service_name }}://{{ domain.name }}:{{port.port_number}}</a>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-        {% endif %}
-        {% for d in data|get_item:port.id %}
-        <div  id="{{ d }}-{{ port.id }}"></div>
-        {% endfor %}
-        {% endif %}
-      {% endfor %}
-      </div>
-    </div>
-  {% endfor %} 
-
-  
+    
+    {% endfor %}
   </div>
 </div>
-  <footer class="text-muted">
-    <div class="container">
-      <p class="float-right">
-        <a href="#">Back to top</a>
-      </p>
-    </div>
-  </footer>
-    <script>
 
-        function load_data(id, data) {
-            var ip = id.split('-')[2];
-            var port = id.split('-')[3];
-            d = $( '#' + data + '-' + ip + '-' + port);
-            if (d.is(':empty') ) {
-                d.load("data/" + data + "-" + ip.replace(/_/g, '.') + '-'+ port +'.html');
-                
-            } else {
-                d.html("");
-                
-            }
-            return false;
-        }
-        $(document).on('change', '.notesave', function(e){
-          var pkid = e.target.id.split('-')[2];
-          $.post('save_notes/' + pkid, { data: e.target.value}, function(result) {});
-        })
-
-        $(document).on('click','.loadunload',function(e){
-          e.preventDefault();
-          id = e.target.id;
-          dest = e.target.href
-          
-          var n = id.split('-')[1];
-          var i = id.split('-')[2];
-
-          d = $( '#' + n + '-' + i );
-          if (d.is(':empty') ) {
-                d.load(dest);
-                
-          } else {
-                d.html("");
-                
-          }
-          return false; 
-
-        });
-
-          //       $(document).on('click','.loadunload',function(e){
-          // e.preventDefault();
-          // id = e.target.id;
-          // var data = id.split('-')[1];
-          // var ip = id.split('-')[2];
-          // var port = id.split('-')[3];
-          // d = $( '#' + data + '-' + ip + '-' + port);
-          // if (d.is(':empty') ) {
-          //       d.load("data/" + data + "-" + ip.replace(/_/g, '.') + '-'+ port +'.html');
-                
-          // } else {
-          //       d.html("");
-                
-          // }
-
-        $(document).on('click','.httptoggle',function(e){
-          e.preventDefault();
-          id = e.target.id;
-          var ip = id.split('-')[2];
-          var port = id.split('-')[3];
-          d = $( '#http-' + ip + '-' + port);
-          d.toggle();
-          return false;
-
-        });
-
-
-        $("#menu-toggle").click(function(e) {
-          e.preventDefault();
-          $("#wrapper").toggleClass("active");
-        });
-    </script>
 </body>
 </html>

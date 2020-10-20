@@ -20,7 +20,7 @@ def index(request):
 
     cidrs = CIDR.objects.all().order_by('name')
 
-    return render(request, 'scoping/index.html', {'cidrs': cidrs})
+    return render(request, 'host_scoping/index.html', {'cidrs': cidrs})
 
 def change_scope(request, item_type, scope_type, pkid):
 
@@ -85,7 +85,7 @@ def clear_scope(request, act, item_type, scope_type, pkid):
                 for dom in i.domain_set.all():
                     dom.passive_scope = setting
                     dom.save()
-        return render(request, 'scoping/cidr.html', {'cidr':obj})
+        return render(request, 'host_scoping/cidr.html', {'cidr':obj})
 
     elif item_type == 'ip':
         obj = get_object_or_404(IPAddress, pk=pkid)
@@ -114,7 +114,7 @@ def clear_scope(request, act, item_type, scope_type, pkid):
                 dom.passive_scope = setting
                 dom.save()
 
-        return render(request, 'scoping/ip.html', {'ip':obj})
+        return render(request, 'host_scoping/ip.html', {'ip':obj})
 
 
 def get_ips(request, pkid):
@@ -122,7 +122,7 @@ def get_ips(request, pkid):
 
     ips = obj.ipaddress_set.all().order_by('ip_address')
 
-    return render(request, 'scoping/ips.html', {'ips': ips})
+    return render(request, 'host_scoping/ips.html', {'ips': ips})
 
 
 def get_domains(request, pkid):
@@ -130,4 +130,4 @@ def get_domains(request, pkid):
 
     domains = obj.domain_set.all().order_by('name')
 
-    return render(request, 'scoping/domains.html', {'domains': domains})
+    return render(request, 'host_scoping/domains.html', {'domains': domains})

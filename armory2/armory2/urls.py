@@ -16,13 +16,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
+from armory2.armory_main.views import main_view
+
 import pdb
 import glob
 import os
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('/', admin.site.urls),
     # path('api/', include('armory2.armory_main.urls')),
+    path('', main_view.index, name="armory_main.index")
 ]
 # pdb.set_trace()
 
