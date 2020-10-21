@@ -3,7 +3,7 @@
 from armory2.armory_main.models import Port, IPAddress, Domain
 from django.db.models import Q
 import pdb
-import random
+import random as random_lib
 
 def run(tool=None, args="", scope_type=None, random=True):
 
@@ -43,7 +43,8 @@ def run(tool=None, args="", scope_type=None, random=True):
                     results.append("%s://%s:%s" % (p.service_name, d.name, p.port_number))
 
     if random:
-        random.shuffle(results)
+        random_lib.shuffle(results)
+        
         return results
     return sort_by_url(results)
 
