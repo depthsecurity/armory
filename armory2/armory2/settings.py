@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'armory2.armory_main.apps.ArmoryMainConfig'
+    'django_q',
+    'armory2.armory_main.apps.ArmoryMainConfig',
+
 ]
 
 MIDDLEWARE = [
@@ -118,6 +120,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# django_q stuff for API
+
+Q_CLUSTER = {
+    'name': 'armory',
+    'workers': 8,
+    'recycle': 500,
+    'timeout': 60,
+    'compress': True,
+    'cpu_affinity': 1,
+    'save_limit': 250,
+    'queue_limit': 500,
+    'label': 'Django Q',
+    'redis': {
+        'host': '127.0.0.1',
+        'port': 6379,
+        'db': 0, }
+}
 
 # Armory specific settings
 
