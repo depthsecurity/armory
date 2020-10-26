@@ -21,3 +21,5 @@ tmux selectp -t 0
 tmux splitw -h -p 50
 
 tmux send-keys "echo 'Type \"tmux kill-server\" to tear it all down.'" C-m
+
+tmux a
