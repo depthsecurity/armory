@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'armory2.armory_main.apps.ArmoryMainConfig'
+    'django_q',
+    'armory2.armory_main.apps.ArmoryMainConfig',
+
 ]
 
 MIDDLEWARE = [
@@ -119,6 +121,24 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# django_q stuff for API
+
+Q_CLUSTER = {
+    'name': 'armory',
+    'workers': 8,
+    'recycle': 500,
+    'timeout': 60,
+    'compress': True,
+    'cpu_affinity': 1,
+    'save_limit': 250,
+    'queue_limit': 500,
+    'label': 'Django Q',
+    'redis': {
+        'host': '127.0.0.1',
+        'port': 6379,
+        'db': 0, }
+}
+
 # Armory specific settings
 
 if os.getenv("ARMORY_HOME"):
@@ -153,6 +173,10 @@ if not os.path.exists(ARMORY_CONFIG['ARMORY_BASE_PATH']):
     os.makedirs(ARMORY_CONFIG['ARMORY_BASE_PATH'])
 
 # pdb.set_trace()
+
+
+TEMPLATES[0]['DIRS'] += [f"{url}templates" for url in glob.glob(f"{BASE_DIR}/armory_main/included/webapps/*/")]
+
 if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
 
     templates = ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']
@@ -163,4 +187,4 @@ if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
         TEMPLATES[0]['DIRS'] += template_paths
 
 
-
+# pdb.set_trace()

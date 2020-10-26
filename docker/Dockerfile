@@ -8,7 +8,7 @@ RUN echo "deb-src http://deb.debian.org/debian buster main" >> /etc/apt/sources.
 CMD ["echo", "Installing Debian packages needed."]
 
 RUN apt update
-RUN apt install -y python python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev sudo chromium xclip nano
+RUN apt install -y python python3 git python3-pip python-pip libmariadb-dev-compat wget ruby ruby-dev gem p7zip-full dnsrecon hydra nmap whois git gcc make libpcap-dev libnet-ssleay-perl build-essential zlib1g-dev sudo chromium xclip nano redis-server tmux
 
 WORKDIR /opt/src/golang
 RUN wget https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz
@@ -134,3 +134,5 @@ RUN pip3 install django # Not sure why this doesn't work from the setup
 RUN python3 setup.py install
 RUN pip3 install jinja2 xlsxwriter
 WORKDIR /root/current
+COPY launch_api.sh /usr/bin/launch_api.sh
+RUN chmod +x /usr/bin/launch_api.sh

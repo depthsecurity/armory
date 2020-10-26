@@ -39,3 +39,4 @@ verify_ssl = true
   termcolor = "*"
   django = "*"
   django-picklefield = "*"
+  django-q = "*"

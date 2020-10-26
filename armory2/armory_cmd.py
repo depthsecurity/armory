@@ -129,22 +129,27 @@ def load_module(module_path):
             return module
 
 
-def list_modules():
+def list_modules(silent=False):
     config = get_config_options()
     custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
     
-    modules = []
+    modules = {}
     if custom_path:
         for c in custom_path:
-            modules += [m for m in get_modules(c)]
-    modules += [m for m in get_modules(os.path.join(PATH, "armory_main/included/modules"))]
+            for m in get_modules(c):
+                modules[m] = c
+    
+    for m in get_modules(os.path.join(PATH, "armory_main/included/modules")):
+        modules[m] = os.path.join(PATH, "armory_main/included/modules")
+    if not silent:
+        print("Available modules:")
+        for m in sorted(list(set(modules.keys()))):
+            print("\t%s" % m)
 
-    print("Available modules:")
-    for m in sorted(list(set(modules))):
-        print("\t%s" % m)
+    else:
+        return modules
 
-
-def list_reports():
+def list_reports(silent=False):
     config = get_config_options()
     custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
 
@@ -154,11 +159,12 @@ def list_reports():
         for r in custom_path:
             modules += [m for m in get_modules(r)]
     modules += [m for m in get_modules(os.path.join(PATH, "armory_main/included/reports"))]
-
-    print("Available reports:")
-    for r in sorted(list(set(modules))):
-        print("\t%s" % r)
-
+    if not silent:
+        print("Available reports:")
+        for r in sorted(list(set(modules))):
+            print("\t%s" % r)   
+    else:
+        return sorted(list(set(modules)))
 
 def list_module_options(module, module_name):
 
