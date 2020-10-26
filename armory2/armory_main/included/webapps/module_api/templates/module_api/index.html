@@ -1,0 +1,191 @@
+{% extends 'armory_main/main_template.html' %}
+{% block 'body' %}
+
+{% block 'title' %}
+<title>Armory - Module API</title>
+{% endblock %}
+<div id="wrapper" class="active">
+
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+            <h1>Tasks</h1>
+          </div>
+        </div>  
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+            <ul class="nav nav-tabs">
+              <li class="nav-item">
+                <a class="nav-link" href="#" onclick="loadactive()">Active</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" onclick="loadinactive()">Inactive</a>
+              </li>
+            </ul>
+            <div id="tasks_div"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+
+    
+  </div>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+            <h1>Launch New Job</h1>
+          </div>
+        </div>  
+      </div>
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="dropdown">
+              <button class="btn btn-secondary dropdown-toggle modulebutton" type="button" id="dropdownModuleButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Armory Module
+              </button>
+              <div class="dropdown-menu" aria-labelledby="dropdownModuleButton">
+                {% for module in all_modules %}
+
+                <a class="dropdown-item modulelink" href="#" id="load-{{ module }}">{{ module }}</a>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div id="module_options"></div>
+
+    </div>
+  </div>
+
+
+  <div id="host_results">
+  </div>
+</div>
+
+<script>
+    function loadactive() {
+      $('#tasks_div').load('get_active_tasks/');
+    }
+ 
+    loadactive();
+    function loadinactive() {
+      $('#tasks_div').load('get_inactive_tasks/');
+    }
+
+
+    $(document).on('click', '.modbutton', function(e) {
+      var form = $('#search_form');
+      var data = form.serialize();
+      
+      $.ajax({
+        method:"post",
+        url:"host_data",
+        data: data,
+        dataType: "json",
+        beforeSend:function() {
+          $('#host_results').html("<h1>Loading data, please wait...</h1>");
+        },
+        success:function(json){
+          $('#host_results').html(json.hostdata);
+          $('#sidebar_results').html(json.sidebardata);
+        }
+      })
+
+      return false;
+
+    });
+
+    $(document).on('click', '.pagenav', function(e) {
+      e.preventDefault();
+      id = e.target.id;
+      page_field = $('#page');
+
+      page_field[0].value = id;
+
+      var form = $('#search_form');
+      var data = form.serialize();
+      
+      $.ajax({
+        method:"post",
+        url:"host_data",
+        data: data,
+        dataType: "json",
+        beforeSend:function() {
+          $('#host_results').html("<h1>Loading data, please wait...</h1>");
+        },
+        success:function(json){
+          $('#host_results').html(json.hostdata);
+          $('#sidebar_results').html(json.sidebardata);
+        }
+      })
+
+      return false;
+    });
+    $(document).on('click','.loadunload',function(e){
+      e.preventDefault();
+      id = e.target.id;
+      dest = e.target.href
+      
+      var n = id.split('-')[1];
+      var i = id.split('-')[2];
+
+      d = $( '#' + n + '-' + i );
+      if (d.is(':empty') ) {
+            d.load(dest);
+            
+      } else {
+            d.html("");
+            
+      }
+      return false; 
+
+    });
+
+
+
+    $(document).on('click','.httptoggle',function(e){
+      e.preventDefault();
+      id = e.target.id;
+      var ip = id.split('-')[2];
+      var port = id.split('-')[3];
+      d = $( '#http-' + ip + '-' + port);
+      d.toggle();
+      return false;
+
+    });
+
+    $(document).on('click', '.modulelink', function(e) {
+      e.preventDefault();
+      id = e.target.id;
+      var module_id = id.split('-')[1];
+
+      $.ajax({
+        method:"get",
+        url:"get_module_options/"+module_id + '/',
+        
+
+        success:function(res){
+          $('#module_options').html(res); 
+        }
+      })
+    });
+
+    $("#menu-toggle").click(function(e) {
+      e.preventDefault();
+      $("#wrapper").toggleClass("active");
+    });
+</script>
+{% endblock %}

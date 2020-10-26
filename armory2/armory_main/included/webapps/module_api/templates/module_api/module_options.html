@@ -1,0 +1,74 @@
+     
+    
+     <div class="col-md-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="row"> 
+                <h1>{{ module }}</h1>
+            </div>
+            <div clas="row">
+                <div class="card">
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-1">
+                        Enabled
+                      </div>
+                      <div class="col-md-3">
+                        Option
+                      </div>
+                      <div class="col-md-3">
+                        Value
+                      </div>
+                      <div class="col-md-5">
+                        Help
+                      </div>
+                    </div>
+            <form method="post" id="launch_module" action="launch_module/">
+                <input type="hidden" name="module" value = "{{ module }}"/>
+            {% for option, data in options.items %}
+
+
+                    <div class="row">
+                      <div class="col-md-1">
+                        {% if data.default %}
+                        <input type="checkbox" name="cb_{{ option }}" checked="true">
+                        {% else %}
+                        <input type="checkbox" name="cb_{{ option }}">
+                        {% endif %}
+                      </div>
+                      <div class="col-md-3">
+                        {{ option }}
+                      </div>
+                      <div class="col-md-3">
+                        {% if data.type != 'bool' %}
+                            {% if data.default %}
+                        <input type="text" value="{{ data.default }}" name="{{option}}_value">
+                            {% else %}
+                        <input type="text" value=""  name="{{option}}_value">
+                            {% endif %}
+                        {% endif %}
+                      </div>
+                      <div class="col-md-5">
+                        {{ data.help }}
+                      </div>
+                    </div>
+                    
+                  
+            {% endfor %}
+                    <div class="row">
+                        <div class="col-md-10">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="submit" value="Launch Module"/>
+                        </div>
+                    </div>
+
+
+                    </form>
+                  </div>
+                </div> 
+            </div>
+            
+          </div>
+        </div>  
+      </div>

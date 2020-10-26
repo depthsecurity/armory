@@ -66,7 +66,7 @@ class IPAddress(BaseModel):
         res = []
         total = qry.count()
         
-        
+        # pdb.set_trace()
         return qry.order_by('ip_address')[(page_num-1)*entries:page_num*entries], total
 class Port(BaseModel):
 

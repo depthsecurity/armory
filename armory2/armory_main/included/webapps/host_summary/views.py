@@ -43,6 +43,7 @@ def index(request):
 
     return render(request, 'host_summary/index.html', {})
 
+@csrf_exempt
 def get_hosts(request):
 
     scope_type = request.POST.get('scope', 'active')
@@ -81,6 +82,7 @@ def get_hosts(request):
     display_complete = request.POST.get('display_completed')
 
     ips_object = {}
+    pdb.set_trace()
     ips, total = IPAddress.get_sorted(scope_type=scope_type, search=search, display_zero=display_zero, page_num=page, entries=entries)
 
     total_pages = int((total - 1) / entries) + 1

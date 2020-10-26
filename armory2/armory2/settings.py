@@ -173,6 +173,10 @@ if not os.path.exists(ARMORY_CONFIG['ARMORY_BASE_PATH']):
     os.makedirs(ARMORY_CONFIG['ARMORY_BASE_PATH'])
 
 # pdb.set_trace()
+
+
+TEMPLATES[0]['DIRS'] += [f"{url}templates" for url in glob.glob(f"{BASE_DIR}/armory_main/included/webapps/*/")]
+
 if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
 
     templates = ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']
@@ -183,4 +187,4 @@ if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
         TEMPLATES[0]['DIRS'] += template_paths
 
 
-
+# pdb.set_trace()

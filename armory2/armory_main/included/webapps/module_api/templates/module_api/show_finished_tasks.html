@@ -1,0 +1,53 @@
+
+     
+    
+     
+                    <div class="row">
+                      <div class="col-md-4">
+                        ID
+                      </div>
+                      <div class="col-md-2">
+                        Module
+                      </div>
+                      <div class="col-md-2">
+                        Started
+                      </div>
+                      <div class="col-md-2">
+                        Finished
+                      </div>
+                      <div class="col-md-2">
+                        Log File
+                      </div>
+                      
+                    </div>
+            
+            
+            {% for task in tasks %}
+
+
+                    <div class="row">
+                      <div class="col-md-4">
+                        
+                        {{ task.code_name }}
+                        
+                      </div>
+                      <div class="col-md-2">
+                        {{ task.module }}
+                      </div>
+                      <div class="col-md-2">
+                        {{ task.started }}
+                      </div>
+                      <div class="col-md-2">
+                        {{ task.finished }} ({{ task.time }})
+                      </div>
+                      <div class="col-md-2">
+                        <a href="show_log/{{ task.code_name }}" target="_blank">
+                            {{ task.log_file }}
+                        </a>
+                      </div>
+                    </div>
+                    
+                  
+            {% endfor %}
+                    
+
