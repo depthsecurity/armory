@@ -82,7 +82,7 @@ def get_hosts(request):
     display_complete = request.POST.get('display_completed')
 
     ips_object = {}
-    pdb.set_trace()
+    # pdb.set_trace()
     ips, total = IPAddress.get_sorted(scope_type=scope_type, search=search, display_zero=display_zero, page_num=page, entries=entries)
 
     total_pages = int((total - 1) / entries) + 1
