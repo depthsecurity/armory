@@ -83,7 +83,7 @@ class Module(ToolTemplate):
         for t in targets:
             res.append(
                 {
-                    "target": t,
+                    "target": t if 'FUZZ' in t else f"{t}/FUZZ",
                     "output": os.path.join(
                         output_path,
                         t.replace(":", "_")
@@ -100,7 +100,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = self.binary
-        cmd += " -o {output} -u {target}/FUZZ "
+        cmd += " -o {output} -u {target} "
 
         if args.tool_args:
             cmd += args.tool_args
