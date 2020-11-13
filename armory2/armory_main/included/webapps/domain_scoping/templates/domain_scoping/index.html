@@ -37,7 +37,7 @@
       <div class="card">
         <div class="card-body">
           <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-5">
             </div>
             <div class="col-md-1"  align="center">
               Active
@@ -64,7 +64,7 @@
       <div class="card">
         <div class="card-body">
             <div class="row">
-              <div class="col-md-5">
+              <div class="col-md-4">
                 <p data-toggle="tooltip" data-html="true" title="<pre>{{ bd.meta.whois }}</pre>">{{ bd.name }}</p>
               </div>
               <div class="col-md-1">
@@ -92,6 +92,9 @@
               </div>
               <div class="col-md-1">
                 <button class="btn btn-info clearscope" id="bd-set-passive-{{ bd.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-danger deletedomain" id="bd-delete-{{ bd.id }}" title="Delete the domain, subdomains, and associated IPs and CIDRs">Delete</button>
               </div>
             </div>
             <div id="domains-{{ bd.id }}-list"></div>
@@ -153,6 +156,21 @@
           
         })
         
+         $(document).on('click', '.deletedomain', function(e){
+          var pkid = e.target.id.split('-')[2];
+          
+
+          if ( confirm('Are you sure you want to delete the domain, subdomain, and child IPs/CIDRs that are not associated with anything else?' )) {
+            $.get('delete_domain/' + pkid, { }, function(result) {
+              $( '#bd-' + pkid + '-item' ).html("");
+              
+            });  
+            
+              
+            
+          };
+          
+        })
 
         $(document).on('click','.loadips',function(e){
           

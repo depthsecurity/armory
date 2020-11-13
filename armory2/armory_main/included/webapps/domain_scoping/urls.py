@@ -20,4 +20,5 @@ urlpatterns = [
     path('clear_scope/<str:act>/<str:item_type>/<str:scope_type>/<int:pkid>', views.clear_scope, name="scoping.clear_scope"),
     path('get_ips/<int:pkid>', views.get_ips, name="scoping.get_ips"),
     path('get_domains/<int:pkid>', views.get_domains, name="domain_scoping.get_domains"),
+    path('delete_domain/<int:pkid>', views.delete_domain, name="domain_scoping.delete_domain"),
     ]

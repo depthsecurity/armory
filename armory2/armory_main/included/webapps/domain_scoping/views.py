@@ -138,3 +138,26 @@ def get_domains(request, pkid):
     domains = obj.domain_set.all().order_by('name')
 
     return render(request, 'domain_scoping/domains.html', {'domains': domains})
+
+def delete_domain(request, pkid):
+    bd = get_object_or_404(BaseDomain, pk=pkid)
+
+    for domain in bd.domain_set.all():
+        for ip in domain.ip_addresses.all():
+            
+            if len(ip.domain_set.all()) == 1:
+                cidr = ip.cidr
+
+                if len(cidr.ipaddress_set.all()) == 1:
+                    print(f"Deleting { cidr.name }")
+                    cidr.delete()
+
+                print(f"Deleting {ip.ip_address}")
+                ip.delete()
+        print(f"Deleting {domain.name}")
+        domain.delete()
+
+    print(f"Deleting Base Domain {bd.name}")
+    bd.delete()
+
+    return HttpResponse("Object deleted.")

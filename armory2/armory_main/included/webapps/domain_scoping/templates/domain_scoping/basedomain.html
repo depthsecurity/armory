@@ -4,7 +4,7 @@
       <div class="card">
         <div class="card-body">
             <div class="row">
-              <div class="col-md-5">
+              <div class="col-md-4">
                 <p data-toggle="tooltip" data-html="true" title="{{ bd.meta.whois }}">{{ bd.name }}</p>
               </div>
               <div class="col-md-1">
@@ -33,7 +33,11 @@
               <div class="col-md-1">
                 <button class="btn btn-info clearscope" id="bd-set-passive-{{ bd.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
               </div>
+              <div class="col-md-1">
+                <button class="btn btn-warning deletedomain" id="bd-delete-{{ bd.id }}" title="Delete the domain, subdomains, and associated IPs and CIDRs">Delete</button>
+              </div>
             </div>
+
             <div id="domains-{{ bd.id }}-list"></div>
         </div>
       </div>
