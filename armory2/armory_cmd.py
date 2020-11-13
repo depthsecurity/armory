@@ -27,6 +27,9 @@ if not os.path.exists(os.path.join(CONFIG_FOLDER, CONFIG_FILE)):
                 "armory2.default_configs", "settings.py"
             ).decode("UTF-8")
         )    
+    NEW_CONFIG_FOLDER = True
+else:
+    NEW_CONFIG_FOLDER = False
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "armory2.armory2.settings")
 
@@ -40,7 +43,7 @@ from django.core.management import call_command
 # Your application specific imports
 from armory2.armory_main.models import *
 from django.conf import settings
-
+from django.db.utils import OperationalError
 import argparse
 import argcomplete
 import os
@@ -50,7 +53,7 @@ import pdb
 from configparser import ConfigParser
 
 
-__version__ = "Armory Version 2.0 Alpha"
+__version__ = "Armory Version 2.0 Beta"
 PATH = os.path.dirname(__file__)
 
 
@@ -58,15 +61,16 @@ DEFAULTS_DIR = os.path.join(os.path.dirname(__file__), "default_configs")
 
 # call_command('migrate')
 
-def check_and_create_configs():
-    """
-    This is run if there is no config currently setup. It will create a home .armory folder,
-    create a sample base config, and populate sample module configs.
-    """
+def check_database():
+    '''
+    Check and make sure the database is migrated
+    '''
 
-
-    return
-    generate_default_configs()
+    try:
+        Url.objects.filter(pk=1)
+    except OperationalError:
+        from django.core.management import execute_from_command_line
+        execute_from_command_line(['manage', 'migrate'])
 
 def generate_default_configs():
     config = get_config_options()
@@ -371,8 +375,10 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
 
 
 def main():
+    check_database()
 
-    check_and_create_configs()
+    if NEW_CONFIG_FOLDER:
+        generate_default_configs()
     cmd_args = sys.argv
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--module", help="Use module")
