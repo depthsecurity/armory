@@ -179,6 +179,23 @@ def get_nessus(request, port_id):
     vuln_data = []
     vulns = Vulnerability.objects.filter(ports__id=port_id).order_by('severity')[::-1]
 
+    vulns_obj = {}
+
+    for v in vulns:
+        vulns_obj[v.name] = {'id': v.id,
+                             'severity': v.severity,
+                             'description': v.description,}
+
+        vuln_output = v.vulnoutput_set.filter(port_id=port_id)
+
+        if vuln_output:
+            vulns_obj[v.name]['detail'] = vuln_output[0].data
+        else:
+            vulns_obj[v.name]['detail'] = ""
+    
+    # pdb.set_trace()
+
+
     # for v in vulns:
     #     vuln_output_item = v.vulnoutput_set.filter(port__id=port_id)
     #     vo = "" if not vuln_output_item else vuln_output_item[0].data
@@ -187,9 +204,9 @@ def get_nessus(request, port_id):
 
     sev_map = {0: 'Informational', 1: 'Low', 2:'Medium', 3:'High', 4:'Critical'}
 
-    return render(request, 'host_summary/nessus.html', {'vulns':vulns, 'sev_map':sev_map})
+    return render(request, 'host_summary/nessus.html', {'vulns':vulns_obj, 'sev_map':sev_map})
 
-def get_nessus_detail(request, vuln_id):
+def get_nessus_detail(request, vuln_id, port_id):
     pass
 
 def get_gowitness(request, port_id):
