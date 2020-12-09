@@ -175,11 +175,11 @@ class Module(ModuleTemplate):
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
-                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
+                self.base_config["ARMORY_BASE_PATH"], 'output', args.output_path[1:]
             )
         else:
             output_path = os.path.join(
-                self.base_config["ARMORY_BASE_PATH"], args.output_path
+                self.base_config["ARMORY_BASE_PATH"], 'output', args.output_path
             )
 
         if not os.path.exists(output_path):
