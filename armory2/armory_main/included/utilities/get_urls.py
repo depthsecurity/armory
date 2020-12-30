@@ -48,6 +48,34 @@ def run(tool=None, args="", scope_type=None, random=True):
         return results
     return sort_by_url(results)
 
+def get_web_ips(tool=None, args="", scope_type=None, random=True):
+    results = []
+    
+
+    ports = Port.objects.all().filter(Q(service_name="http")| Q(service_name="https"))
+    
+
+    for p in ports:
+
+        if (
+            p.ip_address
+            and ((scope_type == "active" and p.ip_address.active_scope)
+            or (scope_type == "passive" and p.ip_address.passive_scope)
+            or not scope_type) 
+            and ((not tool) or (tool not in p.ip_address.tools.keys() or "{}-{}".format(p.port_number, args) not in p.ip_address.tools[tool]))
+        ):
+            
+            results.append(
+                p.ip_address.ip_address
+            )
+
+    results = sorted(list(set(results)))
+
+    if random:
+        random_lib.shuffle(results)
+        
+    return results
+
 def add_tools_urls(tool, args="", scope_type=None):
 
     results = []
