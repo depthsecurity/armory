@@ -31,7 +31,8 @@ RUN git clone https://github.com/aboul3la/Sublist3r.git
 RUN git clone https://github.com/anshumanbh/tko-subs.git
 RUN git clone https://github.com/DanMcInerney/xsscrapy.git
 RUN git clone https://github.com/fang0654/Asnlookup.git
-
+RUN git clone https://github.com/laramies/theHarvester
+RUN git clone https://github.com/projectdiscovery/subfinder.git
 RUN touch /tmp/update1
 
 RUN git clone https://github.com/fang0654/DomLink.git
@@ -57,8 +58,12 @@ RUN chmod +x /usr/local/bin/gowitness
 
 #RUN go get github.com/projectdiscovery/subfinder/cmd/subfinder
 
-RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
-RUN ln -s /root/go/bin/subfinder /usr/local/bin/subfinder
+#RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
+
+WORKDIR /opt/src/subfinder/v2/cmd/subfinder
+RUN go build .
+RUN ln -s /opt/src/subfinder/v2/cmd/subfinder/subfinder /usr/local/bin/subfinder
+#RUN ln -s /root/go/bin/subfinder /usr/local/bin/subfinder
 # Run this to create the subfinder config, so it doesn't create a race condition causing others to error out as multiple threads try to create it at once
 RUN /usr/local/bin/subfinder -d domainthatdoesnotexits.biz -sources shodan
 
@@ -113,6 +118,11 @@ RUN ln -s /opt/src/Asnlookup/asnlookup.py /usr/local/bin/asnlookup.py
 RUN chmod +x /usr/local/bin/asnlookup.py
 RUN ln -s /opt/src/DomLink/domLink.py /usr/local/bin/domLink.py
 RUN chmod +x /usr/local/bin/domLink.py
+
+WORKDIR /opt/src/theHarvester
+RUN pip3 install -r requirements.txt
+RUN python3 setup.py install
+
 
 RUN sed -i 's/\/opt\/exploitdb/\/opt\/src\/exploitdb/g' /opt/src/exploitdb/.searchsploit_rc
 RUN cp /opt/src/exploitdb/.searchsploit_rc /root/
