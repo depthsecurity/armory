@@ -118,9 +118,9 @@ class Module(ToolTemplate):
             if ':' in url:
                 port_num = url.split(':')[1]
                 url = url.split(':')[0]
-            elif proto == 'http':
+            elif proto == 'http:':
                 port_num = "80"
-            elif proto == 'https':
+            elif proto == 'https:':
                 port_num = "443"
             else:
                 port_num = "0"
@@ -137,6 +137,8 @@ class Module(ToolTemplate):
 
             
             port = get_urls.get_port_object("blah://{}:{}".format(url, port_num))
+            # pdb.set_trace()
+
             if port:
                 if not port.meta.get('FFuF'):
                     port.meta['FFuF'] = []
