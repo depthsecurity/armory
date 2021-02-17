@@ -14,7 +14,7 @@ class Report(ReportTemplate):
     associated domains.
     """
 
-    markdown = ["# ", "## ", "### ", "#### ", "##### ", "###### "]
+    markdown = ["### ", "#### ", "- ", "-- ", "--- ", "---- "]
 
     name = ""
 
