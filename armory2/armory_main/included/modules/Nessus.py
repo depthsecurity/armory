@@ -25,6 +25,8 @@ import pdb
 from netaddr import IPNetwork, IPAddress as IPAddr
 from datetime import datetime
 
+test = "1"
+
 
 def gd(orig):
     now = datetime.now()
