@@ -25,7 +25,6 @@ import pdb
 from netaddr import IPNetwork, IPAddress as IPAddr
 from datetime import datetime
 
-
 def gd(orig):
     now = datetime.now()
     diff = now - orig
@@ -312,7 +311,7 @@ class Module(ModuleTemplate):
             exploitable = False
             cves = []
             vuln_refs = {}
-            proto = tag.get("protocol")
+            proto = tag.get("protocol").lower()
             port = tag.get("port")
             svc_name = tag.get("svc_name").replace("?", "")
             plugin_output = []
@@ -507,7 +506,17 @@ class Module(ModuleTemplate):
                     #         db_cve.temporal_score = cvss
                     #     db_cve.vulnerability_set.add(db_vuln)
 
-        self.ip_data[ip] = ip_data
+        if self.ip_data.get(ip):
+            for v in ip_data.keys():
+                if not self.ip_data[ip].get(v):
+                    self.ip_data[ip][v] = ip_data[v]
+                else:
+                    if self.ip_data[ip][v].get('info') and ip_data[v].get('info'):
+                        self.ip_data[ip][v]['info'].update(ip_data[v]['info'])
+
+        else:
+            self.ip_data[ip] = ip_data
+        
         self.ports.update(vuln_data)
 
     def process_data(self, nFile, args):
@@ -561,12 +570,12 @@ class Module(ModuleTemplate):
 
                 hostname = ''.join([i for i in hostname.lower() if i in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
                 
-                if hostname not in current_domains:
+                if hostname not in current_domains and hostname not in new_domains[hostIP]:
                     new_domains[hostIP].append(hostname)
                     if hostname not in just_domains:
                         just_domains.append(hostname)
            
-                
+             
         cidrs = {c.name: c.id for c in CIDR.objects.all()}
 
         for instance in new_ips:
@@ -625,7 +634,7 @@ class Module(ModuleTemplate):
                     d_id = current_domains[d]
 
                     many_objs.append(ThroughModel(domain_id=d_id, ipaddress_id=ip_id))
-
+        
         display("Bulk gluing them together")
         ThroughModel.objects.bulk_create(many_objs)
 
@@ -641,7 +650,6 @@ class Module(ModuleTemplate):
             if hostIP:  # apparently nessus doesn't always have an IP to work with...
 
                 ip_id = current_ips[hostIP]
-
                 
                 self.getVulns(ip_id, ReportHost)
                 
@@ -654,12 +662,18 @@ class Module(ModuleTemplate):
         
 
         for i, v in self.ip_data.items():
+            
             for k, data in v.items():
+
                 if f"{i}|{k}" not in current_ports:
                     ports.append(Port(ip_address_id=i, port_number=k.split('|')[0], proto=k.split('|')[1], service_name=data['service_name']))
                     current_ports.add(f"{i}|{k}")
+                
         display(f"Bulk loading {len(ports)} Ports")            
         Port.objects.bulk_create(ports)
+
+        # Maybe race condition?
+        # time.sleep(30)
 
         all_ports = {f"{p.ip_address_id}|{p.port_number}|{p.proto}":p.id for p in Port.objects.all()}
         
@@ -673,6 +687,12 @@ class Module(ModuleTemplate):
         for d in self.ports:
             p = '|'.join(d.split('|')[:3])
             v = d.split('|')[-1]
+            if not all_ports.get(p):
+                # Weird edge case that seems to happen at random. Relook this one up in DB
+                print(f"Missing {p}")
+                p_id, p_num, p_proto = p.split('|')
+                port_obj = Port.objects.get(ip_address_id=p_id, port_number=p_num, proto=p_proto)
+                all_ports[p] = port_obj.id
             if f"{v}|{all_ports[p]}" not in vuln_port_current:
                 
                 port_vuln_data.append(ThroughModel(port_id=all_ports[p], vulnerability_id=v))
