@@ -1,0 +1,12 @@
+{
+    "name": "host_summary",
+    "pretty_name": "Host Summary",
+    "authors":[
+        {
+            "name": "fang0654",
+            "url": "https://github.com/fang0654"
+        }
+    ],
+    "description": "Access and search host data aggregated through Armory by module. ",
+    "category": "Hosts"
+}

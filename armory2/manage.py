@@ -24,7 +24,7 @@ if not os.path.exists(os.path.join(CONFIG_FOLDER, CONFIG_FILE)):
         )    
 
 
-def main():
+def main(or_args=""):
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'armory2.armory2.settings')
     try:
         from django.core.management import execute_from_command_line
@@ -34,7 +34,11 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    execute_from_command_line(sys.argv)
+
+    if or_args and len(or_args) > 1:
+        execute_from_command_line(or_args)
+    else:
+        execute_from_command_line(sys.argv)
 
 
 if __name__ == '__main__':
