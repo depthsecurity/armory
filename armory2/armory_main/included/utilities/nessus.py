@@ -70,7 +70,7 @@ class NessusRequest(object):
 
         self.HEADERS["X-Cookie"] = "token=" + json.loads(res.text)["token"]
 
-    def launch_job(self, targets, name="Job launched from Armory"):
+    def launch_job(self, targets, name="Job launched from Armory", autostart=True):
 
         data = {
             "uuid": self.uuid,
@@ -78,7 +78,7 @@ class NessusRequest(object):
                 "emails": "",
                 "filter_type": "and",
                 "filters": [],
-                "launch_now": True,
+                "launch_now": autostart,
                 "enabled": False,
                 "file_targets": "",
                 "text_targets": targets,
@@ -91,6 +91,9 @@ class NessusRequest(object):
         }
 
         res = json.loads(self.req("post", "/scans", data=json.dumps(data)).text)
+
+        
+
         return res["scan"]["id"]
 
     def get_status(self, job_id):

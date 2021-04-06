@@ -58,6 +58,12 @@ class Module(ModuleTemplate):
             action="store_true",
         )
         self.options.add_argument(
+            "--max_hosts",
+            type=int,
+            help="Max hosts to add to each launched Armory job. Default=0 (all hosts)", 
+            default=0)
+        
+        self.options.add_argument(
             "--job_name", help="Job name inside Nessus", default="Armory Job"
         )
         self.options.add_argument("--username", help="Nessus Username")
@@ -121,13 +127,39 @@ class Module(ModuleTemplate):
                     domain.name
                     for domain in Domain.get_set(scope_type="active", tool=self.name)
                 ]
-                targets = ", ".join(merge_ranges(ips + cidrs) + domains)
+                if args.max_hosts > 0:
+                    all_ips = []
+                    for c in cidrs:
+                        all_ips += [str(i) for i in IPNetwork(c)]
+                    all_ips += ips
 
-                res = n.launch_job(targets, args.job_name)
-                display("New Nessus job launched with ID {}".format(res))
-                display(
-                    "Remember this number! You'll need it to download the job once it is done."
-                )
+                    targets = list(set(all_ips)) + domains
+                    chunks = [targets[i:i+args.max_hosts] for i in range(0, len(targets), args.max_hosts)]
+                    display(f"Creating {len(chunks)}")
+                    i = 0
+                    for c in chunks:
+                        
+                        i += 1
+                        
+                        if i == 1:
+                            res = n.launch_job(", ".join(c), args.job_name + f" ({i})")
+                            display("New Nessus job launched with ID {}".format(res))
+                        else:
+                            res = n.launch_job(", ".join(c), args.job_name + f" ({i})", autostart=False)
+                            display(f"New Nessus job created with ID {res}. You'll need to launch it manually")
+                        display(
+                        "Remember this number! You'll need it to download the job once it is done."
+                        )    
+
+
+                else:
+                    targets = ", ".join(merge_ranges(ips + cidrs) + domains)
+
+                    res = n.launch_job(targets, args.job_name)
+                    display("New Nessus job launched with ID {}".format(res))
+                    display(
+                        "Remember this number! You'll need it to download the job once it is done."
+                    )
 
         elif args.download:
             if (
