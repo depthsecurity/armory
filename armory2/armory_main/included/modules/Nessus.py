@@ -637,7 +637,7 @@ class Module(ModuleTemplate):
             base_domain = '.'.join(d.split('.')[-2:])
 
             if not base_domains.get(base_domain):
-                bd = BaseDomain(name=base_domain, active_scope = False, passive_scope = True)
+                bd = BaseDomain(name=base_domain, active_scope = False, passive_scope = False)
                 bd.save()
 
                 bd_id = bd.id
