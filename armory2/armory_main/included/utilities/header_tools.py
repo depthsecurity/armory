@@ -28,7 +28,7 @@ def process_urls(data):
 
     display("Processing %s" % u)
     try:
-        res = requests.get(u, timeout=int(timeout), verify=False)
+        res = requests.get(u, timeout=int(timeout), verify=False, headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:10.0) Gecko/20100101 Firefox/89.0"})
         res.raise_for_status()
         for k in res.headers.keys():
             if k not in blacklist:
