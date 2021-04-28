@@ -188,3 +188,4 @@ if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
 
 
 # pdb.set_trace()
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
