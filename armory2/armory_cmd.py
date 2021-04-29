@@ -380,6 +380,16 @@ def main():
     if NEW_CONFIG_FOLDER:
         generate_default_configs()
     cmd_args = sys.argv
+    
+    if '-m' in cmd_args:
+        mod_args = cmd_args[cmd_args.index('-m')+2:]
+        cmd_args = cmd_args[:cmd_args.index('-m')+2]
+
+    elif '-r' in cmd_args:
+        mod_args = cmd_args[cmd_args.index('-r')+2:]
+        cmd_args = cmd_args[:cmd_args.index('-r')+2]
+    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--module", help="Use module")
     parser.add_argument(
@@ -460,10 +470,10 @@ def main():
         if custom_modules:
                 
             Module = load_module(os.path.join(custom_modules[-1][1], custom_modules[-1][0]))
-            run_module(Module, cmd_args, custom_modules[-1][0])
+            run_module(Module, mod_args, custom_modules[-1][0])
         elif modules:
             Module = load_module(".armory_main.included.modules.%s" % modules[0])
-            run_module(Module, cmd_args, modules[0])
+            run_module(Module, mod_args, modules[0])
 
         else:
             print("Module %s is not a valid module." % base_args.module)
@@ -513,10 +523,10 @@ def main():
 
         if custom_reports:
             Report = load_module(os.path.join(custom_reports[-1][1], custom_reports[-1][0]))
-            run_report(Report, cmd_args, custom_reports[-1][0])
+            run_report(Report, mod_args, custom_reports[-1][0])
         elif reports:
             Report = load_module(".armory_main.included.reports.%s" % reports[0])
-            run_report(Report, cmd_args, reports[0])
+            run_report(Report, mod_args, reports[0])
         else:
             print("Report %s is not a valid report." % base_args.report)
             list_reports()

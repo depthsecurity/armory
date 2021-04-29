@@ -34,7 +34,7 @@ def process_urls(data):
             if k not in blacklist:
                 if not new_headers.get(u, False):
                     new_headers[u] = []
-                    new_headers[u].append("{}: {}".format(k, res.headers[k]))
+                new_headers[u].append("{}: {}".format(k, res.headers[k]))
             new_cookies[u] = dict(res.cookies)
     except requests.exceptions.HTTPError as http_error:
         display_error("Http Error: {}".format(http_error))

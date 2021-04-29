@@ -101,8 +101,9 @@ class Module(ToolTemplate):
 
         cmd = self.binary
         cmd += " -o {output} -u {target} "
-
+        
         if args.tool_args:
+
             cmd += args.tool_args
 
         return cmd

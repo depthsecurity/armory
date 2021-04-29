@@ -14,6 +14,8 @@ if sys.version_info[0] < 3:
 else:
     from subprocess import Popen, STDOUT
 
+import pdb
+
 
 class ModuleTemplate(object):
     """
@@ -110,7 +112,14 @@ class ToolTemplate(ModuleTemplate):
     def run(self, args):
         self.args = args
         if self.args.tool_args:
-            self.args.tool_args = " ".join(self.args.tool_args)
+            tool_args = []
+            for t in self.args.tool_args:
+                if ' ' in t:
+                    tool_args.append('"' + t.replace('"', '\\"') + '"')
+                else:
+                    tool_args.append(t)
+            self.args.tool_args = " ".join(tool_args)
+            
         else:
             self.args.tool_args = ""
 
@@ -275,12 +284,19 @@ class ToolTemplateNoOutput(ToolTemplate):
                 self.process_output(targets)
 
 def run_cmd(cmd):
+    # c = []
+    # for cm in cmd[:-1]:
+    #     if ' ' in cm:
+    #         c.append('"' + cm + '"')
+    #     else:
+    #         c.append(cm)
     c = cmd[:-1]
     timeout = cmd[-1]
     display("Executing command: %s" % " ".join(c))
 
     current_time = time.time()
 
+    
     if timeout:
         process = Popen(c)
         while time.time() < current_time + timeout and process.poll() is None:
