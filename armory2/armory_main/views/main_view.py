@@ -53,7 +53,7 @@ def get_obj_stats(obj_name):
         }
     elif obj_name == "Hosts":
         stats['total'] = {
-            "display": "%d domains",
+            "display": "%d hosts",
             "data": IPAddress.objects.count()
         }
         stats['active'] = {
