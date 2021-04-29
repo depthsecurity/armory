@@ -1,0 +1,12 @@
+{
+    "name": "domain_scoping",
+    "pretty_name": "Domain Scoping",
+    "authors":[
+        {
+            "name": "fang0654",
+            "url": "https://github.com/fang0654"
+        }
+    ],
+    "description": "Manage the scoping of domains by toggling them as active, passive, or active and passive.",
+    "category": "Domains"
+}

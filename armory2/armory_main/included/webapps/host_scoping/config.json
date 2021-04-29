@@ -1,0 +1,12 @@
+{
+    "name": "host_scoping",
+    "pretty_name": "Host Scoping",
+    "authors":[
+        {
+            "name": "fang0654",
+            "url": "https://github.com/fang0654"
+        }
+    ],
+    "description": "Manage the scoping of hosts by toggling them as active, passive, or active and passive.",
+    "category": "Hosts"
+}

@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
+from pathlib import Path
 
 here = path.abspath(path.dirname(__file__))
 
@@ -8,6 +9,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "Readme.md"), encoding="UTF-8") as f:
     long_description = f.read()
 
+webapps_dir = Path(__file__).parent / 'armory2/armory_main/included/webapps/'
+webapps_configs = ["webapps/" + str(p.relative_to(webapps_dir)) for p in webapps_dir.rglob('config.json')]
 
 setup(
     name="depth-armory",
@@ -46,6 +49,9 @@ setup(
     keywords="pentesting security",
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
+    package_data={
+        'armory2.armory_main.included': webapps_configs
+    },
     install_requires=[
         "configparser",
         "sqlalchemy",
