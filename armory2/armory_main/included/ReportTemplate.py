@@ -22,6 +22,8 @@ class ReportTemplate(object):
 
     name = "ReportTemplate"
 
+    silent_run = False
+
     depth_marker = "\t"
     markdown = ["", "#", "##", "-", "--", "---", "----", "-----", "------"]
 
@@ -74,19 +76,27 @@ class ReportTemplate(object):
             if args.custom_depth:
                 self.markdown = args.custom_depth.split(",")
             res = self.output_as_cmd(text)
-            print(res)
+            if not self.silent_run:
+                print(res)
 
         elif args.plain:
             res = "\n".join(text)
-            print(res)
+            if not self.silent_run:
+                print(res)
+
         else:
-            print(text)
+            if not self.silent_run:
+                print(text)
+
             res = text
         if args.clipboard:
             pyperclip.copy(res)
 
         if args.output:
             codecs.open(args.output, "w", encoding="utf-8").write(u"{}".format(res))
+
+        if self.silent_run:
+            self.output=res
 
     def output_as_json(self, data):
         return json.dumps(data)

@@ -154,13 +154,15 @@ def list_modules(silent=False):
     custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
     
     modules = {}
+    
+    for m in get_modules(os.path.join(PATH, "armory_main/included/modules")):
+        modules[m] = os.path.join(PATH, "armory_main/included/modules")
+    
     if custom_path:
         for c in custom_path:
             for m in get_modules(c):
                 modules[m] = c
     
-    for m in get_modules(os.path.join(PATH, "armory_main/included/modules")):
-        modules[m] = os.path.join(PATH, "armory_main/included/modules")
     if not silent:
         print("Available modules:")
         for m in sorted(list(set(modules.keys()))):
@@ -173,18 +175,23 @@ def list_reports(silent=False):
     config = get_config_options()
     custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
 
-    modules = []
+    modules = {}
+
+            
+    for m in get_modules(os.path.join(PATH, "armory_main/included/reports")):
+        modules[m] = os.path.join(PATH, "armory_main/included/reports")
 
     if custom_path:
         for r in custom_path:
-            modules += [m for m in get_modules(r)]
-    modules += [m for m in get_modules(os.path.join(PATH, "armory_main/included/reports"))]
+            for m in get_modules(r):
+                modules[m] = r
+    
     if not silent:
         print("Available reports:")
-        for r in sorted(list(set(modules))):
+        for m in sorted(list(set(modules.keys()))):
             print("\t%s" % r)   
     else:
-        return sorted(list(set(modules)))
+        return modules
 
 def list_module_options(module, module_name):
 
@@ -249,6 +256,33 @@ def list_report_options(module, module_name):
     argcomplete.autocomplete(m.options)
     m.options.parse_args(["-h"])
 
+def get_report_options(module, module_name):
+
+    config = get_config_options()
+    
+    # Load the module
+    Module = load_module(module)
+    # if Module.Report.__doc__:
+    #     print("%s" % module_name)
+
+    #     print(Module.Report.__doc__)
+
+    m = Module.Report()
+
+    # Populate the options
+    m.set_options()
+    options = {}
+
+    for a in m.options._actions:
+        cmd = ""
+        for c in a.option_strings:
+            if "--" in c:
+                cmd = c.replace("-", "")
+
+        if cmd and cmd != "help":
+            options[cmd] = {"help": a.help, "default": a.default}
+
+    return options
 
 def run_module(Module, argv, module):
     # Get the basic settings and database set up
@@ -381,11 +415,11 @@ def main():
         generate_default_configs()
     cmd_args = sys.argv
     
-    if '-m' in cmd_args:
+    if '-m' in cmd_args and '-M' not in cmd_args:
         mod_args = cmd_args[cmd_args.index('-m')+2:]
         cmd_args = cmd_args[:cmd_args.index('-m')+2]
 
-    elif '-r' in cmd_args:
+    elif '-r' in cmd_args and '-R' not in cmd_args:
         mod_args = cmd_args[cmd_args.index('-r')+2:]
         cmd_args = cmd_args[:cmd_args.index('-r')+2]
     
