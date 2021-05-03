@@ -54,7 +54,7 @@ def append_str_if_equal(s1, s2, source_str, append_str, delimeter=" "):
         return source_str
 
 @register.simple_tag(takes_context=True)
-def get_page_path2(context):
+def get_page_path(context):
     return context.request.path.replace('/', '')
 
 def get_obj_stats(obj_name):
