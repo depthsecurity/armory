@@ -1,4 +1,28 @@
+body {
+	background: #f8f9fa;
+}
+.navbar-styling .nav-link{
+	color: white !important;
+	font-weight: 400;
+}
 
+.navbar-nav > li > a:hover {
+    color: #D1D6D7 !important;
+}
+
+.nav-item.active > a {
+	text-decoration: underline;
+}
+
+.navbar {
+	border-radius: 0.25rem;
+	margin-bottom: 1rem;
+	background: #343a40;
+}
+
+header {
+	margin-top: 1em;
+}
 
 .default-hidden {
 	display: none;
@@ -11,13 +35,11 @@
 
 #wrapper {
 	padding-left: 70px;
-	transition: all .4s ease 0s;
-	height: 100%
 }
 
 #sidebar-wrapper {
 	margin-left: -150px;
-	left: 70px;
+	left: 150px;
 	width: 150px;
 	background: #222;
 	position: fixed;

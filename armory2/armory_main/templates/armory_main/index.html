@@ -1,26 +1,21 @@
-{% extends "./main_template.html" %}
-{% block title %}Armory Web Applications - Dashboard{% endblock %}
+{% extends "./base.html" %}
 
 {% block content %}
-<div id="wrapper" class="active">
-  <div class="container">
-    <h1>Armory Web Applications</h1>
-
     <div class="container">
-      {% for category, category_data in apps.items|dictsort:"0.lower" %}
+      {% for category, category_stats in webapp_stats.items|dictsort:"0.lower" %}
       <div class="row">
         <div class="col-lg-12">
           <h6 class="text-uppercase">
             {{ category }}
             <div class="float-right">
-              {% for stat, stat_data in category_data.stats.items %}
+              {% for stat, stat_data in category_stats.items %}
               <span class="badge badge-{{ forloop.counter0 | get_context_idx}} mt-2">{{stat_data.display | format_string:stat_data.data}}</span>
               {% endfor %}
             </div>
             <hr class="solid">
           </h6>
         </div>
-        {% for app in category_data.apps %}
+        {% for app in category|get_value_by_key:armory_webapps_grouped %}
         <div class="col-lg-6 mb-4">
           <div class="card">
             <img class="card-img-top" src="" alt="">
@@ -43,6 +38,4 @@
       </div>
       {% endfor %}
     </div>
-  </div>
-</div>
 {% endblock %}
