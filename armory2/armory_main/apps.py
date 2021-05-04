@@ -9,7 +9,6 @@ def get_armory_webapps():
         Return dictionary of webapps available in Armory
         """
         webapps = {}
-        print("Called Get Armory Webapps")
         app_paths = glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-1])}/included/webapps/*/config.json")
 
         if settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
@@ -26,6 +25,9 @@ def get_armory_webapps():
         return webapps
 
 def get_armory_webapps_grouped(webapps):
+    """
+        Return dictionary of webapps available in Armory grouped by their self-reported category attribute.
+    """
     webapps_grouped = {}
     for app, app_data in webapps.items():
         app_category = app_data['category']
