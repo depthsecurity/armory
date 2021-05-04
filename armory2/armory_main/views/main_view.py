@@ -36,6 +36,27 @@ def title_item(s):
 def format_string(f, d):
     return f % d
 
+@register.filter
+def get_value_by_key(key, dictionary):
+    if key in dictionary.keys():
+        return dictionary[key]
+    return None
+
+@register.filter
+def get_page_path(path):
+    return path.replace('/', '')
+
+@register.simple_tag
+def append_str_if_equal(s1, s2, source_str, append_str, delimeter=" "):
+    if s1 == s2:
+        return "%s%s%s" % (source_str, delimeter, append_str)
+    else:
+        return source_str
+
+@register.simple_tag(takes_context=True)
+def get_page_path(context):
+    return context.request.path.replace('/', '')
+
 def get_obj_stats(obj_name):
     stats = {}
     if obj_name == "Domains":
@@ -75,36 +96,8 @@ def get_obj_stats(obj_name):
 
 
 def index(request):
-
-    # Going to repeat the logic in urls.py to get a dynamic list of webapps to display.
-    
-    webapps = {}
-
-    app_paths = glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-2])}/included/webapps/*/config.json")
-
-    if settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
-        for path in settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
-            for webapp in glob.glob(f"{'/'.join(os.path.realpath(path).split('/'))}/*/config.json"):
-                app_paths.append(webapp)
-
-    for app_config in app_paths:
-        with open(app_config, 'r') as f:
-                app_config = json.load(f)
-                apps_key = app_config['name'] if app_config['name'] else module_config_path.split("/")[-2]
-                webapps[apps_key] = app_config
-
-    # pdb.set_trace()
-
-    webapps_grouped = {}
-
-    for a in webapps:
-        a_category = webapps[a]['category']
-        if a_category in webapps_grouped:
-            webapps_grouped[a_category]["apps"].append(webapps[a])
-        else:
-            webapps_grouped[a_category] = {
-                "apps":[webapps[a]]
-            }
+    webapps_stats = {}
+    webapps_grouped = apps.app_configs['armory_main'].webapps_grouped
 
     for category in webapps_grouped:
         stats = get_obj_stats(category)
@@ -112,10 +105,10 @@ def index(request):
             stats = { 
                 "total":{
                     "display": "%d total",
-                    "data": len(webapps_grouped[category]["apps"])
+                    "data": len(webapps_grouped[category])
                 } 
             }
-        webapps_grouped[category]["stats"] = stats
+        webapps_stats[category] = stats
             
-    return render(request, 'armory_main/index.html', {'apps': webapps_grouped})
+    return render(request, 'armory_main/index.html', {'webapp_stats': webapps_stats, 'title': 'Armory Web - Dashboard', 'hide_nav':""})
 

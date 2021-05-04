@@ -17,7 +17,7 @@ def index(request):
 
     basedomains = BaseDomain.objects.all().order_by('name')
 
-    return render(request, 'domain_scoping/index.html', {'basedomains': basedomains})
+    return render(request, 'domain_scoping/index.html', {'basedomains': basedomains, 'title': 'Armory Web - Domain Scoping'})
 
 def change_scope(request, item_type, scope_type, pkid):
 

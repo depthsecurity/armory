@@ -20,7 +20,7 @@ def index(request):
 
     cidrs = CIDR.objects.all().order_by('name')
 
-    return render(request, 'host_scoping/index.html', {'cidrs': cidrs})
+    return render(request, 'host_scoping/index.html', {'cidrs': cidrs, 'title': 'Armory Web - Host Scoping'})
 
 def change_scope(request, item_type, scope_type, pkid):
 

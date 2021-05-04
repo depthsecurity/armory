@@ -41,7 +41,7 @@ def unique_ffuf(l):
 
 def index(request):
 
-    return render(request, 'host_summary/index.html', {})
+    return render(request, 'host_summary/index.html', {'title': 'Armory Web - Host Summary'})
 
 @csrf_exempt
 def get_hosts(request):
