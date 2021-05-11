@@ -105,11 +105,14 @@ class Module(ToolTemplate):
             add_tool_url(url=t['target'], tool=self.name, args=self.args.tool_args)
             # pdb.set_trace()
             port = get_port_object(t['target'])
-            if not port.meta.get('Nikto'):
-                port.meta['Nikto'] = {}
-            if not port.meta['Nikto'].get(t['target']):
-                port.meta['Nikto'][t['target']] = []
-            if t['output'] not in port.meta['Nikto'][t['target']]:
+            if not port:
+                display_error(f"Port object for {t['target']} not found")
+            else:
+                if not port.meta.get('Nikto'):
+                    port.meta['Nikto'] = {}
+                if not port.meta['Nikto'].get(t['target']):
+                    port.meta['Nikto'][t['target']] = []
+                if t['output'] not in port.meta['Nikto'][t['target']]:
 
                 port.meta['Nikto'][t['target']].append(t['output'])
             port.save()
