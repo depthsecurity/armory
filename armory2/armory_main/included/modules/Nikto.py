@@ -103,7 +103,7 @@ class Module(ToolTemplate):
 
         for t in cmds:
             add_tool_url(url=t['target'], tool=self.name, args=self.args.tool_args)
-            pdb.set_trace()
+            # pdb.set_trace()
             port = get_port_object(t['target'])
             if not port.meta.get('Nikto'):
                 port.meta['Nikto'] = {}
