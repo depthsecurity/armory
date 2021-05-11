@@ -103,7 +103,7 @@ class Module(ToolTemplate):
         for t in cmds:
             add_tool_url(url=t['target'], tool=self.name, args=self.args.tool_args)
             
-            port = get_port_object(['target'])
+            port = get_port_object(t['target'])
             if not port.meta.get('Nikto'):
                 port.meta['Nikto'] = {}
             if not port.meta['Nikto'].get(t['target']):
