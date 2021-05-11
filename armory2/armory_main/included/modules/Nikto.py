@@ -6,7 +6,7 @@ from armory2.armory_main.models import (
  
 )
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
-from armory2.armory_main.included.utilities.get_urls import run, add_tool_url
+from armory2.armory_main.included.utilities.get_urls import run, add_tool_url, get_port_object
 from armory2.armory_main.included.utilities.color_display import display_warning
 import os
 import time
@@ -102,6 +102,16 @@ class Module(ToolTemplate):
 
         for t in cmds:
             add_tool_url(url=t['target'], tool=self.name, args=self.args.tool_args)
+            
+            port = get_port_object(['target'])
+            if not port.meta.get('Nikto'):
+                port.meta['Nikto'] = {}
+            if not port.meta['Nikto'].get(t['target']):
+                port.meta['Nikto'][t['target']] = []
+            if t['output'] not in port.meta['Nikto'][t['target']]:
+
+                port.meta['Nikto'][t['target']].append(t['output'])
+
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
         )
