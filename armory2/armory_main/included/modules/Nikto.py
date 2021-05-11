@@ -112,6 +112,7 @@ class Module(ToolTemplate):
             if t['output'] not in port.meta['Nikto'][t['target']]:
 
                 port.meta['Nikto'][t['target']].append(t['output'])
+            port.save()
 
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
