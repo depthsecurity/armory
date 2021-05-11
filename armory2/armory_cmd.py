@@ -187,6 +187,7 @@ def list_reports(silent=False):
                 modules[m] = r
     
     if not silent:
+        
         print("Available reports:")
         for m in sorted(list(set(modules.keys()))):
             print("\t%s" % m)   

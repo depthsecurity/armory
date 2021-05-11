@@ -128,6 +128,8 @@ def get_hosts(request):
                     # Look for FFuF and Gowitness - these should be done by the tools themselves and have the data stored in meta
                     if p.meta.get('nmap_scripts'):
                         data[p.id].append('Nmap')
+                    if p.meta.get('Nikto'):
+                        data[p.id].append('Nikto')
                     if gowitness and p.meta.get('Gowitness'):
                         data[p.id].append('Gowitness')
 
@@ -225,6 +227,19 @@ def get_gowitness(request, port_id):
     port = Port.objects.get(id=port_id)
 
     return render(request, 'host_summary/gowitness.html', {'port':port})
+
+def get_nikto(request, port_id):
+
+    port = get_object_or_404(Port, pk=port_id)
+    data = {}
+    for f, v in port.meta['Nikto'].items():
+        text = ''
+        for fl in v:
+            if os.path.exists(fl):
+                text += open(fl).read() + '\n'
+        data[f] = {'text': text, 'id' : str(uuid.uuid1())}
+
+    return render(request, 'host_summary/nikto.html', {'data':data})
 
 def get_ffuf(request, port_id):
 
