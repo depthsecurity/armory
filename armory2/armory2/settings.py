@@ -68,6 +68,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'armory2.armory_main.context_processors.get_armory_webapps',
+                'armory2.armory_main.context_processors.get_armory_webapps_grouped'
             ],
         },
     },

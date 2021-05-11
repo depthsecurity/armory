@@ -21,7 +21,7 @@ def index(request):
     all_modules = sorted(list_modules(silent=True).keys())
 
 
-    return render(request, 'module_api/index.html', {'all_modules': all_modules})
+    return render(request, 'module_api/index.html', {'all_modules': all_modules, 'title': 'Armory Web - Module API'})
 
 def get_module_opts(request, module):
 

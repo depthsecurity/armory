@@ -1,0 +1,78 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="icon" href="favicon.ico">
+  <title>
+    {{title | default:"Armory Web"}}
+  </title>
+
+  <!--Core Stylesheets-->
+  <link rel="stylesheet" href="{% static 'armory_main/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'armory_main/css/default.css' %}">
+
+
+  <!--Plugin Stylesheets-->
+  <link rel="stylesheet" href="{% static 'armory_main/plugins/bootstrap-select/bootstrap-select.min.css' %}">
+
+  <!--Core Scripts-->
+  <script src="{% static 'armory_main/js/jquery-3.5.1.min.js' %}"></script>
+  <script src="{% static 'armory_main/js/bootstrap.bundle.min.js' %}"></script>
+
+  <!--Plugin Scripts-->
+  <script src="{% static 'armory_main/plugins/bootstrap-select/bootstrap-select.min.js' %}"></script>
+</head>
+
+<header>
+  <div class="container">
+    <h1>{{title | default:"Armory Web"}}</h1>
+  </div>
+</header>
+
+{% if hide_nav is None %}
+{% get_page_path as curr_page %}
+<div class="container">
+  <nav class="navbar navbar-expand-lg navbar-light navbar-styling">
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Dashboard</a>
+        </li>
+        {% for category, apps in armory_webapps_grouped.items %}
+          {% if category != "Custom Webapps" %}
+            {% for app in apps %}
+            <li class="{% append_str_if_equal curr_page app.name 'nav-item' 'active' %}">
+              <a class="nav-link" href="/{{app.name}}">{{app.pretty_name}}</a>
+            </li>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+
+        {% if "Custom Webapps" in armory_webapps_grouped.keys %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Custom Webapps
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            {% for app in "Custom Webapps"|get_value_by_key:armory_webapps_grouped %}
+              <a class="{% append_str_if_equal curr_page app.name 'dropdown-item' 'active' %}" href="/{{app.name}}">{{app.pretty_name}}</a>
+            {% endfor %}
+          </div>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+</div>
+{% endif %}
+
+<body>
+  <div id="content">
+    {% block content %}{% endblock %}
+  </div>
+
+</body>
+</html>
