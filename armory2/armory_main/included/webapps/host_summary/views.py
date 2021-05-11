@@ -9,6 +9,7 @@ import pdb
 import os
 from base64 import b64encode
 import json
+import uuid
 
 # from armory2.
 
@@ -125,7 +126,8 @@ def get_hosts(request):
 
 
                     # Look for FFuF and Gowitness - these should be done by the tools themselves and have the data stored in meta
-
+                    if p.meta.get('nmap_scripts'):
+                        data[p.id].append('Nmap')
                     if gowitness and p.meta.get('Gowitness'):
                         data[p.id].append('Gowitness')
 
@@ -174,6 +176,15 @@ def save_notes(request, ip_id):
     ip.save()
 
     return HttpResponse("Success")
+
+def get_nmap(request, port_id):
+    port_db = get_object_or_404(Port, pk=port_id)
+    
+    data = {d: {'text': v, 'id': str(uuid.uuid1())} for d, v in port_db.meta['nmap_scripts'].items()}
+
+    return render(request, 'host_summary/nmap.html', {'data':data})
+
+
 def get_nessus(request, port_id):
 
     vuln_data = []
