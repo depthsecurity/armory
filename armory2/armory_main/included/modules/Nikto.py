@@ -10,6 +10,7 @@ from armory2.armory_main.included.utilities.get_urls import run, add_tool_url, g
 from armory2.armory_main.included.utilities.color_display import display_warning
 import os
 import time
+import pdb
 
 
 class Module(ToolTemplate):
