@@ -11,7 +11,7 @@ def get_armory_webapps():
         webapps = {}
         app_paths = glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-1])}/included/webapps/*/config.json")
 
-        if settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
+        if 'ARMORY_CUSTOM_WEBAPPS' in settings.ARMORY_CONFIG:
             for path in settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
                 for webapp in glob.glob(f"{'/'.join(os.path.realpath(path).split('/'))}/*/config.json"):
                     app_paths.append(webapp)
