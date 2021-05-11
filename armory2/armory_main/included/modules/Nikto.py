@@ -106,7 +106,7 @@ class Module(ToolTemplate):
             # pdb.set_trace()
             port = get_port_object(t['target'])
             if not port:
-                display_error(f"Port object for {t['target']} not found")
+                display_warning(f"Port object for {t['target']} not found")
             else:
                 if not port.meta.get('Nikto'):
                     port.meta['Nikto'] = {}
@@ -114,8 +114,8 @@ class Module(ToolTemplate):
                     port.meta['Nikto'][t['target']] = []
                 if t['output'] not in port.meta['Nikto'][t['target']]:
 
-                port.meta['Nikto'][t['target']].append(t['output'])
-            port.save()
+                    port.meta['Nikto'][t['target']].append(t['output'])
+                port.save()
 
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
