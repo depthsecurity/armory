@@ -117,6 +117,8 @@
                       <a id="" class="btn btn-light" title='FFuF was run, but no results were found'>FFuF</a>
                   {% elif d == 'Nmap' %}
                       <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nmap' port.id %}" class="loadunload btn btn-info">{{d }}</a>
+                  {% elif d == 'Nikto' %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nikto' port.id %}" class="loadunload btn btn-info">{{d }}</a>
                   {% else %}
                       <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
                   {% endif %}
