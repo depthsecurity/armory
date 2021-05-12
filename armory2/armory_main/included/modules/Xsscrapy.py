@@ -109,7 +109,7 @@ class Module(ToolTemplate):
     def process_output(self, cmds):
 
         for c in cmds:
-            pdb.set_trace()
+            
             get_urls.add_tool_url(c['target'], self.name, self.args.tool_args)
         # Xsscrapy dumps results in its current directory.
         hosts = {}
