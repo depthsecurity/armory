@@ -108,6 +108,8 @@ class Module(ToolTemplate):
 
     def process_output(self, cmds):
 
+        for c in cmds:
+            get_urls.add_tool_url(c['target'], self.tool, self.args.tool_args)
         # Xsscrapy dumps results in its current directory.
         hosts = {}
         
@@ -141,7 +143,7 @@ class Module(ToolTemplate):
                     port.meta['Xsscrapy'] = {}
                 if not port.meta['Xsscrapy'].get(h):
                     port.meta['Xsscrapy'][h] = []
-                if t['output'] not in port.meta['Xsscrapy'][h]:
+                if os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_'))) not in port.meta['Xsscrapy'][h]:
 
                     port.meta['Xsscrapy'][h].append(os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_'))))
                 port.save()

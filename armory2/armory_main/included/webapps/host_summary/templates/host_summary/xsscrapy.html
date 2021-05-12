@@ -1,0 +1,21 @@
+<div class="card">
+  <div class="card-header">
+    <h4>Nikto Findings</h4>
+  </div>
+  <div class="card-body">
+    {% for name, output in data.items %}
+    <div class="row ">
+      <div class="col-md-12">
+        
+        <button type="button" class="btn btn-info btn-sm btn-block" data-toggle="collapse" data-target="#detail-{{ output.id }}">{{ name }}</button>
+        
+      </div>
+      <div class="col-md-12 collapse text-wrap" id="detail-{{ output.id }}">
+        <pre>{{ output.text|escape }}</pre>
+        
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>

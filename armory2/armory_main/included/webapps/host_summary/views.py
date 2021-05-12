@@ -131,7 +131,10 @@ def get_hosts(request):
                     if p.meta.get('Nikto'):
                         data[p.id].append('Nikto')
                     if gowitness and p.meta.get('Gowitness'):
+                        
                         data[p.id].append('Gowitness')
+                    if p.meta.get('Xsscrapy'):
+                        data[p.id].append('Xsscrapy')
 
                     if ffuf and p.meta.get('FFuF'):
                         ffuf_good = False
@@ -240,6 +243,20 @@ def get_nikto(request, port_id):
         data[f] = {'text': text, 'id' : str(uuid.uuid1())}
 
     return render(request, 'host_summary/nikto.html', {'data':data})
+
+def get_xsscrapy(request, port_id):
+
+    port = get_object_or_404(Port, pk=port_id)
+    data = {}
+    for f, v in port.meta['Xsscrapy'].items():
+        text = ''
+        for fl in v:
+            if os.path.exists(fl):
+                text += open(fl).read() + '\n'
+        data[f] = {'text': text, 'id' : str(uuid.uuid1())}
+
+    return render(request, 'host_summary/xsscrapy.html', {'data':data})
+
 
 def get_ffuf(request, port_id):
 
