@@ -133,7 +133,19 @@ class Module(ToolTemplate):
                 display("URL: {}".format(d.split('\n')[0].split(' ')[1]))
                 f.write(d + '\n\n')
 
+            port = get_urls.get_port_object(h)
+            if not port:
+                display_warning(f"Port object for {t['target']} not found")
+            else:
+                if not port.meta.get('Xsscrapy'):
+                    port.meta['Xsscrapy'] = {}
+                if not port.meta['Xsscrapy'].get(h):
+                    port.meta['Xsscrapy'][h] = []
+                if t['output'] not in port.meta['Xsscrapy'][h]:
 
+                    port.meta['Xsscrapy'][h].append(os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_'))))
+                port.save()
+                
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
         )
