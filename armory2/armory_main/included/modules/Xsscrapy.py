@@ -120,7 +120,7 @@ class Module(ToolTemplate):
             if res[1:4] == 'URL': # This looks like results
                 data = res[1:].split('\n\n')
                 for d in data:
-                    host = d.split('\n')[0].split('/')[2]
+                    host = d.split('\n')[0]
                     if not hosts.get(host, False):
                         hosts[host] = []
 
