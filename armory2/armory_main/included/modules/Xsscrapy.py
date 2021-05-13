@@ -126,7 +126,7 @@ class Module(ToolTemplate):
 
                     hosts[host].append(d)
                 os.unlink(f)
-        pdb.set_trace()
+        # pdb.set_trace()
         for h, v in hosts.items():
             
             display_new("Found data for {}".format(h))
