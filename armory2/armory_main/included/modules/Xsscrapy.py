@@ -130,7 +130,8 @@ class Module(ToolTemplate):
         for h, v in hosts.items():
             
             display_new("Found data for {}".format(h))
-            f = open(os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_'))), 'w')
+            output = os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_').replace('/', '_')))
+            f = open(output, 'w')
 
             for d in v:
                 display("URL: {}".format(d.split('\n')[0].split(' ')[1]))
@@ -144,9 +145,9 @@ class Module(ToolTemplate):
                     port.meta['Xsscrapy'] = {}
                 if not port.meta['Xsscrapy'].get(h):
                     port.meta['Xsscrapy'][h] = []
-                if os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_'))) not in port.meta['Xsscrapy'][h]:
+                if output not in port.meta['Xsscrapy'][h]:
 
-                    port.meta['Xsscrapy'][h].append(os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_'))))
+                    port.meta['Xsscrapy'][h].append(output)
                 port.save()
                 
         display_warning(
