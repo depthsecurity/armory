@@ -10,6 +10,8 @@ import os
 from base64 import b64encode
 import json
 import uuid
+import re
+
 
 # from armory2.
 
@@ -39,6 +41,11 @@ def unique_ffuf(l):
             endpoints.append(endpoint)
 
     return res
+
+def escape_ansi(line):
+    ansi_escape = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
+    return ansi_escape.sub('', line)
+
 
 def index(request):
 
@@ -135,7 +142,8 @@ def get_hosts(request):
                         data[p.id].append('Gowitness')
                     if p.meta.get('Xsscrapy'):
                         data[p.id].append('Xsscrapy')
-
+                    if p.meta.get('Xsstrike'):
+                        data[p.id].append('Xsstrike')
                     if ffuf and p.meta.get('FFuF'):
                         ffuf_good = False
 
@@ -243,6 +251,19 @@ def get_nikto(request, port_id):
         data[f] = {'text': text, 'id' : str(uuid.uuid1())}
 
     return render(request, 'host_summary/nikto.html', {'data':data})
+
+def get_xsstrike(request, port_id):
+
+    port = get_object_or_404(Port, pk=port_id)
+    data = {}
+    for f, v in port.meta['Xsstrike'].items():
+        text = ''
+        for fl in v:
+            if os.path.exists(fl):
+                text += escape_ansi(open(fl).read()) + '\n'
+        data[f] = {'text': text}
+
+    return render(request, 'host_summary/xsstrike.html', {'data':data})
 
 def get_xsscrapy(request, port_id):
 
