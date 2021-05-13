@@ -107,7 +107,7 @@ class Module(ToolTemplate):
         os.chdir(os.path.dirname(self.binary))
 
     def process_output(self, cmds):
-        pdb.set_trace()
+        
         for c in cmds:
             
             get_urls.add_tool_url(c['target'], self.name, self.args.tool_args)
@@ -126,7 +126,7 @@ class Module(ToolTemplate):
 
                     hosts[host].append(d)
                 os.unlink(f)
-
+        pdb.set_trace()
         for h, v in hosts.items():
             
             display_new("Found data for {}".format(h))
