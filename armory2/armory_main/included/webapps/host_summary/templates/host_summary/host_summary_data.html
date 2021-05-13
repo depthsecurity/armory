@@ -119,6 +119,8 @@
                       <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nmap' port.id %}" class="loadunload btn btn-info">{{d }}</a>
                   {% elif d == 'Nikto' %}
                       <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nikto' port.id %}" class="loadunload btn btn-info">{{d }}</a>
+                  {% elif d == 'Xsscrapy' %}
+                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_xsscrapy' port.id %}" class="loadunload btn btn-danger">{{d }}</a>
                   {% else %}
                       <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
                   {% endif %}

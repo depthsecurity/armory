@@ -107,7 +107,10 @@ class Module(ToolTemplate):
         os.chdir(os.path.dirname(self.binary))
 
     def process_output(self, cmds):
-
+        
+        for c in cmds:
+            
+            get_urls.add_tool_url(c['target'], self.name, self.args.tool_args)
         # Xsscrapy dumps results in its current directory.
         hosts = {}
         
@@ -117,23 +120,36 @@ class Module(ToolTemplate):
             if res[1:4] == 'URL': # This looks like results
                 data = res[1:].split('\n\n')
                 for d in data:
-                    host = d.split('\n')[0].split('/')[2]
+                    host = d.split('\n')[0].split(' ')[1]
                     if not hosts.get(host, False):
                         hosts[host] = []
 
                     hosts[host].append(d)
                 os.unlink(f)
-
+        # pdb.set_trace()
         for h, v in hosts.items():
             
             display_new("Found data for {}".format(h))
-            f = open(os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_'))), 'w')
+            output = os.path.join(self.output_path, "{}.txt".format(h.replace(':', '_').replace('/', '_')))
+            f = open(output, 'w')
 
             for d in v:
                 display("URL: {}".format(d.split('\n')[0].split(' ')[1]))
                 f.write(d + '\n\n')
 
+            port = get_urls.get_port_object(h)
+            if not port:
+                display_warning(f"Port object for {h} not found")
+            else:
+                if not port.meta.get('Xsscrapy'):
+                    port.meta['Xsscrapy'] = {}
+                if not port.meta['Xsscrapy'].get(h):
+                    port.meta['Xsscrapy'][h] = []
+                if output not in port.meta['Xsscrapy'][h]:
 
+                    port.meta['Xsscrapy'][h].append(output)
+                port.save()
+                
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
         )

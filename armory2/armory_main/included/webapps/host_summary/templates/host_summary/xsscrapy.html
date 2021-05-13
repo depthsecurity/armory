@@ -1,0 +1,21 @@
+<div class="card">
+  <div class="card-header">
+    <h4>XSScrapy Results</h4>
+  </div>
+  <div class="card-body">
+    {% for name, output in data.items %}
+    <div class="row ">
+      <div class="col-md-12">
+        <h3>{{ name }}</h3>
+        
+        
+      </div>
+      <div class="col-md-12 text-wrap" id="detail-{{ output.id }}">
+        <pre>{{ output.text|escape }}</pre>
+        
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>

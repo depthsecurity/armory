@@ -140,8 +140,12 @@ def add_tool_url(url, tool, args):
 
     host = url.split("/")[2].split(":")[0]
     scheme = url.split(":")[0]
-    port = url.split(":")[2]
-    
+    if url.count(':') == 2:
+        port = url.split(":")[2]
+    elif scheme == 'https':
+        port = '443'
+    else:
+        port = '80'
     try:
         [int(i) for i in host.split('.')]
         ip, created = IPAddress.objects.get_or_create(ip_address=host)
@@ -152,10 +156,19 @@ def add_tool_url(url, tool, args):
     
 def get_port_object(url):
     # pdb.set_trace()
-    host = url.split("/")[2].split(":")[0]
-    
-    port = url.split(":")[2]
-    
+    try:
+        host = url.split("/")[2].split(":")[0]
+        if url.count(':') == 2:
+            port = url.split(":")[2]
+        elif url.split(':')[0] == 'https':
+            port = '443'
+        else:
+            port = '80'
+    except Exception as e:
+        print("--------------------------------------------")
+        print(f"Something went wrong pulling in {url}: {e}")
+        print("--------------------------------------------")
+        return None
     try:
         [int(i) for i in host.split('.')]
         ports = Port.objects.filter(ip_address__ip_address=host, port_number=port, proto='tcp')
