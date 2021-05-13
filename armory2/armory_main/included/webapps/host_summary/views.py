@@ -10,6 +10,8 @@ import os
 from base64 import b64encode
 import json
 import uuid
+import re
+
 
 # from armory2.
 
@@ -39,6 +41,11 @@ def unique_ffuf(l):
             endpoints.append(endpoint)
 
     return res
+
+def escape_ansi(line):
+    ansi_escape = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
+    return ansi_escape.sub('', line)
+
 
 def index(request):
 
@@ -253,7 +260,7 @@ def get_xsstrike(request, port_id):
         text = ''
         for fl in v:
             if os.path.exists(fl):
-                text += open(fl).read() + '\n'
+                text += escape_ansi(open(fl).read()) + '\n'
         data[f] = {'text': text}
 
     return render(request, 'host_summary/xsstrike.html', {'data':data})
