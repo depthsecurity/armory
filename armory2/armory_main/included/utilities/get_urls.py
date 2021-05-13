@@ -168,6 +168,7 @@ def get_port_object(url):
         print("--------------------------------------------")
         print(f"Something went wrong pulling in {url}: {e}")
         print("--------------------------------------------")
+        return None
     try:
         [int(i) for i in host.split('.')]
         ports = Port.objects.filter(ip_address__ip_address=host, port_number=port, proto='tcp')

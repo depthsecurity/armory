@@ -107,7 +107,7 @@ class Module(ToolTemplate):
         os.chdir(os.path.dirname(self.binary))
 
     def process_output(self, cmds):
-
+        pdb.set_trace()
         for c in cmds:
             
             get_urls.add_tool_url(c['target'], self.name, self.args.tool_args)
@@ -138,7 +138,7 @@ class Module(ToolTemplate):
 
             port = get_urls.get_port_object(h)
             if not port:
-                display_warning(f"Port object for {t['target']} not found")
+                display_warning(f"Port object for {h} not found")
             else:
                 if not port.meta.get('Xsscrapy'):
                     port.meta['Xsscrapy'] = {}
