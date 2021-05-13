@@ -42,6 +42,9 @@ class Module(ToolTemplate):
             help="Run xsstrike on hosts that have already been processed.",
             action="store_true",
         )
+        self.options.add_argument(
+            "-l", "--log_level", help="File log level (default is GOOD)", default="GOOD"
+        )
         self.options.set_defaults(timeout=600)  # Kick the default timeout to 10 minutes
 
     def get_targets(self, args):
@@ -86,6 +89,7 @@ class Module(ToolTemplate):
                 {
                     "target": t,
                     "output": os.path.join(self.output_path, "{}.txt".format(t.replace(':', '_').replace('/', '_')))
+                    
                 }
             )
 
@@ -93,7 +97,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = self.binary + " --crawl --log-file {output} -u {target} --file-log-level VULN "
+        cmd = self.binary + " --crawl --log-file {output} -u {target} --file-log-level " + self.args.log_level + ' '
 
         if args.tool_args:
             cmd += args.tool_args
