@@ -246,3 +246,31 @@ def get_domains_from_cert(cert):
     domains = list(set([d for d in re.findall(regex, cert) if "*" not in d]))
 
     return domains
+
+def parseHeaders(httpHeaders):
+    bsHeaders = [
+        "Pragma",
+        "Expires",
+        "Date",
+        "Transfer-Encoding",
+        "Connection",
+        "X-Content-Type-Options",
+        "Cache-Control",
+        "X-Frame-Options",
+        "Content-Type",
+        "Content-Length",
+        "(Request type",
+    ]
+    keepHeaders = {}
+    for i in range(0, len(httpHeaders)):
+        if httpHeaders[i].strip() != "" and httpHeaders[i].split(":")[
+            0
+        ].strip() not in " ".join(bsHeaders):
+            hName = httpHeaders[i].split(":")[0].strip()
+            hValue = "".join(httpHeaders[i].split(":")[1:]).strip()
+            keepHeaders[hName] = hValue
+
+    if keepHeaders == {}:
+        keepHeaders = ""
+
+    return keepHeaders
