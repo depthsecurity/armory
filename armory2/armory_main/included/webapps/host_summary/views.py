@@ -192,8 +192,35 @@ def save_notes(request, ip_id):
 
 def get_nmap(request, port_id):
     port_db = get_object_or_404(Port, pk=port_id)
-    
-    data = {d: {'text': v, 'id': str(uuid.uuid1())} for d, v in port_db.meta['nmap_scripts'].items()}
+    data = {}
+
+    # nmap returns a lot of failed info that isn't really useful, so we are going to filter out what we can
+    failed_strings = [
+        "Couldn't find any comments.",
+        "Couldn't find any CSRF vulnerabilities.",
+        "Couldn't determine the underlying framework or CMS. Try increasing 'httpspider.maxpagecount' value to spider more pages.",
+        "Couldn't find any DOM based XSS.",
+        "ERROR: Script execution failed (use -d to debug)",
+        "Couldn't find any feeds.",
+        "Please enter the complete path of the directory to save data in.",
+        "No mobile version detected.",
+        "Couldn't find any cross-domain scripts.",
+        "false",
+        "Couldn't find any stored XSS vulnerabilities.",
+        "No previously reported XSS vuln.",
+        "No reply from server (TIMEOUT)",
+        "Failed to specify credentials and command to run.",
+        "FAILED: No domain specified (use ntdomain argument)",
+        'Path "/" does not require authentication',
+        "Couldn't find any error pages.",
+          
+
+        ]
+
+    for d, v in port_db.meta['nmap_scripts'].items():
+        if v and v.strip() not in failed_strings:
+            data[d] = {'text': v, 'id': str(uuid.uuid1())}
+            
 
     return render(request, 'host_summary/nmap.html', {'data':data})
 
