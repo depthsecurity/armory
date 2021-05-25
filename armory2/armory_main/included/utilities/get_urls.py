@@ -159,11 +159,11 @@ def get_port_object(url):
     try:
         host = url.split("/")[2].split(":")[0]
         if url.count(':') == 2:
-            port = url.split(":")[2]
+            port = int(url.split(":")[2].split('/')[0])
         elif url.split(':')[0] == 'https':
-            port = '443'
+            port = 443
         else:
-            port = '80'
+            port = 80
     except Exception as e:
         print("--------------------------------------------")
         print(f"Something went wrong pulling in {url}: {e}")
