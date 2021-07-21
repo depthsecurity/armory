@@ -138,7 +138,7 @@ RUN touch /tmp/revision139
 
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
-RUN git checkout armory2.0
+
 CMD ["echo", "Installing Armory"]
 RUN pip3 install django # Not sure why this doesn't work from the setup
 RUN python3 setup.py install
