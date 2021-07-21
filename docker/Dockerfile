@@ -90,6 +90,7 @@ WORKDIR /opt/src
 RUN touch /tmp/revision21
 RUN git clone https://github.com/depthsecurity/armory.git
 WORKDIR /opt/src/armory
+RUN git checkout armory1
 CMD ["echo", "Installing Armory"]
 RUN python3 setup.py install
 RUN pip3 install jinja2 xlsxwriter
