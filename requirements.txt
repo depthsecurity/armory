@@ -53,7 +53,7 @@ thready==0.1.5
 tld==0.12.5
 tldextract==3.1.0
 traitlets==5.0.5
-urllib3==1.26.3
+urllib3==1.26.5
 wcwidth==0.2.5
 whois==0.9.7
 xmltodict==0.12.0
