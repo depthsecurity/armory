@@ -51,7 +51,7 @@ def get_arrow_coords(x1, x2, mx, y1, y2, my):
         else:
             coords = ((x1 - x_size, y1 - y_size), (x1, y1))
     return coords    
-def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text='', arrow=False):
+def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text='', arrow=False, full_line=False):
 
     lengths = []
     text_data = []
@@ -82,7 +82,14 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
         for h, c in highlight_text:
             hl_data = []
             for t in text_data:
-                hl_data.append(h.join([' '*len(tx) for tx in t.split(h)]))
+                
+                if full_line:
+                    if h in t:
+                        hl_data.append(t)
+                    else:
+                        hl_data.append('')
+                else:
+                    hl_data.append(h.join([' '*len(tx) for tx in t.split(h)]))
                 
             hl_text = '\n'.join(hl_data)
             d = ImageDraw.Draw(img)
@@ -97,13 +104,22 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
             coords = []
             for i, t in enumerate(text_data):
                 if h in t:
-                    finds = [m.start() for m in re.finditer(h, t)]
-                    for f in finds:
+                    if full_line:
+                        f = 0
+                        offset_w = int(len(t)*font_width) + border
                         x1 = int(f*font_width + border/2)
                         y1 = int(i*(font_height+2))+(border/2)
                         y2 = y1 + offset_h
                         x2 = x1 + offset_w
                         coords.append((x1, y1, x2, y2))
+                    else:
+                        finds = [m.start() for m in re.finditer(h, t)]
+                        for f in finds:
+                            x1 = int(f*font_width + border/2)
+                            y1 = int(i*(font_height+2))+(border/2)
+                            y2 = y1 + offset_h
+                            x2 = x1 + offset_w
+                            coords.append((x1, y1, x2, y2))
 
             d = ImageDraw.Draw(img)
             for c1 in coords:
