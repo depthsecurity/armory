@@ -7,6 +7,8 @@ from subprocess import check_output
 import re
 import cv2
 import numpy as np
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 
 font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
 
@@ -151,11 +153,79 @@ def run_command(cmd, leader="$ ", cols=100, **kwargs):
     create_screenshot(txt, cols=cols, **kwargs)
 
 
+def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, paddingw=10, windowsize="800,600"):
+
+    options = webdriver.ChromeOptions()
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument("--test-type")
+    options.add_argument("--headless")
+    options.add_argument(f"--window-size={windowsize}")
+    options.binary_location = "/usr/bin/chromium"
+    driver = webdriver.Chrome(chrome_options=options)
+
+    driver.get(url)
+
+    driver.save_screenshot(save_path)
+
+    if not draw_box:
+        return
+
+    boxes = []
+    for items in draw_box:
+
+        try:
+            data = {}
+            xpath = items[0]
+            data['color'] = items[1]
+
+            elem = driver.find_element_by_xpath(xpath)
+
+            data['startx'] = elem.location['x'] - paddingw
+            data['starty'] = elem.location['y'] - paddingh
+
+            data['endx'] = elem.size['width'] + (paddingw * 2) + data['startx']
+            data['endy'] = elem.size['height'] + (paddingh * 2) + data['starty']
+
+
+            boxes.append(data)
+        except NoSuchElementException:
+            print(f"No results returned with {items[0]}")
+
+    driver.close()
+    img = Image.open(save_path)
+    width, height = img.size
+
+    for box in boxes:
+        d = ImageDraw.Draw(img)
+        for b in boxes:
+        
+        
+            d.rectangle((b['startx'], b['starty'], b['endx'], b['endy']), fill=None, outline=b['color'], width=3)
+
+    if arrow:
+        na = np.array(img)
+
+        for b in boxes:
+            crds = get_arrow_coords(b['startx'], b['endx'], width, b['starty'], b['endy'], height)
+            
+            na = cv2.arrowedLine(na, crds[0], crds[1], b['color']+ (255,), 3)
+
+        img = Image.fromarray(na)
+
+    img.save(save_path)
+
+
 
 if __name__ == "__main__":
 
 
-    cmd = "sslscan https://depthsecurity.com | grep TLSv1 | sed 's/\x1b\[[0-9;]*m//g'"
-    run_command(cmd, box_text=[('enabled', (255,0,0))], highlight_text=[('TLSv1.2', (255,0,0)),('X-Frame-Options', (0,255,0))], arrow=True)
+    # cmd = "sslscan https://depthsecurity.com | grep TLSv1 | sed 's/\x1b\[[0-9;]*m//g'"
+    # run_command(cmd, box_text=[('enabled', (255,0,0))], highlight_text=[('TLSv1.2', (255,0,0)),('X-Frame-Options', (0,255,0))], arrow=True)
+
+    url = 'https://depthsecurity.com'
+    xpath = '//*[contains(text(), "If thre")]'
+    color = (255,0,0)
+    web_screenshot(url, '/tmp/depth2.png', draw_box=[(xpath, color)], arrow=True, paddingw=-100, paddingh=10, windowsize='800,800')
+
 
 
