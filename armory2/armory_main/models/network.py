@@ -102,7 +102,14 @@ def pre_save_domain(sender, instance, *args, **kwargs):
         try:
             base_domain = tld.get_fld(f"http://{domain_name}")
         except Exception as e:
-            base_domain = 'local'
+            # if tld fails try to extract the basedomain out of the hostname
+            try:
+                if domain_name.count('.') == 2:
+                    base_domain = domain_name.partition('.')[2]
+                elif domain_name.count('.') == 3:
+                    base_domain = domain_name.partition('.')[2].partition('.')[2]
+            except Exception as e:
+                base_domain = 'local'
 
         bd, created = BaseDomain.objects.get_or_create(name=base_domain, defaults={"active_scope":instance.active_scope, "passive_scope":instance.passive_scope})
 
@@ -120,6 +127,8 @@ def pre_save_domain(sender, instance, *args, **kwargs):
 
 @receiver(post_save, sender=Domain)
 def post_save_domain(sender, instance, created, *args, **kwargs):
+    if "offlinedns" in instance.meta:
+        return
     if created:
         domain_name = instance.name
         ips = get_ips(domain_name)
