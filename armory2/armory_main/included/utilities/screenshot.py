@@ -58,6 +58,8 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
     lengths = []
     text_data = []
 
+
+
     for t in txt.split('\n'):
         if len(t) > cols:
             
@@ -79,19 +81,24 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
     d = ImageDraw.Draw(img)
 
     d.text((border,border), text, font=fnt, fill=(255,255,255))
-    
+    success = False
     if highlight_text:
+        
         for h, c in highlight_text:
             hl_data = []
-            for t in text_data:
-                
-                if full_line:
-                    if h in t:
+            for i, t in enumerate(text_data):
+                if h in t:
+                    success = True
+                    
+                    if full_line:
+                    
                         hl_data.append(t)
+                    
                     else:
                         hl_data.append('')
                 else:
                     hl_data.append(h.join([' '*len(tx) for tx in t.split(h)]))
+
                 
             hl_text = '\n'.join(hl_data)
             d = ImageDraw.Draw(img)
@@ -106,6 +113,8 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
             coords = []
             for i, t in enumerate(text_data):
                 if h in t:
+                    success = True
+                    
                     if full_line:
                         f = 0
                         offset_w = int(len(t)*font_width) + border
@@ -143,17 +152,73 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
         img.save(save_path)
     else:
         img.show()
+    if highlight_text or box_text:
+        return success
+    else:
+        return True
 
-def run_command(cmd, leader="$ ", cols=100, **kwargs):
+def run_command(cmd, leader="$ ", cols=100, lines=None, **kwargs):
 
     cmd_txt = check_output(cmd, shell=True).decode().replace('\r', '')
+    text_data = []
+    # lengths = []
+    for t in cmd_txt.split('\n'):
+        if len(t) > cols:
+            text_data += [t[i:i+cols] for i in range(0, len(t), cols)]
+            # lengths.append(cols)
+        else:
+            text_data.append(t)
+            # lengths.append(len(t)) 
 
-    txt = f"{leader}{cmd}\n{cmd_txt}"
 
-    create_screenshot(txt, cols=cols, **kwargs)
+    if lines and lines < len(text_data):
+        search_text = [k[0] for k in kwargs.get('highlight_text', [])]
+        search_text += [k[0] for k in kwargs.get('box_text', [])]
+        if search_text:
+            found_lines = []
+            for s in search_text:
+                found_lines += [i for i, k in enumerate(text_data) if s in k ]
+            # pdb.set_trace()
+            if not found_lines:
+                found_lines = [0]
+            mn = min(found_lines)
+            mx = max(found_lines)
+            rg = mx-mn+1
+            
+                
+            if rg % 2:
+                
+                lower_offset = int((lines - rg + 1)/2)
+                upper_offset = lower_offset
+            else:
+                lower_offset = int((lines - rg) / 2)
+                upper_offset = lower_offset
+            
+            
+            lower_line = mn - lower_offset
+            upper_line = mx + upper_offset
+
+            if lower_line < 0:
+                lower_line = 0
+                upper_line = lines
+                
+            elif upper_line > len(text_data):
+                upper_line = len(text_data) - 1
+                lower_line = len(text_data) - lines - 1
+                
+            txt = f"{leader}{cmd}| head -n {upper_line} | tail -n {lines}\n" + '\n'.join(text_data[lower_line:upper_line])  + '\n'
+
+        else:
+            txt = f"{leader}{cmd}| head -n {lines}\n" + '\n'.join(text_data[:lines]) + '\n'
+
+    else:
+        txt = f"{leader}{cmd}\n" + "\n".join(text_data)
+
+    res = create_screenshot(txt, cols=cols, **kwargs)
+    return res
 
 
-def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, paddingw=10, windowsize="800,600"):
+def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, paddingw=10, windowsize="800,600", cropsize=None):
 
     options = webdriver.ChromeOptions()
     options.add_argument('--ignore-certificate-errors')
@@ -168,9 +233,12 @@ def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, 
     driver.save_screenshot(save_path)
 
     if not draw_box:
-        return
+        return True
 
+    success = False
     boxes = []
+    center_points = []
+
     for items in draw_box:
 
         try:
@@ -179,15 +247,16 @@ def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, 
             data['color'] = items[1]
 
             elem = driver.find_element_by_xpath(xpath)
-
+            
             data['startx'] = elem.location['x'] - paddingw
             data['starty'] = elem.location['y'] - paddingh
 
             data['endx'] = elem.size['width'] + (paddingw * 2) + data['startx']
             data['endy'] = elem.size['height'] + (paddingh * 2) + data['starty']
 
-
+            center_points.append([int(((data['endx'] - data['startx'])/2)+data['startx']), int(((data['endy'] - data['starty'])/2)+data['starty'])])
             boxes.append(data)
+            success = True
         except NoSuchElementException:
             print(f"No results returned with {items[0]}")
 
@@ -212,8 +281,41 @@ def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, 
 
         img = Image.fromarray(na)
 
-    img.save(save_path)
+    if cropsize:
+        
+        xs, ys = [int(c) for c in cropsize.split(',')]
+        
+        if not center_points:
+            img = img.crop([0, 0, xs, ys])
+        else:
+            xc = int(sum([c[0] for c in center_points])/len(center_points))
+            yc = int(sum([c[1] for c in center_points])/len(center_points))
 
+            x_padding = int(xs/2)
+            y_padding = int(ys/2)
+
+            x1 = xc - x_padding
+            x2 = x1 + xs
+            y1 = yc - y_padding
+            y2 = y1 + ys
+
+            if x1 < 0:
+                x1 = 0
+                x2 = xs
+            elif x2 > width:
+                x1 = width - xs
+                x2 = width
+            if y1 < 0:
+                y1 = 0
+                y2 = ys
+            elif y2 > height:
+                y1 = height - y2
+                y2 = height
+            
+            img = img.crop([x1, y1, x2, y2])
+
+    img.save(save_path)
+    return success
 
 
 if __name__ == "__main__":
