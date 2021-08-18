@@ -233,7 +233,11 @@ def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, 
     options.binary_location = "/usr/bin/chromium"
     driver = webdriver.Chrome(chrome_options=options)
 
-    driver.get(url)
+    try:
+        driver.get(url)
+    except Exception as e:
+        print(f"Error getting {url}: {e}")
+        return False
 
     driver.save_screenshot(save_path)
 
