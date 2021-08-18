@@ -225,6 +225,7 @@ def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, 
     options.add_argument("--test-type")
     options.add_argument("--headless")
     options.add_argument(f"--window-size={windowsize}")
+    options.add_argument('--no-sandbox')
     options.binary_location = "/usr/bin/chromium"
     driver = webdriver.Chrome(chrome_options=options)
 
