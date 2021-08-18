@@ -159,7 +159,11 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
 
 def run_command(cmd, leader="$ ", cols=100, lines=None, **kwargs):
 
-    cmd_txt = check_output(cmd, shell=True).decode().replace('\r', '')
+    try:
+        cmd_txt = check_output(cmd, shell=True).decode().replace('\r', '')
+    except Exception as e:
+        print(f"Error running {cmd}: {e}")
+        return False
     text_data = []
     # lengths = []
     for t in cmd_txt.split('\n'):
