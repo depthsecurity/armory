@@ -3,13 +3,17 @@
 from PIL import Image, ImageDraw, ImageFont
 import pdb
 from time import sleep
-from subprocess import check_output
+import subprocess
 import re
 import cv2
 import numpy as np
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-
+from armory2.armory_main.included.utilities.color_display import (
+    display_warning,
+    display_new,
+    display,
+)
 font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
 
 font_height = 15
@@ -160,9 +164,9 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
 def run_command(cmd, leader="$ ", cols=100, lines=None, **kwargs):
 
     try:
-        cmd_txt = check_output(cmd, shell=True).decode().replace('\r', '')
+        cmd_txt = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode().replace('\r', '')
     except Exception as e:
-        print(f"Error running {cmd}: {e}")
+        display_warning(f"Error running {cmd}: {e}")
         return False
     text_data = []
     # lengths = []
