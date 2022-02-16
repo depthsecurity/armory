@@ -1,0 +1,12 @@
+{
+    "name": "GowitnessPage",
+    "pretty_name": "Gowitness Page",
+    "authors":[
+        {
+            "name": "jk-mayne",
+            "url": "https://github.com/jk-mayne"
+        }
+    ],
+    "description": "Allows for a quick birds eye view of Images captured using Gowitness.",
+    "category": "Custom Webapps"
+}
