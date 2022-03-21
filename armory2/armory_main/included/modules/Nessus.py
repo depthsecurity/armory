@@ -91,11 +91,20 @@ class Module(ModuleTemplate):
             action="store_true",
 
         )
+        self.options.add_argument('--proxy',
+            help="Use proxy for mitre lookups (socks4 or http)"
+        )
+        self.options.add_argument(
+            '-tf', 
+            '--targets_file',
+            help="json file consisting of a list of name/targets for creating multiple jobs. (ie [{'name':'foo','target':'bar'}]"
+
+        )
     def run(self, args):
         if args.import_file:
             for nFile in args.import_file:
                 self.process_data(nFile, args)
-        elif args.launch:
+        elif args.launch or args.targets_file:
             if (
                 not args.username  # noqa: W503
                 and not args.password  # noqa: W503
@@ -117,49 +126,54 @@ class Module(ModuleTemplate):
                     policy_id=args.policy_id,
                     folder_id=args.folder_id,
                 )
+                if args.launch:
+                    ips = [
+                        ip.ip_address
+                        for ip in IPAddress.get_set(scope_type="active", tool=self.name)
+                    ]
+                    cidrs = [cidr.name for cidr in CIDR.get_set(tool=self.name, scope_type="active")]
+                    domains = [
+                        domain.name
+                        for domain in Domain.get_set(scope_type="active", tool=self.name)
+                    ]
+                    if args.max_hosts > 0:
+                        all_ips = []
+                        for c in cidrs:
+                            all_ips += [str(i) for i in IPNetwork(c)]
+                        all_ips += ips
 
-                ips = [
-                    ip.ip_address
-                    for ip in IPAddress.get_set(scope_type="active", tool=self.name)
-                ]
-                cidrs = [cidr.name for cidr in CIDR.get_set(tool=self.name, scope_type="active")]
-                domains = [
-                    domain.name
-                    for domain in Domain.get_set(scope_type="active", tool=self.name)
-                ]
-                if args.max_hosts > 0:
-                    all_ips = []
-                    for c in cidrs:
-                        all_ips += [str(i) for i in IPNetwork(c)]
-                    all_ips += ips
+                        targets = list(set(all_ips)) + domains
+                        chunks = [targets[i:i+args.max_hosts] for i in range(0, len(targets), args.max_hosts)]
+                        display(f"Creating {len(chunks)}")
+                        i = 0
+                        for c in chunks:
+                            
+                            i += 1
+                            
+                            if i == 1:
+                                res = n.launch_job(", ".join(c), args.job_name + f" ({i})")
+                                display("New Nessus job launched with ID {}".format(res))
+                            else:
+                                res = n.launch_job(", ".join(c), args.job_name + f" ({i})", autostart=False)
+                                display(f"New Nessus job created with ID {res}. You'll need to launch it manually")
+                            display(
+                            "Remember this number! You'll need it to download the job once it is done."
+                            )    
 
-                    targets = list(set(all_ips)) + domains
-                    chunks = [targets[i:i+args.max_hosts] for i in range(0, len(targets), args.max_hosts)]
-                    display(f"Creating {len(chunks)}")
-                    i = 0
-                    for c in chunks:
-                        
-                        i += 1
-                        
-                        if i == 1:
-                            res = n.launch_job(", ".join(c), args.job_name + f" ({i})")
-                            display("New Nessus job launched with ID {}".format(res))
-                        else:
-                            res = n.launch_job(", ".join(c), args.job_name + f" ({i})", autostart=False)
-                            display(f"New Nessus job created with ID {res}. You'll need to launch it manually")
+
+                    else:
+                        targets = ", ".join(merge_ranges(ips + cidrs) + domains)
+
+                        res = n.launch_job(targets, args.job_name)
+                        display("New Nessus job launched with ID {}".format(res))
                         display(
-                        "Remember this number! You'll need it to download the job once it is done."
-                        )    
-
-
+                            "Remember this number! You'll need it to download the job once it is done."
+                        )
                 else:
-                    targets = ", ".join(merge_ranges(ips + cidrs) + domains)
-
-                    res = n.launch_job(targets, args.job_name)
-                    display("New Nessus job launched with ID {}".format(res))
-                    display(
-                        "Remember this number! You'll need it to download the job once it is done."
-                    )
+                    target_data = json.load(open(args.targets_file))
+                    for td in target_data:
+                        res = n.launch_job(td['target'], td['name'], autostart=False)
+                        display(f"New Nessus job {td['name']} created with ID {res}. You'll need to start it automatically")
 
         elif args.download:
             if (
