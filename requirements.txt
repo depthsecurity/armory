@@ -20,7 +20,7 @@ greenlet==1.1.0
 idna==3.2
 ipaddr==2.2.0
 ipwhois
-ipython==7.25.0
+ipython==7.31.1
 ipython-genutils==0.2.0
 jedi==0.18.0
 lxml==4.6.3
