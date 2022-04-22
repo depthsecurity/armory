@@ -96,6 +96,18 @@ class NessusRequest(object):
 
         return res["scan"]["id"]
 
+    def get_all_scans(self, folder_id):
+
+        res = self.req("get", f"/scans?folder_id={folder_id}").json()
+
+        return res
+
+    def start_scan(self, scan_id):
+        res = self.req("get", f"/scans/{scan_id}/launch").json()
+
+        return res
+
+
     def get_status(self, job_id):
 
         res = json.loads(self.req("get", "/scans/{}".format(str(job_id))).text)

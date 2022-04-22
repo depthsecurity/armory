@@ -100,11 +100,18 @@ class Module(ModuleTemplate):
             help="json file consisting of a list of name/targets for creating multiple jobs. (ie [{'name':'foo','target':'bar'}]"
 
         )
+
+        self.options.add_argument(
+            "--auto_run",
+            help="Folder id to poll. When no jobs are running, the next unrun job will be launched. Polls every minute"
+        )
+
     def run(self, args):
         if args.import_file:
             for nFile in args.import_file:
                 self.process_data(nFile, args)
-        elif args.launch or args.targets_file:
+        
+        elif args.launch or args.targets_file or args.auto_run:
             if (
                 not args.username  # noqa: W503
                 and not args.password  # noqa: W503
@@ -169,11 +176,59 @@ class Module(ModuleTemplate):
                         display(
                             "Remember this number! You'll need it to download the job once it is done."
                         )
-                else:
+                elif args.targets_file:
                     target_data = json.load(open(args.targets_file))
                     for td in target_data:
                         res = n.launch_job(td['target'], td['name'], autostart=False)
                         display(f"New Nessus job {td['name']} created with ID {res}. You'll need to start it automatically")
+
+                elif args.auto_run:
+                    folder_id = args.auto_run
+
+                    scan_data = n.get_all_scans(folder_id)
+
+                    
+                    completed_scans = 0
+                    new_scans = 0
+                    running_scans = 0
+
+                    for scan in scan_data['scans']:
+                        if scan['status'] == 'completed':
+                            completed_scans += 1
+                        elif scan['status'] == 'running':
+                            running_scans += 1
+                        elif scan['status'] == 'empty':
+                            new_scans += 1
+
+                    total_scans = len(scan_data['scans'])
+
+                    while new_scans > 0:
+                        n.login(args.username, args.password, args.host)
+                        scan_data = n.get_all_scans(folder_id)
+
+                    
+                        completed_scans = 0
+                        new_scans = 0
+                        running_scans = 0
+                        next_queued = ''
+                        
+                        for scan in scan_data['scans']:
+                            if scan['status'] == 'completed':
+                                completed_scans += 1
+                            elif scan['status'] == 'running':
+                                running_scans += 1
+                            elif scan['status'] == 'empty':
+                                if not next_queued:
+                                    next_queued = scan["id"]
+                                new_scans += 1
+                                
+                        print(f"Total scans: {total_scans}  Completed: {completed_scans}  Running: {running_scans}  Remaining: {new_scans}")
+                        if running_scans == 0:
+                            print(f"Launching new scan {next_queued}")                        
+                            res = n.start_scan(next_queued)
+                            print(res)
+                        print(f"Sleeping for 1 minute")
+                        time.sleep(60)
 
         elif args.download:
             if (
