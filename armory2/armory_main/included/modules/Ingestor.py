@@ -96,9 +96,9 @@ class Module(ModuleTemplate):
 
         self.active_scope = args.active
         self.passive_scope = args.passive
-        regex = re.compile('[@_!#$%^&*()<>?\|}{~:]')
+        badchars = re.compile('[@_!#$%^&*()<>?\|}{~:]')
         if args.descope:
-            if (regex.search(args.descope) == None):
+            if (badchars.search(args.descope) == None):
                 descope_ip_list = re.split(r'[ ,|;"]+',args.descope) 
                 for ip in descope_ip_list:
                     if "/" in ip:
@@ -124,7 +124,7 @@ class Module(ModuleTemplate):
                             self.process_ip(line.strip(), force_scope=True)
 
             except IOError:
-                if (regex.search(args.import_ips) == None):
+                if (badchars.search(args.import_ips) == None):
                     ip_list = re.split(r'[ ,|;"]+',args.import_ips) 
                     for ip in ip_list:
                         if "/" in ip or "-" in ip:
@@ -142,7 +142,7 @@ class Module(ModuleTemplate):
                         self.process_domain(line.strip())
 
             except IOError:
-                if (regex.search(args.import_domains) == None):
+                if (badchars.search(args.import_domains) == None):
                     domain_list = re.split(r'[ ,|;"]+',args.import_domains)
                     for name in domain_list:
                         self.process_domain(name)
