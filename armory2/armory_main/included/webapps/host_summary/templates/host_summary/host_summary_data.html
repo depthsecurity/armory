@@ -115,15 +115,6 @@
                       <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_ffuf' port.id %}" class="loadunload btn btn-info">{{d }}</a>
                   {% elif d == 'FFuF-empty' %}
                       <a id="" class="btn btn-light" title='FFuF was run, but no results were found'>FFuF</a>
-                  {% elif d == 'Nmap' %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nmap' port.id %}" class="loadunload btn btn-info">{{d }}</a>
-                  {% elif d == 'Nikto' %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_nikto' port.id %}" class="loadunload btn btn-info">{{d }}</a>
-                  {% elif d == 'Xsscrapy' %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_xsscrapy' port.id %}" class="loadunload btn btn-danger">{{d }}</a>
-                  {% elif d == 'Xsstrike' %}
-                      <a id="btn-{{ d }}-{{ port.id}}" href="{% url 'get_xsstrike' port.id %}" class="loadunload btn btn-warning">{{d }}</a>
-                  
                   {% else %}
                       <a href="#" id="a-{{ d }}" class="loadunload btn btn-info">{{d }}</a>
                   {% endif %}
