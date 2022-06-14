@@ -45,7 +45,7 @@ def unique_ffuf(l):
 
 
 def index(request):
-    pdb.set_trace()
+    #pdb.set_trace()
     return render(request, "host_summary/index.html", {})
 
 
