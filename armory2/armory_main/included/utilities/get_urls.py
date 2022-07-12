@@ -176,7 +176,7 @@ def get_port_object(url):
     except:
         ips = IPAddress.objects.filter(domain__name=host)
 
-        ports = ips[0].port_set.filter(port_number=443, proto='tcp')
+        ports = ips[0].port_set.filter(port_number=port, proto='tcp')
 
     if ports:
         return ports[0]
