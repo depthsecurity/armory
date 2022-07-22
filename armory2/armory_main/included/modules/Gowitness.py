@@ -16,6 +16,8 @@ import json
 import pdb
 import sqlite3
 
+from armory2.armory_main.models.network import VirtualHost
+
 if sys.version[0] == "3":
     xrange = range
 
@@ -164,12 +166,24 @@ class Module(ToolTemplate):
             conn = sqlite3.connect(os.path.join(output, 'gowitness.db'))
 
             cr = conn.cursor()
-
-            domains = [d[0] for d in cr.execute('select distinct name from tls_certificate_dns_names').fetchall()]
+            sql = '''
+                select u.url, d.name from tls_certificate_dns_names as d
+                inner join tls_certificates as c on c.id = d.tls_certificate_id
+                inner join tls as t on t.id = c.tls_id
+                inner join urls as u on u.id = t.url_id
+            '''
+            domain_data = cr.execute(sql).fetchall()
+            domains = [d[1] for d in domain_data if '.' in d[1] and '*' not in d[1]]
             for name in domains:
-                if '.' in name:
-                    domain, created = Domain.objects.get_or_create(name=name.lower())
+                
+                domain, created = Domain.objects.get_or_create(name=name.lower())
 
+            url_domain_data = {}
+            for d, n in domain_data:
+                if not url_domain_data.get(d):
+                    url_domain_data = []
+                if n not in url_domain_data[d]:
+                    url_domain_data[d].append(n)
 
             for u in cr.execute('select id, url, filename, final_url, response_code from urls').fetchall():
                 port = get_port_object(u[1])
@@ -187,9 +201,12 @@ class Module(ToolTemplate):
                         'final_url': u[3],
                         'response_code_string': str(u[4]),
                         'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
-                        'cert': {'dns_names':[ k[0] for k in cr.execute('select d.name from tls_certificate_dns_names as d inner join tls_certificates as tc on tc.id = d.tls_certificate_id inner join tls on tls.id = tc.tls_id where tls.url_id = ?', (u[0],))]}
+                        'cert': {'dns_names':url_domain_data[u[1]]}
                         }
 
+                    for dmn in url_domain_data[u[1]]:
+                        dn, created = VirtualHost.objects.get_or_create(ip_address=port.ip_address, name=dmn)
+                        
 
 
                     port.meta['Gowitness'].append(data)
