@@ -204,7 +204,7 @@ class Module(ToolTemplate):
                         'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
                         'cert': {'dns_names':url_domain_data.get(u[1],[])}
                         }
-                    display(f"Saving domains for {u[1]}")
+                    
                     for dmn in url_domain_data.get(u[1], []):
                         
                         dn, created = VirtualHost.objects.get_or_create(ip_address=port.ip_address, name=dmn)

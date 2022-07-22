@@ -160,7 +160,7 @@ class ToolTemplate(ModuleTemplate):
             if not self.args.no_binary and targets:
                 cmd = self.build_cmd(self.args).strip()
 
-                cmds = [shlex.split(cmd.format(**t)) + [timeout] for t in targets]
+                cmds = self.populate_cmds(cmd, timeout, targets)
 
                 # if hard_timeout:
                 #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
@@ -194,6 +194,13 @@ class ToolTemplate(ModuleTemplate):
         """
 
         return ""
+
+    def populate_cmds(self, cmd, timeout, targets):
+        """
+        Populate the cmds, if you need to do it in a custom manner.
+        """
+        
+        return [shlex.split(cmd.format(**t)) + [timeout] for t in targets]
 
     def pre_run(self, args):
         """
