@@ -179,7 +179,7 @@ class Module(ToolTemplate):
                 domain, created = Domain.objects.get_or_create(name=name.lower())
 
             url_domain_data = {}
-            display(f"Discovered {len(domains)} unique domain names")
+            # display(f"Discovered {len(domains)} unique domain names")
             for d, n in domain_data:
                 if not url_domain_data.get(d):
                     url_domain_data[d] = []
@@ -202,10 +202,10 @@ class Module(ToolTemplate):
                         'final_url': u[3],
                         'response_code_string': str(u[4]),
                         'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
-                        'cert': {'dns_names':url_domain_data[u[1]]}
+                        'cert': {'dns_names':url_domain_data.get(u[1],[])}
                         }
                     display(f"Saving domains for {u[1]}")
-                    for dmn in url_domain_data[u[1]]:
+                    for dmn in url_domain_data.get(u[1], []):
                         
                         dn, created = VirtualHost.objects.get_or_create(ip_address=port.ip_address, name=dmn)
 
