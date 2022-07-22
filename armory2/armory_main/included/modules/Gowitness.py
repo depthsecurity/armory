@@ -3,7 +3,7 @@
 from armory2.armory_main.models import IPAddress, Domain
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities.get_urls import run, add_tools_urls, get_port_object
-from armory2.armory_main.included.utilities.color_display import display_error
+from armory2.armory_main.included.utilities.color_display import display, display_error
 from armory2.armory_main.included.utilities.validate_ip import is_ip
 import os
 import re
@@ -173,15 +173,16 @@ class Module(ToolTemplate):
                 inner join urls as u on u.id = t.url_id
             '''
             domain_data = cr.execute(sql).fetchall()
-            domains = [d[1] for d in domain_data if '.' in d[1] and '*' not in d[1]]
+            domains = sorted(list(set([d[1] for d in domain_data if '.' in d[1] and '*' not in d[1]])))
             for name in domains:
                 
                 domain, created = Domain.objects.get_or_create(name=name.lower())
 
             url_domain_data = {}
+            display(f"Discovered {len(domains)} unique domain names")
             for d, n in domain_data:
                 if not url_domain_data.get(d):
-                    url_domain_data = []
+                    url_domain_data[d] = []
                 if n not in url_domain_data[d]:
                     url_domain_data[d].append(n)
 
@@ -203,9 +204,11 @@ class Module(ToolTemplate):
                         'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
                         'cert': {'dns_names':url_domain_data[u[1]]}
                         }
-
+                    display(f"Saving domains for {u[1]}")
                     for dmn in url_domain_data[u[1]]:
+                        
                         dn, created = VirtualHost.objects.get_or_create(ip_address=port.ip_address, name=dmn)
+
                         
 
 
