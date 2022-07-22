@@ -144,8 +144,6 @@ class Module(ToolTemplate):
 
         res = []
 
-        
-
         for t in targets:
             cmd = self.binary
             cmd += f" -o {t['output']} -u {t['target']} "
@@ -155,7 +153,7 @@ class Module(ToolTemplate):
             
             cmd += self.args.tool_args
 
-            res.append([shlex.split(cmd) + [timeout]])
+            res.append(shlex.split(cmd) + [timeout])
 
         return res
 
@@ -181,8 +179,11 @@ class Module(ToolTemplate):
             try:
                 [int(i) for i in url.split('.')]
                 ip, created = IPAddress.objects.get_or_create(ip_address=url, defaults={'active_scope':True})
-                
-                ip.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args))
+                if vhost:
+
+                    ip.add_tool_run(tool=self.name, args="{}-{}".format(port_num, f'-H "Host: {vhost}"' + self.args.tool_args))
+                else:
+                    ip.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args))
             except:
                 display("Domain found: {}".format(url))
                 domain, created = Domain.objects.get_or_create(name=url)

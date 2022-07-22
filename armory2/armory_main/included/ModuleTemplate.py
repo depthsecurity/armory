@@ -159,7 +159,6 @@ class ToolTemplate(ModuleTemplate):
 
             if not self.args.no_binary and targets:
                 cmd = self.build_cmd(self.args).strip()
-
                 cmds = self.populate_cmds(cmd, timeout, targets)
 
                 # if hard_timeout:

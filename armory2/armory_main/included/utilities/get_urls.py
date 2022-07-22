@@ -79,6 +79,12 @@ def get_web_ips(tool=None, args="", scope_type=None, random=True):
 def get_urls_with_virtualhosts(tool=None, args="", scope_type=None, random=True):
     ports = Port.objects.all().filter(Q(service_name="http")| Q(service_name="https"))
     
+    if scope_type == "active":
+        ports = ports.filter(ip_address__active_scope=True)
+    elif scope_type == "passive":
+        ports = ports.filter(ip_address__passive_scope=True)
+
+    
     results = []
 
     for p in ports:
@@ -88,10 +94,12 @@ def get_urls_with_virtualhosts(tool=None, args="", scope_type=None, random=True)
             and ((scope_type == "active" and p.ip_address.active_scope)
             or (scope_type == "passive" and p.ip_address.passive_scope)
             or not scope_type) 
-            and ((not tool) or (tool not in p.ip_address.tools.keys() or "{}-{}".format(p.port_number, args) not in p.ip_address.tools[tool]))
+            
         ):
+            if tool:
 
-            url = "%s://%s:%s" % (p.service_name, p.ip_address, p.port_number)
+
+                url = "%s://%s:%s" % (p.service_name, p.ip_address, p.port_number)
 
             virt_hosts = sorted(list(set([v.name for v in p.ip_address.virtualhost_set.all()] + [d.name for d in p.ip_address.domain_set.all()] + [p.ip_address.ip_address])))
 
