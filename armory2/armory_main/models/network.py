@@ -71,8 +71,8 @@ class IPAddress(BaseModel):
 
 class VirtualHost(BaseModel):
     ip_address = models.ForeignKey(IPAddress, on_delete=models.CASCADE)
-    domain = models.CharField(max_length=256)
-    
+    name = models.CharField(max_length=256)
+
 class Port(BaseModel):
 
     port_number = models.IntegerField(unique=False)
