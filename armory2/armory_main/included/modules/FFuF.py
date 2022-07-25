@@ -179,15 +179,13 @@ class Module(ToolTemplate):
             try:
                 [int(i) for i in url.split('.')]
                 ip, created = IPAddress.objects.get_or_create(ip_address=url, defaults={'active_scope':True})
-                if vhost:
-
-                    ip.add_tool_run(tool=self.name, args="{}-{}".format(port_num, f'-H "Host: {vhost}"' + self.args.tool_args))
-                else:
-                    ip.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args))
+                
+                ip.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args), virtualhost=vhost)
+                
             except:
                 display("Domain found: {}".format(url))
                 domain, created = Domain.objects.get_or_create(name=url)
-                domain.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args))
+                domain.ip_address.add_tool_run(tool=self.name, args="{}-{}".format(port_num, self.args.tool_args), virtualhost=domain.name)
 
             
             port = get_urls.get_port_object("blah://{}:{}".format(url, port_num))

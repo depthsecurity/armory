@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
 from armory2.armory_main.models import Port, IPAddress, Domain
-from django.db.models import Q
+from django.db.models import Q, F
 import pdb
 import random as random_lib
+
+from armory2.armory_main.models.network import VirtualHost
 
 def run(tool=None, args="", scope_type=None, random=True):
 
@@ -78,34 +80,46 @@ def get_web_ips(tool=None, args="", scope_type=None, random=True):
 
 def get_urls_with_virtualhosts(tool=None, args="", scope_type=None, random=True):
     ports = Port.objects.all().filter(Q(service_name="http")| Q(service_name="https"))
-    
+    results = []
+
     if scope_type == "active":
         ports = ports.filter(ip_address__active_scope=True)
     elif scope_type == "passive":
         ports = ports.filter(ip_address__passive_scope=True)
 
     
-    results = []
-
+    if tool:
+        ports = ports.exclude(ip_address__toolrun__args=args, ip_address__toolrun__tool=tool)
+        
+    
     for p in ports:
 
-        if (
-            p.ip_address
-            and ((scope_type == "active" and p.ip_address.active_scope)
-            or (scope_type == "passive" and p.ip_address.passive_scope)
-            or not scope_type) 
-            
-        ):
-            if tool:
+        url = "%s://%s:%s" % (p.service_name, p.ip_address, p.port_number)
+        results.append([url, ""])
+
+    virt_hosts = VirtualHost.objects.filter(
+        Q(ip_address__port__service_name="http")| Q(ip_address__port__service_name="https")
+    )
+
+    if scope_type == "active":
+        virt_hosts = virt_hosts.filter(ip_address__active_scope=True)
+    elif scope_type == "passive":
+        virt_hosts = virt_hosts.filter(ip_address__passive_scope=True)
+
+    
+    if tool:
+        virt_hosts = virt_hosts.exclude(ip_address__toolrun__args=args, ip_address__toolrun__tool=tool, ip_address__toolrun__virtualhost__pk=F('pk'))
+    
+    for vhost in virt_hosts.distinct():
+        for p in vhost.ip_address.port_set.filter(Q(service_name="http")| Q(service_name="https")):
+            url = "%s://%s:%s" % (p.service_name, p.ip_address, p.port_number)
+            results.append([url, vhost.name])
 
 
-                url = "%s://%s:%s" % (p.service_name, p.ip_address, p.port_number)
+    
 
-            virt_hosts = sorted(list(set([v.name for v in p.ip_address.virtualhost_set.all()] + [d.name for d in p.ip_address.domain_set.all()] + [p.ip_address.ip_address])))
-
-            for v in virt_hosts:
-                results.append([url, v])
-
+    
+    
     return results
 
 def add_tools_urls(tool, args="", scope_type=None):
