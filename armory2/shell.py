@@ -18,7 +18,7 @@ from django.conf import settings
 
 
 def main():
-    global Domains, IPAddresses, CIDRs, Users, Creds, Vulns, Ports, Urls, ScopeCIDRs, BaseDomains
+    
     
     print()
     print("Available database modules: Domain, BaseDomain, IPAddress,")

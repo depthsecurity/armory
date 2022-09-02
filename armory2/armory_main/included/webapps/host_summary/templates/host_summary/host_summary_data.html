@@ -78,6 +78,12 @@
         <div class="row">
           <div class="col-md-2 font-weight-bold">Domains</div>
           <div class="col-md-10">{{ ip.domain_set.all|join:', '}}</div>
+
+        </div>
+        <div class="row">
+          <div class="col-md-2 font-weight-bold">Virtualhosts</div>
+          <div class="col-md-10">{{ ip.get_virtualhosts|join:', '}}</div>
+          
         </div>
         <div class="row border-top  font-weight-bold">
           <div class="col-md-2">Port</div>
