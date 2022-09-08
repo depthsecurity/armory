@@ -17,39 +17,23 @@ class BaseModel(models.Model):
     def set_source_tool(self, tool):
         self.source_tool = tool
         self.save()
-        
+
     def add_tool_run(self, tool, args=""):
-        if not self.tools.get(tool):
-            self.tools[tool] = []
 
-        if args not in self.tools[tool]:
-            self.tools[tool].append(args)
-
-        self.save()
+        self.toolrun.get_or_create(tool=tool, args=args)
 
     @classmethod
     def get_set(cls, tool=None, args="", scope_type=None):
         qry = cls.objects.all()
-        if scope_type == 'active':
-            qry = qry.filter(active_scope = True)
+        if scope_type == "active":
+            qry = qry.filter(active_scope=True)
         elif scope_type == "passive":
-            qry = qry.filter(passive_scope = True)
-        
+            qry = qry.filter(passive_scope=True)
 
         if tool:
-            res = []
-            for q in qry:
-                if not (tool in q.tools.keys() and args in q.tools[tool]):
-                    res.append(q)
+            qry = qry.exclude(toolrun__tool=tool, toolrun__args=args)
 
-        else:
-            res = qry
-
-        return res
-
-            
-
+        return qry
 
     class Meta:
-        abstract=True
-
+        abstract = True

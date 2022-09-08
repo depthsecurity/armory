@@ -87,40 +87,8 @@ class Module(ToolTemplate):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        res = []
-        for t in targets:
-            if type(t) == list and len(t) > 1 and t[1]:
-
-                res.append(
-                    {
-                        "target": t[0] if "FUZZ" in t[0] else f"{t[0]}/FUZZ",
-                        "output": os.path.join(
-                            output_path,
-                            t[0]
-                            .replace(":", "_")
-                            .replace("/", "_")
-                            .replace("?", "_")
-                            .replace("&", "_")
-                            + f"-{t[1]}-dir.txt",  # noqa: W503
-                        ),
-                        "virtualhost": t[1],
-                    }
-                )
-            else:
-                res.append(
-                    {
-                        "target": t,
-                        "output": os.path.join(
-                            output_path,
-                            t.replace(":", "_")
-                            .replace("/", "_")
-                            .replace("?", "_")
-                            .replace("&", "_")
-                            + "-dir.txt",  # noqa: W503
-                        ),
-                    }
-                )
-
+        res = self.build_generic_targets(targets, output_path)
+        
         return res
 
     # def build_cmd(self, args):

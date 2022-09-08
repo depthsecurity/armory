@@ -88,6 +88,10 @@ class Module(ToolTemplate):
 
         for cmd in cmds:
 
+            
+            bd, created = BaseDomain.objects.get_or_create(name=cmd["target"])
+            bd.add_tool_run(tool=self.name, args=self.args.tool_args)
+            
             try:
                 data = xmltodict.parse(open(cmd["output"] + ".xml").read())
             except Exception as e:

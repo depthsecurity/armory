@@ -130,9 +130,9 @@ class Module(ToolTemplate):
             else:
                 # Go through the database and grab the domains adding them to the file.
                 if args.rescan:
-                    domains = BaseDomains.all(passive_scope=True)
+                    domains = BaseDomain.all(passive_scope=True)
                 else:
-                    domains = BaseDomains.all(tool=self.name, passive_scope=True)
+                    domains = BaseDomain.all(tool=self.name, passive_scope=True)
                 if domains:
                     for domain in domains:
                         fd.write("{}\n".format(domain.domain).encode("utf-8"))

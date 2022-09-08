@@ -11,11 +11,11 @@ from armory2.armory_main.models.network import VirtualHost
 def run(tool=None, args="", scope_type=None, random=True, domain=True):
 
     results = []
-
+    # pdb.set_trace()
     ports = Port.objects.all().filter(Q(service_name="http") | Q(service_name="https"))
 
     if tool:
-        ports = ports.exclude(toolrun__tool=tool)
+        ports = ports.exclude(toolrun__tool=tool, toolrun__args=args)
 
     if scope_type == "active":
         ports = ports.filter(ip_address__active_scope=True)
@@ -196,6 +196,7 @@ def add_tool_url(url, tool, args, vhost=None):
 
     host = url.split("/")[2].split(":")[0]
     scheme = url.split(":")[0]
+    
     if url.count(":") == 2:
         port = url.split(":")[2]
     elif scheme == "https":
@@ -206,10 +207,15 @@ def add_tool_url(url, tool, args, vhost=None):
         [int(i) for i in host.split(".")]
         ip, created = IPAddress.objects.get_or_create(ip_address=host)
 
-        ip.add_tool_run(tool=tool, args="{}-{}".format(port, args), port=int(port), virtualhost=vhost)
+        ip.add_tool_run(
+            tool=tool,
+            args=args,
+            port=int(port),
+            virtualhost=vhost,
+        )
     except:
         d, created = Domain.objects.get_or_create(name=host)
-        d.add_tool_run(tool=tool, args="{}-{}".format(port, args))
+        d.add_tool_run(tool=tool, args=args)
 
 
 def get_port_object(url):

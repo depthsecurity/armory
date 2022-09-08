@@ -1,6 +1,9 @@
 from django.db import models
 from picklefield.fields import PickledObjectField
 from .base_model import BaseModel
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+
 import pdb
 from django.db.models.signals import pre_save, post_save
 from django.db.models import Q
@@ -16,53 +19,14 @@ from armory2.armory_main.included.utilities.network_tools import (
     get_ips,
     private_subnets,
 )
+
 from netaddr import IPNetwork, IPAddress as IPAddr
 from ipwhois import IPWhois
 import tld
 
 
-class BaseDomain(BaseModel):
-    name = models.CharField(max_length=64)
-    dns = PickledObjectField(default=dict)
-
-    def __str__(self):
-        return self.name
-
-    def add_tool_run(self, tool, args="", port=None, virtualhost=None):
-
-        port_obj = None
-        if port:
-            port_objs = Port.objects.filter(
-                ip_address__domain=self, port_number=port, proto="tcp"
-            )
-            if port_objs.exists():
-                port_obj = port_objs[0]
-        if virtualhost:
-            vhost, created = VirtualHost.objects.get_or_create(
-                name=virtualhost, ip_address=self, port=port_obj
-            )
-        else:
-            vhost = None
-        tool_run, created = ToolRun.objects.get_or_create(
-            ip_address=self, tool=tool, args=args, port_obj=port_obj, virtualhost=vhost
-        )
-class CIDR(BaseModel):
-
-    name = models.CharField(max_length=44, unique=True)
-    org_name = models.CharField(max_length=256, unique=False, null=True)
-
-    def __str__(self):
-        return "{}: {}".format(self.name, self.org_name)
-
-
 class ToolRun(BaseModel):
 
-    ip_address = models.ForeignKey(
-        "IPAddress", on_delete=models.CASCADE, blank=True, null=True
-    )
-    domain = models.ForeignKey(
-        "Domain", on_delete=models.CASCADE, blank=True, null=True
-    )
     args = models.CharField(max_length=1024, default="")
     port = models.IntegerField(default=0)
     port_obj = models.ForeignKey(
@@ -73,12 +37,36 @@ class ToolRun(BaseModel):
         "VirtualHost", on_delete=models.CASCADE, blank=True, null=True
     )
 
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
+    object_id = models.PositiveIntegerField(null=True)
+    content_object = GenericForeignKey()
+
+
+class BaseDomain(BaseModel):
+    name = models.CharField(max_length=64)
+    dns = PickledObjectField(default=dict)
+    toolrun = GenericRelation(ToolRun, related_query_name="base_domains")
+
+    def __str__(self):
+        return self.name
+
+
+class CIDR(BaseModel):
+
+    name = models.CharField(max_length=44, unique=True)
+    org_name = models.CharField(max_length=256, unique=False, null=True)
+    toolrun = GenericRelation(ToolRun, related_query_name="cidrs")
+
+    def __str__(self):
+        return "{}: {}".format(self.name, self.org_name)
+
 
 class Domain(BaseModel):
     name = models.CharField(max_length=128, unique=True)
     ip_addresses = models.ManyToManyField("IPAddress")
     basedomain = models.ForeignKey(BaseDomain, on_delete=models.CASCADE)
     whois = models.TextField()
+    toolrun = GenericRelation(ToolRun, related_query_name="domains")
 
     def __str__(self):
         return self.name
@@ -92,6 +80,7 @@ class IPAddress(BaseModel):
     version = models.IntegerField()
     notes = models.TextField(default="")
     completed = models.BooleanField(default=False, null=True)
+    toolrun = GenericRelation(ToolRun, related_query_name="ip_addresses")
 
     def __str__(self):
         return self.ip_address
@@ -111,12 +100,24 @@ class IPAddress(BaseModel):
             )
         else:
             vhost = None
-        tool_run, created = ToolRun.objects.get_or_create(
-            ip_address=self, tool=tool, args=args, port_obj=port_obj, virtualhost=vhost
+        self.toolrun.get_or_create(
+            tool=tool, args=args, port_obj=port_obj, virtualhost=vhost
         )
 
     def get_virtualhosts(self):
-        return sorted(list(set([vh.name for vh in VirtualHost.objects.filter(ip_address=self, active=True)])))
+        return sorted(
+            list(
+                set(
+                    [
+                        vh.name
+                        for vh in VirtualHost.objects.filter(
+                            ip_address=self, active=True
+                        )
+                    ]
+                )
+            )
+        )
+
     @classmethod
     def get_sorted(
         cls, scope_type=None, search=None, display_zero=False, page_num=1, entries=50
@@ -166,6 +167,7 @@ class Port(BaseModel):
     cert = models.TextField(unique=False, null=True)
     certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
+    # toolrun = GenericRelation(ToolRun, related_query_name="ports")
 
     def __str__(self):
         return "{} / {} / {}".format(self.proto, self.port_number, self.service_name)

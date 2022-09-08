@@ -69,7 +69,7 @@ class Module(ModuleTemplate):
             if args.rescan:
                 urls += run(scope_type="active")
             else:
-                urls += run(scope_type="active", tool=self.name)
+                urls += run(scope_type="active", tool=self.name, args="")
 
 
 
