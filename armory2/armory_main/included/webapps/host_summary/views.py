@@ -331,7 +331,13 @@ def get_ffuf(request, port_id):
                     ffuf_data[r['host']][url][r['status']] = []
 
                 if len(ffuf_data[r['host']][url][r['status']]) < max_status and r not in ffuf_data[r['host']][url][r['status']]:
+                    
+
+                    if r.get('host') and r.get('host') not in r['url']:
+                        r['url'] = get_virtualhost_url(r['url'], r['host'])
+                    
                     ffuf_data[r['host']][url][r['status']].append(r)
+                    
     # pdb.set_trace()            
     return render(request, 'host_summary/ffuf.html', {'ffuf_data':ffuf_data})
 
@@ -339,3 +345,22 @@ def get_ffuf(request, port_id):
 
 def get_cidr_ips(request):
     pass
+
+def get_virtualhost_url(url, vhost):
+
+    tail = '.oastify.com'
+    delim = '.vhost-proxy.'
+    host_raw = url.split('/')[2]
+    host = host_raw.split(':')[0]
+
+    if ':' in host_raw:
+        port = f":{host_raw.split(':')[1]}"
+    else:
+        port = ""
+
+    new_host = f"{host}{delim}{vhost}{delim}{tail}{port}"
+
+    new_url = url.replace(host_raw, new_host)
+
+    return new_url
+    

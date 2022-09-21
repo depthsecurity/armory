@@ -45,7 +45,7 @@
            {% for result in status_info|unique_ffuf %}
           <div class="row">
             <div class="col-md-8">
-              <a href="{{ result.host_url }}">{{ result.input.FUZZ }}</a>
+              <a href="{{ result.url }}">{{ result.input.FUZZ }}</a>
             </div>
             <div class="col-md-4">
               {{ result.length }}
