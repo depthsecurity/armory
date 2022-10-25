@@ -255,17 +255,25 @@ def post_save_domain(sender, instance, created, *args, **kwargs):
                 instance.passive_scope = True
                 ip.passive_scope = True
 
+            for p in ip.port_set.all():
+                vh, created = VirtualHost.objects.get_or_create(ip_address=ip, port=p, name=domain_name)
             display_new(
                 "IP and Domain {}/{} scope updated to:  Active Scope: {}     Passive Scope: {}".format(
                     i, domain_name, ip.active_scope, ip.passive_scope
                 )
             )
+
             ip.save()
+            vh, created = VirtualHost.objects.get_or_create(ip_address=ip, port=None, name=instance.name)
+            if created:
+                display_new(f"Added {instance.name} to virtualhosts for {ip.ip_address}")
             instance.ip_addresses.add(ip)
             for p in ip.port_set.filter(service_name__icontains="http"):
                 vh, created = VirtualHost.objects.get_or_create(
                     ip_address=ip, port=p, name=instance.name
                 )
+                if created:
+                    display_new(f"Added {instance.name} to virtualhosts for {ip.ip_address}:{p.port_number}")
             instance.save()
 
 
@@ -305,6 +313,11 @@ def pre_save_ip(sender, instance, *args, **kwargs):
             )
         )
 
+@receiver(post_save, sender=Port)
+def post_save_port(sender, instance, created, *args, **kwargs):
+    if created:
+        for vhost in instance.ip_address.virtualhost_set.all():
+            vh, created = VirtualHost.objects.get_or_create(ip_address=instance.ip_address, port=instance, name=vhost.name)
 
 @receiver(pre_save, sender=CIDR)
 def pre_save_cidr(sender, instance, *args, **kwargs):

@@ -152,6 +152,13 @@
                   </div>
                 </div>
               {% endfor %}
+              {% for vhost in port.virtualhost_set.all %}
+                <div class="row">
+                  <div class="col-md-12">
+                    <a class="list-group-item list-group-item-action" href="{{ port.service_name }}://{{ ip.ip_address}}.vhost-proxy.{{ vhost.name }}.vhost-proxy.oastify.com:{{port.port_number}}" target="_blank">(Virtualhost) {{ port.service_name }}://{{ vhost.name }}:{{port.port_number}}</a>
+                  </div>
+                </div>
+              {% endfor %}
             </div>
           </div>
         </div>

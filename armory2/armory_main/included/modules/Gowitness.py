@@ -226,7 +226,7 @@ class Module(ToolTemplate):
                     for dmn in url_domain_data.get(u[1], []):
 
                         dn, created = VirtualHost.objects.get_or_create(
-                            ip_address=port.ip_address, name=dmn
+                            ip_address=port.ip_address, name=dmn, port=port
                         )
 
                     port.meta["Gowitness"].append(data)

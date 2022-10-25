@@ -38,7 +38,7 @@ def only_valid(txt):
     return res
 
 def get_domains_from_data(txt):
-    txt = txt.replace('\\t', '').replace('\\n', '')
+    txt = txt.replace('\\t', '').replace('\\n', '').replace('\\r', '')
     results = [match for match in re.split("(\\\\x\w\w)", txt) if len(match) > 4 and "." in match and "*" not in match]
 
     return list(set([only_valid(match).lower() for match in results if only_valid(match)]))
