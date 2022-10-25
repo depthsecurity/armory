@@ -12,11 +12,29 @@ class Report(ReportTemplate):
 
     name = ""
 
+    def set_options(self):
+        super(Report, self).set_options()
+
+        self.options.add_argument(
+            "--port",
+            help="Single port to target"
+        )
+
+        self.options.add_argument(
+            "--only_ips",
+            help="List IPs only when targeting specific port",
+            action="store_true",
+        )
 
     def run(self, args):
         # Cidrs = self.CIDR.
 
-        ports = Port.objects.all()
+        if args.port is not None:
+            ports = Port.objects.filter(port_number=int(args.port))
+
+        else:
+            ports = Port.objects.all()
+        
         services = {}
 
         for p in ports:
@@ -44,24 +62,28 @@ class Report(ReportTemplate):
 
         for p in sorted(services):
             for s in sorted(services[p]):
-
                 res.append("\tProtocol: {} Port: {}".format(p, s))
                 res.append("\n")
                 for ip in sorted(services[p][s].keys()):
-                    if services[p][s][ip]["domains"]:
-                        res.append(
-                            "\t\t{} ({}): {}".format(
-                                ip,
-                                services[p][s][ip]["svc"],
-                                ", ".join(services[p][s][ip]["domains"]),
-                            )
-                        )
+
+                    if (args.port is not None) and args.only_ips:
+                        res.append(ip)
+
                     else:
-                        res.append(
-                            "\t\t{} ({}) (No domain)".format(
-                                ip, services[p][s][ip]["svc"]
+                        if services[p][s][ip]["domains"]:
+                            res.append(
+                                "\t\t{} ({}): {}".format(
+                                    ip,
+                                    services[p][s][ip]["svc"],
+                                    ", ".join(services[p][s][ip]["domains"]),
+                                )
                             )
-                        )
+                        else:
+                            res.append(
+                                "\t\t{} ({}) (No domain)".format(
+                                    ip, services[p][s][ip]["svc"]
+                                )
+                            )
                 res.append("\n")
 
         self.process_output(res, args)
