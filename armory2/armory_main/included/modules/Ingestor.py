@@ -10,7 +10,7 @@ from armory2.armory_main.included.utilities.color_display import (
 )
 import dns.resolver
 import string
-
+import re
 import pdb
 
 
@@ -96,15 +96,17 @@ class Module(ModuleTemplate):
 
         self.active_scope = args.active
         self.passive_scope = args.passive
-
+        badchars = re.compile('[@_!#$%^&*()<>?\|}{~:]')
         if args.descope:
-            if "/" in args.descope:
-                self.descope_cidr(args.descope)
-            elif check_string(args.descope):
-                pass
-
+            if (badchars.search(args.descope) == None):
+                descope_ip_list = re.split(r'[ ,|;"]+',args.descope) 
+                for ip in descope_ip_list:
+                    if "/" in ip:
+                        self.descope_cidr(ip)
+                    else:
+                        self.descope_ip(ip)
             else:
-                self.descope_ip(args.descope)
+                display("Your input descope IPs contain an invalid character")
 
                 # Check if in ScopeCIDR and remove if found
 
@@ -122,12 +124,15 @@ class Module(ModuleTemplate):
                             self.process_ip(line.strip(), force_scope=True)
 
             except IOError:
-
-                if "/" in args.import_ips or "-" in args.import_ips:
-                    self.process_cidr(args.import_ips, args.label)
-
+                if (badchars.search(args.import_ips) == None):
+                    ip_list = re.split(r'[ ,|;"]+',args.import_ips) 
+                    for ip in ip_list:
+                        if "/" in ip or "-" in ip:
+                            self.process_cidr(ip,args.label)
+                        else:
+                            self.process_ip(ip,force_scope=True)
                 else:
-                    self.process_ip(args.import_ips.strip(), force_scope=True)
+                    display("Your input IPs contain an invalid character")
 
         if args.import_domains:
             try:
@@ -137,7 +142,12 @@ class Module(ModuleTemplate):
                         self.process_domain(line.strip())
 
             except IOError:
-                self.process_domain(args.import_domains.strip())
+                if (badchars.search(args.import_domains) == None):
+                    domain_list = re.split(r'[ ,|;"]+',args.import_domains)
+                    for name in domain_list:
+                        self.process_domain(name)
+                else:
+                    display("Your input contains invalid domains")
 
         if args.scope_base_domains:
             base_domains = BaseDomain.all(active_scope=False, passive_scope=False)
@@ -156,7 +166,6 @@ class Module(ModuleTemplate):
             return []
 
     def process_domain(self, domain_str):
-
         domain, created = Domain.objects.get_or_create(
             name=domain_str,
             defaults={
@@ -223,7 +232,6 @@ class Module(ModuleTemplate):
         return ip
 
     def process_cidr(self, line, label=None):
-        display("Processing %s" % line)
         if "/" in line:
             # pdb.set_trace()
             cidr, created = CIDR.objects.get_or_create(
