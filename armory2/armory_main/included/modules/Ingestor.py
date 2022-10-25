@@ -106,7 +106,7 @@ class Module(ModuleTemplate):
                     else:
                         self.descope_ip(ip)
             else:
-                display("Your input descope IPs contain invalid character")
+                display("Your input descope IPs contain an invalid character")
 
                 # Check if in ScopeCIDR and remove if found
 
@@ -132,7 +132,7 @@ class Module(ModuleTemplate):
                         else:
                             self.process_ip(ip,force_scope=True)
                 else:
-                    display("Your input IPs contain invalid character")
+                    display("Your input IPs contain an invalid character")
 
         if args.import_domains:
             try:
