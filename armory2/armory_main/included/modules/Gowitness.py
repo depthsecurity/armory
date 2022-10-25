@@ -2,8 +2,13 @@
 
 from armory2.armory_main.models import IPAddress, Domain
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
-from armory2.armory_main.included.utilities.get_urls import run, add_tools_urls, get_port_object
-from armory2.armory_main.included.utilities.color_display import display_error
+from armory2.armory_main.included.utilities.get_urls import (
+    add_tool_url,
+    run,
+    add_tools_urls,
+    get_port_object,
+)
+from armory2.armory_main.included.utilities.color_display import display, display_error
 from armory2.armory_main.included.utilities.validate_ip import is_ip
 import os
 import re
@@ -15,6 +20,8 @@ import sys
 import json
 import pdb
 import sqlite3
+
+from armory2.armory_main.models.network import VirtualHost
 
 if sys.version[0] == "3":
     xrange = range
@@ -30,7 +37,6 @@ class Module(ToolTemplate):
 
     name = "Gowitness"
     binary_name = "gowitness"
-
 
     def set_options(self):
         super(Module, self).set_options()
@@ -72,7 +78,9 @@ class Module(ToolTemplate):
             if args.rescan:
                 targets += run(scope_type="active")
             else:
-                targets += run(scope_type="active", tool=self.name, args=self.args.tool_args)
+                targets += run(
+                    scope_type="active", tool=self.name, args=self.args.tool_args
+                )
 
         if args.scan_folder:
 
@@ -151,55 +159,84 @@ class Module(ToolTemplate):
         # if m:
         #     if LooseVersion(m.group("ver")) <= command_change:
         #         gen_command = ["generate"]
+
         for cmd in cmds:
             output = cmd["output"]
-
+            for t in open(cmd["target"]).read().split("\n"):
+                if t:
+                    display(f"Adding {t} with {self.args.tool_args}")
+                    add_tool_url(t, tool=self.name, args=self.args.tool_args)
             # cmd = [self.binary] + gen_command
             os.chdir(output)
 
-
-
             # subprocess.Popen(cmd, shell=False).wait()
 
-            conn = sqlite3.connect(os.path.join(output, 'gowitness.db'))
+            conn = sqlite3.connect(os.path.join(output, "gowitness.db"))
 
             cr = conn.cursor()
-
-            domains = [d[0] for d in cr.execute('select distinct name from tls_certificate_dns_names').fetchall()]
+            sql = """
+                select u.url, d.name from tls_certificate_dns_names as d
+                inner join tls_certificates as c on c.id = d.tls_certificate_id
+                inner join tls as t on t.id = c.tls_id
+                inner join urls as u on u.id = t.url_id
+            """
+            domain_data = cr.execute(sql).fetchall()
+            domains = sorted(
+                list(
+                    set([d[1] for d in domain_data if "." in d[1] and "*" not in d[1]])
+                )
+            )
             for name in domains:
-                if '.' in name:
-                    domain, created = Domain.objects.get_or_create(name=name.lower())
 
+                domain, created = Domain.objects.get_or_create(name=name.lower())
 
-            for u in cr.execute('select id, url, filename, final_url, response_code from urls').fetchall():
+            url_domain_data = {}
+            # display(f"Discovered {len(domains)} unique domain names")
+            for d, n in domain_data:
+                if not url_domain_data.get(d):
+                    url_domain_data[d] = []
+                if n not in url_domain_data[d]:
+                    url_domain_data[d].append(n)
+
+            for u in cr.execute(
+                "select id, url, filename, final_url, response_code from urls"
+            ).fetchall():
                 port = get_port_object(u[1])
                 if not port:
                     display_error("Port not found: {}".format(u[1]))
                 else:
-                    if not port.meta.get('Gowitness'):
+                    if not port.meta.get("Gowitness"):
 
-                        port.meta['Gowitness'] = []
-
-                    
+                        port.meta["Gowitness"] = []
 
                     data = {
-                        'screenshot_file':os.path.join(output, u[2]),
-                        'final_url': u[3],
-                        'response_code_string': str(u[4]),
-                        'headers': [ {'key': k[0], 'value': k[1]} for k in cr.execute('select key, value from headers where url_id = ?', (u[0],))],
-                        'cert': {'dns_names':[ k[0] for k in cr.execute('select d.name from tls_certificate_dns_names as d inner join tls_certificates as tc on tc.id = d.tls_certificate_id inner join tls on tls.id = tc.tls_id where tls.url_id = ?', (u[0],))]}
-                        }
+                        "screenshot_file": os.path.join(output, u[2]),
+                        "final_url": u[3],
+                        "response_code_string": str(u[4]),
+                        "headers": [
+                            {"key": k[0], "value": k[1]}
+                            for k in cr.execute(
+                                "select key, value from headers where url_id = ?",
+                                (u[0],),
+                            )
+                        ],
+                        "cert": {"dns_names": url_domain_data.get(u[1], [])},
+                    }
 
+                    for dmn in url_domain_data.get(u[1], []):
 
+                        dn, created = VirtualHost.objects.get_or_create(
+                            ip_address=port.ip_address, name=dmn, port=port
+                        )
 
-                    port.meta['Gowitness'].append(data)
+                    port.meta["Gowitness"].append(data)
 
                     port.save()
             # for d in data:
             #     if '{"url"' in d:
-                    
+
             #         j = json.loads(d)
-                    
+
             #         port = get_port_object(j['url'])
             #         if not port:
             #             display_error("Port not found: {}".format(j['url']))
@@ -214,14 +251,12 @@ class Module(ToolTemplate):
             #                 for cert in j['ssl_certificate']['peer_certificates']:
             #                     if cert and cert.get('dns_names') and cert['dns_names'] != None:
             #                         for name in cert['dns_names']:
-            
 
             os.chdir(cwd)
 
-        add_tools_urls(scope_type="active", tool=self.name, args=self.args.tool_args)
+        # add_tools_urls(scope_type="active", tool=self.name, args=self.args.tool_args)
 
     def chunks(self, chunkable, n):
-        """ Yield successive n-sized chunks from l.
-        """
+        """Yield successive n-sized chunks from l."""
         for i in xrange(0, len(chunkable), n):
             yield chunkable[i : i + n]  # noqa: E203

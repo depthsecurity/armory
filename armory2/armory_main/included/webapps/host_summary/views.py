@@ -316,22 +316,51 @@ def get_ffuf(request, port_id):
     for f in port.meta['FFuF']:
         if os.path.exists(f):
             data = json.loads(open(f).read())
-            # pdb.set_trace()
+            
             for r in data['results']:
+                url = data['config']['url']
+                url_orig = r['url']
+                r['host_url'] = '/'.join(url_orig.split('/')[:2] + [r['host']] + url_orig.split('/')[3:])
+                
                 if not ffuf_data.get(r['host']):
                     ffuf_data[r['host']] = {}
-                if not ffuf_data[r['host']].get(data['config']['url']):
-                    ffuf_data[r['host']][data['config']['url']] = {}
+                if not ffuf_data[r['host']].get(url):
+                    ffuf_data[r['host']][url] = {}
 
-                if not ffuf_data[r['host']][data['config']['url']].get(r['status']):
-                    ffuf_data[r['host']][data['config']['url']][r['status']] = []
+                if not ffuf_data[r['host']][url].get(r['status']):
+                    ffuf_data[r['host']][url][r['status']] = []
 
-                if len(ffuf_data[r['host']][data['config']['url']][r['status']]) < max_status and r not in ffuf_data[r['host']][data['config']['url']][r['status']]:
-                    ffuf_data[r['host']][data['config']['url']][r['status']].append(r)
-                    # pdb.set_trace()
+                if len(ffuf_data[r['host']][url][r['status']]) < max_status and r not in ffuf_data[r['host']][url][r['status']]:
+                    
+
+                    if r.get('host') and r.get('host') not in r['url']:
+                        r['url'] = get_virtualhost_url(r['url'], r['host'])
+                    
+                    ffuf_data[r['host']][url][r['status']].append(r)
+                    
+    # pdb.set_trace()            
     return render(request, 'host_summary/ffuf.html', {'ffuf_data':ffuf_data})
 
                 
 
 def get_cidr_ips(request):
     pass
+
+def get_virtualhost_url(url, vhost):
+
+    tail = '.oastify.com'
+    delim = '.vhost-proxy.'
+    host_raw = url.split('/')[2]
+    host = host_raw.split(':')[0]
+
+    if ':' in host_raw:
+        port = f":{host_raw.split(':')[1]}"
+    else:
+        port = ""
+
+    new_host = f"{host}{delim}{vhost}{delim}{tail}{port}"
+
+    new_url = url.replace(host_raw, new_host)
+
+    return new_url
+    

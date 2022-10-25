@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import pdb
 from armory2.armory_main.models import BaseDomain, Domain
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities.color_display import display_error
@@ -10,7 +11,6 @@ class Module(ToolTemplate):
 
     name = "Sublist3r"
     binary_name = "sublist3r"
-
 
     def set_options(self):
         super(Module, self).set_options()
@@ -46,7 +46,9 @@ class Module(ToolTemplate):
             if args.rescan:
                 domains = BaseDomain.get_set(scope_type="passive")
             else:
-                domains = BaseDomain.get_set(tool=self.name, scope_type="passive", args=self.args.tool_args)
+                domains = BaseDomain.get_set(
+                    tool=self.name, scope_type="passive", args=self.args.tool_args
+                )
             for d in domains:
 
                 targets.append(d.name)
@@ -84,10 +86,13 @@ class Module(ToolTemplate):
         for cmd in cmds:
             output_path = cmd["output"]
 
+            bd, created = BaseDomain.objects.get_or_create(name=cmd["target"])
+            bd.add_tool_run(tool=self.name, args=self.args.tool_args)
+
             if os.path.isfile(output_path):
                 data = open(output_path).read().split("\n")
                 for d in data:
-                    for ds in d.split('<BR>'):  # Sublist3r is spitting out <BR>s now...
+                    for ds in d.split("<BR>"):  # Sublist3r is spitting out <BR>s now...
                         if ds:
                             new_domain = ds.split(":")[0].lower()
                             if new_domain:
@@ -96,10 +101,13 @@ class Module(ToolTemplate):
                                     name=new_domain
                                 )
             else:
-                display_error("{} not found.".format(output_path))
+                display_error(
+                    "{} not found, probably no subdomains discovered.".format(
+                        output_path
+                    )
+                )
                 next
 
-        
         # except IOError:
         #     display_error("No results found.")
 

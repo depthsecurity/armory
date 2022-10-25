@@ -3,7 +3,7 @@
 from armory2.armory_main.models import IPAddress
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities.color_display import display_error
-from armory2.armory_main.included.utilities.get_urls import run as get_urls, add_tools_urls
+from armory2.armory_main.included.utilities.get_urls import add_tool_url, run as get_urls, add_tools_urls
 import os
 import tempfile
 from time import time
@@ -85,7 +85,7 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        command = self.binary + " -m file-scan -file {target} -out {output} "
+        command = "python3 " + self.binary + " -m file-scan -file {target} -out {output} "
 
         if args.tool_args:
             command += args.tool_args
@@ -97,7 +97,10 @@ class Module(ToolTemplate):
         """
         # Mark them all as having been run. Since we aren't processing output, this seems to be the best way of doing it. In the future I might just grab the finished files.
 
-        add_tools_urls(scope_type="active", tool=self.name, args=self.args.tool_args)
+        for cmd in cmds:
+            for t in open(cmd['target']).read().split('\n'):
+                if t:
+                    add_tool_url(t, tool=self.name, args=self.args.tool_args)
 
     def chunks(self, chunkable, n):
         """ Yield successive n-sized chunks from l.

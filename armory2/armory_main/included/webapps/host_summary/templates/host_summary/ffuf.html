@@ -21,10 +21,16 @@
             </div>
           </div>
           <div class="row">
-            <div class="col-md-4">Wordlist</div>
+            <div class="col-md-4">Hostname</div>
+            <div class="col-md-8">{{ host }}</div>
+          </div>
+          
+          {% for header in data.headers %}
+          <div class="row">
+            <div class="col-md-4">{{ header }}</div>
             <div class="col-md-8">{{ data.wordlist }}</div>
           </div>
-
+          {% endfor %}
           {% for status_code, status_info in data.items %}
           
           <div class="row">

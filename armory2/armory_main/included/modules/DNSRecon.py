@@ -48,7 +48,7 @@ class Module(ToolTemplate):
         targets = []
         if args.domain:
             domain, created = BaseDomain.objects.get_or_create(
-                name=args.domain, defaults={'passive_scope':True}
+                name=args.domain, defaults={"passive_scope": True}
             )
             targets.append(domain.name)
 
@@ -57,14 +57,16 @@ class Module(ToolTemplate):
             for d in domains:
                 if d:
                     domain, created = BaseDomain.objects.get_or_create(
-                        name=d, defaults={'passive_scope':True}
+                        name=d, defaults={"passive_scope": True}
                     )
                     targets.append(domain.name)
         elif args.import_database:
             if args.rescan:
                 domains = BaseDomain.get_set(scope_type="passive")
             else:
-                domains = BaseDomain.get_set(scope_type="passive", tool=self.name, args=self.args.tool_args)
+                domains = BaseDomain.get_set(
+                    scope_type="passive", tool=self.name, args=self.args.tool_args
+                )
             for domain in domains:
                 targets.append(domain.name)
 
@@ -75,7 +77,9 @@ class Module(ToolTemplate):
             if args.rescan:
                 cidrs = CIDR.get_set(scope_type="active")
             else:
-                cidrs = CIDR.get_set(scope_type="active", tool=self.name, args=self.args.tool_args)
+                cidrs = CIDR.get_set(
+                    scope_type="active", tool=self.name, args=self.args.tool_args
+                )
 
             for cidr in cidrs:
                 targets.append(cidr.name)
@@ -131,7 +135,7 @@ class Module(ToolTemplate):
                 continue
             if " -d " in res[0]["arguments"]:
                 dbrec, created = Domain.objects.get_or_create(name=target)
-                dbrec.dns = res
+                dbrec.meta["dns"] = res
                 dbrec.save()
 
             for record in res:
@@ -152,11 +156,11 @@ class Module(ToolTemplate):
 
                 if domain:
                     domain_obj, created = Domain.objects.get_or_create(name=domain)
-                    
 
-            if '/' in target:
-                bd, created = CIDR.objects.get_or_create(name=target, defaults={'active_scope':True})
+            if "/" in target:
+                bd, created = CIDR.objects.get_or_create(
+                    name=target, defaults={"active_scope": True}
+                )
             else:
                 bd, created = BaseDomain.objects.get_or_create(name=target)
             bd.add_tool_run(tool=self.name, args=self.args.tool_args)
-        

@@ -36,7 +36,7 @@ class Module(ToolTemplate):
         self.options.add_argument(
             "-s",
             "--rescan",
-            help="Rescan domains that have already been scanned",
+            help="Rescan IPs that have already been scanned",
             action="store_true",
         )
 
