@@ -259,7 +259,7 @@ def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, 
             xpath = items[0]
             data['color'] = items[1]
 
-            elem = driver.find_element_by_xpath(xpath)
+            elem = driver.find_element("xpath",xpath)
             
             data['startx'] = elem.location['x'] - paddingw
             data['starty'] = elem.location['y'] - paddingh
