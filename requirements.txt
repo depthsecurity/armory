@@ -5,7 +5,7 @@ backcall==0.2.0
 beautifulsoup4==4.9.3
 blessed==1.18.1
 bs4==0.0.1
-certifi==2021.5.30
+certifi
 chardet==4.0.0
 charset-normalizer==2.0.3
 configparser==5.0.2
@@ -42,8 +42,8 @@ python-docx==0.8.11
 python-Levenshtein==0.12.2
 pytz==2021.1
 redis==3.5.3
-requests==2.26.0
-requests-file==1.5.1
+requests
+requests-file
 six==1.16.0
 soupsieve==2.2.1
 SQLAlchemy==1.4.21
@@ -58,5 +58,6 @@ urllib3==1.26.6
 wcwidth==0.2.5
 whois==0.9.13
 xmltodict==0.12.0
-selenium==22.0.0
+selenium==4.4.3
+pyOpenSSL==22.0.0
 pysocks
