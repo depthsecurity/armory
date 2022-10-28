@@ -58,5 +58,5 @@ urllib3==1.26.6
 wcwidth==0.2.5
 whois==0.9.13
 xmltodict==0.12.0
-selenium
+selenium==22.0.0
 pysocks
