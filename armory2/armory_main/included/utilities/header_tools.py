@@ -9,10 +9,15 @@ from armory2.armory_main.included.utilities.color_display import (
     display_new,
 )
 
+
 def process_urls(data):
     # silence insecure url warnings
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-    u = data[0]
+    if type(data[0]) == list:
+        u, virtualhost = data[0]
+    else:
+        u = data[0]
+        virtualhost = None
     timeout = data[1]
     blacklist = [
         "Date",
@@ -23,19 +28,24 @@ def process_urls(data):
         "Content-Encoding",
         "Vary",
     ]
-    new_headers = {}
-    new_cookies = {}
+    data = {"virtualhost": virtualhost, "url": u, "headers": [], "cookies": {}}
 
-    display("Processing %s" % u)
+    if virtualhost:
+        display(f"Processing {u} ({virtualhost})")
+    else:
+        display("Processing %s" % u)
     try:
-        res = requests.get(u, timeout=int(timeout), verify=False, headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:10.0) Gecko/20100101 Firefox/89.0"})
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:10.0) Gecko/20100101 Firefox/89.0"
+        }
+        if virtualhost:
+            headers["Host"] = virtualhost
+        res = requests.get(u, timeout=int(timeout), verify=False, headers=headers)
         res.raise_for_status()
         for k in res.headers.keys():
             if k not in blacklist:
-                if not new_headers.get(u, False):
-                    new_headers[u] = []
-                new_headers[u].append("{}: {}".format(k, res.headers[k]))
-            new_cookies[u] = dict(res.cookies)
+                data["headers"].append("{}: {}".format(k, res.headers[k]))
+            data["cookies"] = dict(res.cookies)
     except requests.exceptions.HTTPError as http_error:
         display_error("Http Error: {}".format(http_error))
     except requests.exceptions.ConnectionError as connect_error:
@@ -45,4 +55,4 @@ def process_urls(data):
         sys.exit(1)
     except Exception as e:
         display_error("{} no good, skipping: {}".format(u, e))
-    return (new_headers, new_cookies)
+    return data
