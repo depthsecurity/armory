@@ -104,14 +104,17 @@ class Module(ToolTemplate):
 
         for cmd in cmds:
             if cmd["cidr"]:
+
                 cidr, _ = CIDR.objects.get_or_create(name=cmd["cidr_name"])
                 cidr.meta["whois"] = read_file(cmd["output"])
+                cidr.save()
                 display(cidr.meta["whois"])
                 cidr.add_tool_run(self.name)
 
             elif cmd["domain"]:
                 domain, _ = BaseDomain.objects.get_or_create(name=cmd["domain"])
                 domain.meta["whois"] = read_file(cmd["output"])
+                domain.save()
                 display(domain.meta["whois"])
                 domain.add_tool_run(self.name)
 
