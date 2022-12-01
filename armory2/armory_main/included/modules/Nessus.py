@@ -678,20 +678,22 @@ class Module(ModuleTemplate):
            
              
         cidrs = {c.name: c.id for c in CIDR.objects.all()}
-
+        
         for instance in new_ips:
-            found = False
+            
             for c, v in cidrs.items():
+                
                 if instance.ip_address in IPNetwork(c):
                     
-                    instance.cidr__id = v
-                    found = True
+                    instance.cidr_id = v
+                    cidrs[c] = v
                     break
             
-            cidr_data, org_name = get_cidr_info(instance.ip_address)
-            cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':org_name})
-            instance.cidr = cidr
-            cidrs[cidr.name] = cidr.id
+            if not instance.cidr:
+                cidr_data, org_name = get_cidr_info(instance.ip_address)
+                cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':org_name})
+                instance.cidr = cidr
+                cidrs[cidr.name] = cidr.id
 
         
         display("Bulk creating IPs...")
