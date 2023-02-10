@@ -11,7 +11,11 @@ from armory2.armory_main.models import (
 )
 
 from armory2.armory_main.models.network import get_cidr_info
-from armory2.armory_main.included.utilities.color_display import display, display_new, display_error
+from armory2.armory_main.included.utilities.color_display import (
+    display,
+    display_new,
+    display_error,
+)
 from armory2.armory_main.included.utilities.nessus import NessusRequest
 from armory2.armory_main.included.utilities.sort_ranges import merge_ranges
 from armory2.armory_main.included.utilities.network_tools import validate_ip
@@ -24,6 +28,7 @@ import xml.etree.cElementTree as ET
 import pdb
 from netaddr import IPNetwork, IPAddress as IPAddr
 from datetime import datetime
+
 
 def gd(orig):
     now = datetime.now()
@@ -60,9 +65,10 @@ class Module(ModuleTemplate):
         self.options.add_argument(
             "--max_hosts",
             type=int,
-            help="Max hosts to add to each launched Armory job. Default=0 (all hosts)", 
-            default=0)
-        
+            help="Max hosts to add to each launched Armory job. Default=0 (all hosts)",
+            default=0,
+        )
+
         self.options.add_argument(
             "--job_name", help="Job name inside Nessus", default="Armory Job"
         )
@@ -89,28 +95,26 @@ class Module(ModuleTemplate):
             "--disable_mitre",
             help="Disable mitre CVE data gathering.",
             action="store_true",
-
-        )
-        self.options.add_argument('--proxy',
-            help="Use proxy for mitre lookups (socks4 or http)"
         )
         self.options.add_argument(
-            '-tf', 
-            '--targets_file',
-            help="json file consisting of a list of name/targets for creating multiple jobs. (ie [{'name':'foo','target':'bar'}]"
-
+            "--proxy", help="Use proxy for mitre lookups (socks4 or http)"
+        )
+        self.options.add_argument(
+            "-tf",
+            "--targets_file",
+            help="json file consisting of a list of name/targets for creating multiple jobs. (ie [{'name':'foo','target':'bar'}]",
         )
 
         self.options.add_argument(
             "--auto_run",
-            help="Folder id to poll. When no jobs are running, the next unrun job will be launched. Polls every minute"
+            help="Folder id to poll. When no jobs are running, the next unrun job will be launched. Polls every minute",
         )
 
     def run(self, args):
         if args.import_file:
             for nFile in args.import_file:
                 self.process_data(nFile, args)
-        
+
         elif args.launch or args.targets_file or args.auto_run:
             if (
                 not args.username  # noqa: W503
@@ -138,10 +142,15 @@ class Module(ModuleTemplate):
                         ip.ip_address
                         for ip in IPAddress.get_set(scope_type="active", tool=self.name)
                     ]
-                    cidrs = [cidr.name for cidr in CIDR.get_set(tool=self.name, scope_type="active")]
+                    cidrs = [
+                        cidr.name
+                        for cidr in CIDR.get_set(tool=self.name, scope_type="active")
+                    ]
                     domains = [
                         domain.name
-                        for domain in Domain.get_set(scope_type="active", tool=self.name)
+                        for domain in Domain.get_set(
+                            scope_type="active", tool=self.name
+                        )
                     ]
                     if args.max_hosts > 0:
                         all_ips = []
@@ -150,23 +159,35 @@ class Module(ModuleTemplate):
                         all_ips += ips
 
                         targets = list(set(all_ips)) + domains
-                        chunks = [targets[i:i+args.max_hosts] for i in range(0, len(targets), args.max_hosts)]
+                        chunks = [
+                            targets[i : i + args.max_hosts]
+                            for i in range(0, len(targets), args.max_hosts)
+                        ]
                         display(f"Creating {len(chunks)}")
                         i = 0
                         for c in chunks:
-                            
-                            i += 1
-                            
-                            if i == 1:
-                                res = n.launch_job(", ".join(c), args.job_name + f" ({i})")
-                                display("New Nessus job launched with ID {}".format(res))
-                            else:
-                                res = n.launch_job(", ".join(c), args.job_name + f" ({i})", autostart=False)
-                                display(f"New Nessus job created with ID {res}. You'll need to launch it manually")
-                            display(
-                            "Remember this number! You'll need it to download the job once it is done."
-                            )    
 
+                            i += 1
+
+                            if i == 1:
+                                res = n.launch_job(
+                                    ", ".join(c), args.job_name + f" ({i})"
+                                )
+                                display(
+                                    "New Nessus job launched with ID {}".format(res)
+                                )
+                            else:
+                                res = n.launch_job(
+                                    ", ".join(c),
+                                    args.job_name + f" ({i})",
+                                    autostart=False,
+                                )
+                                display(
+                                    f"New Nessus job created with ID {res}. You'll need to launch it manually"
+                                )
+                            display(
+                                "Remember this number! You'll need it to download the job once it is done."
+                            )
 
                     else:
                         targets = ", ".join(merge_ranges(ips + cidrs) + domains)
@@ -179,52 +200,54 @@ class Module(ModuleTemplate):
                 elif args.targets_file:
                     target_data = json.load(open(args.targets_file))
                     for td in target_data:
-                        res = n.launch_job(td['target'], td['name'], autostart=False)
-                        display(f"New Nessus job {td['name']} created with ID {res}. You'll need to start it automatically")
+                        res = n.launch_job(td["target"], td["name"], autostart=False)
+                        display(
+                            f"New Nessus job {td['name']} created with ID {res}. You'll need to start it automatically"
+                        )
 
                 elif args.auto_run:
                     folder_id = args.auto_run
 
                     scan_data = n.get_all_scans(folder_id)
 
-                    
                     completed_scans = 0
                     new_scans = 0
                     running_scans = 0
 
-                    for scan in scan_data['scans']:
-                        if scan['status'] == 'completed':
+                    for scan in scan_data["scans"]:
+                        if scan["status"] == "completed":
                             completed_scans += 1
-                        elif scan['status'] == 'running':
+                        elif scan["status"] == "running":
                             running_scans += 1
-                        elif scan['status'] == 'empty':
+                        elif scan["status"] == "empty":
                             new_scans += 1
 
-                    total_scans = len(scan_data['scans'])
+                    total_scans = len(scan_data["scans"])
 
                     while new_scans > 0:
                         n.login(args.username, args.password, args.host)
                         scan_data = n.get_all_scans(folder_id)
 
-                    
                         completed_scans = 0
                         new_scans = 0
                         running_scans = 0
-                        next_queued = ''
-                        
-                        for scan in scan_data['scans']:
-                            if scan['status'] == 'completed':
+                        next_queued = ""
+
+                        for scan in scan_data["scans"]:
+                            if scan["status"] == "completed":
                                 completed_scans += 1
-                            elif scan['status'] == 'running':
+                            elif scan["status"] == "running":
                                 running_scans += 1
-                            elif scan['status'] == 'empty':
+                            elif scan["status"] == "empty":
                                 if not next_queued:
                                     next_queued = scan["id"]
                                 new_scans += 1
-                                
-                        print(f"Total scans: {total_scans}  Completed: {completed_scans}  Running: {running_scans}  Remaining: {new_scans}")
+
+                        print(
+                            f"Total scans: {total_scans}  Completed: {completed_scans}  Running: {running_scans}  Remaining: {new_scans}"
+                        )
                         if running_scans == 0:
-                            print(f"Launching new scan {next_queued}")                        
+                            print(f"Launching new scan {next_queued}")
                             res = n.start_scan(next_queued)
                             print(res)
                         print(f"Sleeping for 1 minute")
@@ -246,7 +269,6 @@ class Module(ModuleTemplate):
                     args.username,
                     args.password,
                     args.host,
-                    
                 )
 
                 if args.output_path[0] == "/":
@@ -348,12 +370,12 @@ class Module(ModuleTemplate):
             if pluginID == "11411":  # Backup Files Disclosure
                 if tag.find("plugin_output") is not None:
                     urls = []
-                    
+
                     tmp = (
                         tag.find("plugin_output")
-                        .text.split(
-                            "It is possible to read the following backup file"
-                        )[1]
+                        .text.split("It is possible to read the following backup file")[
+                            1
+                        ]
                         .strip()
                     )
                     tmpUrls = tmp.split("\n")
@@ -408,7 +430,7 @@ class Module(ModuleTemplate):
         ip_data = {}
         vuln_data = set()
         for tag in ReportHost.iter("ReportItem"):
-            
+
             exploitable = False
             cves = []
             vuln_refs = {}
@@ -433,19 +455,18 @@ class Module(ModuleTemplate):
             port_id = f"{port}|{proto}"
 
             if not ip_data.get(port_id):
-                ip_data[port_id] = {'service_name':""}
+                ip_data[port_id] = {"service_name": ""}
 
             # db_port, created = Port.objects.get_or_create(
             #     port_number=port, status="open", proto=proto, ip_address_id=ip
             # )
-            if ip_data[port_id]['service_name'] == "http":
+            if ip_data[port_id]["service_name"] == "http":
                 if portName == "https":
-                    ip_data[port_id]['service_name'] = portName
-            elif ip_data[port_id]['service_name'] == "https":
+                    ip_data[port_id]["service_name"] = portName
+            elif ip_data[port_id]["service_name"] == "https":
                 pass
             else:
-                ip_data[port_id]['service_name'] = portName
-            
+                ip_data[port_id]["service_name"] = portName
 
             if tag.get("pluginID") == "56984":
                 severity = 1
@@ -453,11 +474,10 @@ class Module(ModuleTemplate):
                 severity = 3
             else:
                 severity = int(tag.get("severity"))
-            
+
             findingName = tag.get("pluginName")
             description = tag.find("description").text
-            
-            
+
             # print("Processing " + findingName)
             if tag.find("solution") is not None and tag.find("solution") != "n/a":
                 solution = tag.find("solution").text
@@ -465,14 +485,12 @@ class Module(ModuleTemplate):
                 solution = "No Remediation From Nessus"
 
             nessCheck = self.nessCheckPlugin(tag)
-            
-            if nessCheck:
-                if not ip_data[port_id].get('info'):
-                    ip_data[port_id]['info'] = {findingName: nessCheck}
-                else:
-                    ip_data[port_id]['info'][findingName] = nessCheck
 
-                
+            if nessCheck:
+                if not ip_data[port_id].get("info"):
+                    ip_data[port_id]["info"] = {findingName: nessCheck}
+                else:
+                    ip_data[port_id]["info"][findingName] = nessCheck
 
             if tag.find("exploit_available") is not None:
                 exploitable = True
@@ -496,23 +514,22 @@ class Module(ModuleTemplate):
 
             cwe_ids = [c.text for c in tag.findall("cwe")]
             references = [c.text for c in tag.findall("see_also")]
-            
+
             if self.vulns.get(findingName):
                 db_vuln = self.vulns[findingName]
 
-
-            
             else:
                 db_vuln, created = Vulnerability.objects.get_or_create(
-                        name=findingName,
-                        defaults={'severity':severity,
-                        'description':description,
-                        'remediation':solution,
-                        'exploitable' : exploitable,
-                        }
-                    )
-                db_vuln.meta['CWEs'] = cwe_ids
-                db_vuln.meta['Refs'] = references
+                    name=findingName,
+                    defaults={
+                        "severity": severity,
+                        "description": description,
+                        "remediation": solution,
+                        "exploitable": exploitable,
+                    },
+                )
+                db_vuln.meta["CWEs"] = cwe_ids
+                db_vuln.meta["Refs"] = references
 
                 if vuln_refs:
                     if db_vuln.exploit_reference is not None:
@@ -532,15 +549,13 @@ class Module(ModuleTemplate):
                 #     display_new("exploit available for " + findingName)
 
             vuln_data.add(f"{ip}|{port}|{proto}|{db_vuln.id}")
-            #db_vuln.ports.add(db_port)
-            
-            
+            # db_vuln.ports.add(db_port)
 
+            if (
+                tag.find("plugin_output") is not None
+                and tag.find("plugin_output").text is not None
+            ):
 
-            
-
-            if tag.find("plugin_output") is not None and tag.find("plugin_output").text is not None:
-                
                 plugin_output = tag.find("plugin_output").text
 
                 self.vulnobjects[f"{ip}|{port}|{proto}|{db_vuln.id}"] = plugin_output
@@ -551,7 +566,7 @@ class Module(ModuleTemplate):
                 #     # print("Plugin output added to database")
                 #     db_output.data = plugin_output
                 #     db_output.save()
-                      
+
                 # if not db_vuln.meta.get('plugin_output', False):
                 #     db_vuln.meta['plugin_output'] = {}
                 # if not db_vuln.meta['plugin_output'].get(ip.ip_address, False):
@@ -561,29 +576,32 @@ class Module(ModuleTemplate):
                 #     db_vuln.meta['plugin_output'][ip.ip_address][port] = []
 
                 # if plugin_output not in db_vuln.meta['plugin_output'][ip.ip_address][port]:
-                
+
                 #     db_vuln.meta['plugin_output'][ip.ip_address][port].append(plugin_output)
-                
 
             # if not self.args.disable_mitre:
             for cve in cves:
                 if not self.cve_data.get(cve):
 
-                # if not CVE.objects.all().filter(name=cve):
+                    # if not CVE.objects.all().filter(name=cve):
                     if self.args.disable_mitre:
                         cveDescription = ""
                         cvss = 0.0
                     else:
 
                         try:
-                            
-                            url = 'https://nvd.nist.gov/vuln/detail/{}/'
+
+                            url = "https://nvd.nist.gov/vuln/detail/{}/"
                             res = requests.get(url.format(cve)).text
 
-                            cveDescription = res.split('<p data-testid="vuln-description">')[1].split('</p>')[0]
-                        
-                            cvss = float(res.split('Base Score:')[1].split(' ')[3].split(';')[-1])
-                        
+                            cveDescription = res.split(
+                                '<p data-testid="vuln-description">'
+                            )[1].split("</p>")[0]
+
+                            cvss = float(
+                                res.split("Base Score:")[1].split(" ")[3].split(";")[-1]
+                            )
+
                             # cveDescription = res["summary"]
                             # cvss = float(res["cvss"])
 
@@ -595,33 +613,33 @@ class Module(ModuleTemplate):
                     self.cve_data[cve] = [cveDescription, cvss]
 
                 self.cve_map.append(f"{cve}|{db_vuln.id}")
-                        # db_cve.vulnerability_set.add(db_vuln)
-                    # else:
-                    #     db_cve = CVE.objects.get(name=cve)
-                    #     if (
-                    #         db_cve.description is None
-                    #         and cveDescription is not None  # noqa: W503
-                    #     ):
-                    #         db_cve.description = cveDescription
-                    #     if db_cve.temporal_score is None and cvss is not None:
-                    #         db_cve.temporal_score = cvss
-                    #     db_cve.vulnerability_set.add(db_vuln)
+                # db_cve.vulnerability_set.add(db_vuln)
+                # else:
+                #     db_cve = CVE.objects.get(name=cve)
+                #     if (
+                #         db_cve.description is None
+                #         and cveDescription is not None  # noqa: W503
+                #     ):
+                #         db_cve.description = cveDescription
+                #     if db_cve.temporal_score is None and cvss is not None:
+                #         db_cve.temporal_score = cvss
+                #     db_cve.vulnerability_set.add(db_vuln)
 
         if self.ip_data.get(ip):
             for v in ip_data.keys():
                 if not self.ip_data[ip].get(v):
                     self.ip_data[ip][v] = ip_data[v]
                 else:
-                    if self.ip_data[ip][v].get('info') and ip_data[v].get('info'):
-                        self.ip_data[ip][v]['info'].update(ip_data[v]['info'])
+                    if self.ip_data[ip][v].get("info") and ip_data[v].get("info"):
+                        self.ip_data[ip][v]["info"].update(ip_data[v]["info"])
 
         else:
             self.ip_data[ip] = ip_data
-        
+
         self.ports.update(vuln_data)
 
     def process_data(self, nFile, args):
-        
+
         display("Reading " + nFile)
         tree = ET.parse(nFile)
         root = tree.getroot()
@@ -653,62 +671,82 @@ class Module(ModuleTemplate):
                         os = " OR ".join(tag.text.split("\n"))
             # pdb.set_trace()
 
-
             if hostIP and hostIP not in current_ips:
                 res = validate_ip(hostIP)
                 if res == "ipv4":
                     v = 4
                 else:
-                
+
                     v = 6
-                new_ips.append(IPAddress(ip_address=hostIP, active_scope=True, passive_scope=True, version=v, os=os))
+                new_ips.append(
+                    IPAddress(
+                        ip_address=hostIP,
+                        active_scope=True,
+                        passive_scope=True,
+                        version=v,
+                        os=os,
+                    )
+                )
                 new_ip_list.append(hostIP)
                 current_ips.add(hostIP)
-              
-            if hostIP and hostname and '.' in hostname: # Filter out the random hostnames that aren't fqdns
+
+            if (
+                hostIP and hostname and "." in hostname
+            ):  # Filter out the random hostnames that aren't fqdns
                 if not new_domains.get(hostIP):
                     new_domains[hostIP] = []
 
-                hostname = ''.join([i for i in hostname.lower() if i in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
-                
-                if hostname not in current_domains and hostname not in new_domains[hostIP]:
+                hostname = "".join(
+                    [
+                        i
+                        for i in hostname.lower()
+                        if i in "abcdefghijklmnopqrstuvwxyz.-0123456789"
+                    ]
+                )
+
+                if (
+                    hostname not in current_domains
+                    and hostname not in new_domains[hostIP]
+                ):
                     new_domains[hostIP].append(hostname)
                     if hostname not in just_domains:
                         just_domains.append(hostname)
-           
-             
+
         cidrs = {c.name: c.id for c in CIDR.objects.all()}
-        
+
         for instance in new_ips:
-            
+
             for c, v in cidrs.items():
-                
+
                 if instance.ip_address in IPNetwork(c):
-                    
+
                     instance.cidr_id = v
                     cidrs[c] = v
                     break
-            
-            if not instance.cidr:
+
+            if not hasattr(instance, "cidr"):
                 cidr_data, org_name = get_cidr_info(instance.ip_address)
-                cidr, created = CIDR.objects.get_or_create(name=cidr_data, defaults={'org_name':org_name})
+                cidr, created = CIDR.objects.get_or_create(
+                    name=cidr_data, defaults={"org_name": org_name}
+                )
                 instance.cidr = cidr
                 cidrs[cidr.name] = cidr.id
 
-        
         display("Bulk creating IPs...")
 
         IPAddress.objects.bulk_create(new_ips)
         domain_objs = []
 
-        base_domains = { bd.name: bd.id for bd in BaseDomain.objects.all()}
+        base_domains = {bd.name: bd.id for bd in BaseDomain.objects.all()}
 
         for d in just_domains:
-            
-            base_domain = '.'.join(d.split('.')[-2:])
+
+            base_domain = ".".join(d.split(".")[-2:])
 
             if not base_domains.get(base_domain):
-                bd = BaseDomain(name=base_domain, active_scope = False, passive_scope = False)
+                bd = BaseDomain(
+                    name=base_domain, active_scope=False, passive_scope=False
+                )
                 bd.save()
 
                 bd_id = bd.id
@@ -721,8 +759,8 @@ class Module(ModuleTemplate):
         display("Bulk creating domains...")
         Domain.objects.bulk_create(domain_objs)
 
-        current_ips = {i.ip_address:i.id for i in IPAddress.objects.all()}
-        current_domains = {d.name:d.id for d in Domain.objects.all()}
+        current_ips = {i.ip_address: i.id for i in IPAddress.objects.all()}
+        current_domains = {d.name: d.id for d in Domain.objects.all()}
 
         ThroughModel = Domain.ip_addresses.through
 
@@ -737,86 +775,101 @@ class Module(ModuleTemplate):
                     d_id = current_domains[d]
 
                     many_objs.append(ThroughModel(domain_id=d_id, ipaddress_id=ip_id))
-        
+
         display("Bulk gluing them together")
         ThroughModel.objects.bulk_create(many_objs)
 
-        
         for ReportHost in root.iter("ReportHost"):
-            
+
             for HostProperties in ReportHost.iter("HostProperties"):
                 for tag in HostProperties:
                     if tag.get("name") == "host-ip":
                         hostIP = tag.text
 
-            
             if hostIP:  # apparently nessus doesn't always have an IP to work with...
 
                 ip_id = current_ips[hostIP]
-                
-                self.getVulns(ip_id, ReportHost)
-                
 
-        
+                self.getVulns(ip_id, ReportHost)
+
         ports = []
 
-        current_ports = set([f"{p.ip_address_id}|{p.port_number}|{p.proto}" for p in Port.objects.all()])
-
-        
+        current_ports = set(
+            [f"{p.ip_address_id}|{p.port_number}|{p.proto}" for p in Port.objects.all()]
+        )
 
         for i, v in self.ip_data.items():
-            
+
             for k, data in v.items():
 
                 if f"{i}|{k}" not in current_ports:
-                    ports.append(Port(ip_address_id=i, port_number=k.split('|')[0], proto=k.split('|')[1], service_name=data['service_name']))
+                    ports.append(
+                        Port(
+                            ip_address_id=i,
+                            port_number=k.split("|")[0],
+                            proto=k.split("|")[1],
+                            service_name=data["service_name"],
+                        )
+                    )
                     current_ports.add(f"{i}|{k}")
-                
-        display(f"Bulk loading {len(ports)} Ports")            
+
+        display(f"Bulk loading {len(ports)} Ports")
         Port.objects.bulk_create(ports)
 
         # Maybe race condition?
         # time.sleep(30)
 
-        all_ports = {f"{p.ip_address_id}|{p.port_number}|{p.proto}":p.id for p in Port.objects.all()}
-        
+        all_ports = {
+            f"{p.ip_address_id}|{p.port_number}|{p.proto}": p.id
+            for p in Port.objects.all()
+        }
+
         display("Gluing in Vulnerabilities")
 
         ThroughModel = Vulnerability.ports.through
 
-        vuln_port_current = set([f"{v.vulnerability_id}|{v.port_id}" for v in ThroughModel.objects.all()])
+        vuln_port_current = set(
+            [f"{v.vulnerability_id}|{v.port_id}" for v in ThroughModel.objects.all()]
+        )
         port_vuln_data = []
 
         for d in self.ports:
-            p = '|'.join(d.split('|')[:3])
-            v = d.split('|')[-1]
+            p = "|".join(d.split("|")[:3])
+            v = d.split("|")[-1]
             if not all_ports.get(p):
                 # Weird edge case that seems to happen at random. Relook this one up in DB
                 print(f"Missing {p}")
-                p_id, p_num, p_proto = p.split('|')
-                port_obj = Port.objects.get(ip_address_id=p_id, port_number=p_num, proto=p_proto)
+                p_id, p_num, p_proto = p.split("|")
+                port_obj = Port.objects.get(
+                    ip_address_id=p_id, port_number=p_num, proto=p_proto
+                )
                 all_ports[p] = port_obj.id
             if f"{v}|{all_ports[p]}" not in vuln_port_current:
-                
-                port_vuln_data.append(ThroughModel(port_id=all_ports[p], vulnerability_id=v))
-                vuln_port_current.add(f"{v}|{all_ports[p]}")
-        
-        
-        ThroughModel.objects.bulk_create(port_vuln_data)
 
-        
+                port_vuln_data.append(
+                    ThroughModel(port_id=all_ports[p], vulnerability_id=v)
+                )
+                vuln_port_current.add(f"{v}|{all_ports[p]}")
+
+        ThroughModel.objects.bulk_create(port_vuln_data)
 
         vuln_outputs = []
 
-        vulnobject_data = set([f"{v.port.ip_address_id}|{v.port.port_number}|{v.port.proto}|{v.vulnerability_id}" for v in VulnOutput.objects.all()])
-
+        vulnobject_data = set(
+            [
+                f"{v.port.ip_address_id}|{v.port.port_number}|{v.port.proto}|{v.vulnerability_id}"
+                for v in VulnOutput.objects.all()
+            ]
+        )
 
         for k, v in self.vulnobjects.items():
             if k not in vulnobject_data:
-                port_id = all_ports['|'.join(k.split('|')[:3])]
-                vuln_id = k.split('|')[-1]
+                port_id = all_ports["|".join(k.split("|")[:3])]
+                vuln_id = k.split("|")[-1]
 
-                vuln_outputs.append(VulnOutput(port_id=port_id, vulnerability_id=vuln_id, data=v))
+                vuln_outputs.append(
+                    VulnOutput(port_id=port_id, vulnerability_id=vuln_id, data=v)
+                )
 
         display(f"Adding in {len(vuln_outputs)} output data")
         VulnOutput.objects.bulk_create(vuln_outputs)
@@ -834,24 +887,24 @@ class Module(ModuleTemplate):
 
         display("And finally gluing them to the vulns")
 
-        cve_current = {c.name :c.id for c in CVE.objects.all()}
+        cve_current = {c.name: c.id for c in CVE.objects.all()}
         ThroughModel = Vulnerability.cves.through
 
-        cve_through = set([f"{c.cve_id}|{c.vulnerability_id}" for c in ThroughModel.objects.all()])
+        cve_through = set(
+            [f"{c.cve_id}|{c.vulnerability_id}" for c in ThroughModel.objects.all()]
+        )
 
         cve_glue = []
         for m in list(set(self.cve_map)):
 
-            cve_id = cve_current[m.split('|')[0]]
-            vuln_id = m.split('|')[1]
+            cve_id = cve_current[m.split("|")[0]]
+            vuln_id = m.split("|")[1]
             if f"{cve_id}|{vuln_id}" not in cve_through:
 
                 cve_glue.append(ThroughModel(cve_id=cve_id, vulnerability_id=vuln_id))
 
         ThroughModel.objects.bulk_create(cve_glue)
 
-
         # Now to add all of this data into the database
-
 
         return
