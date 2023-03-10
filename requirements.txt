@@ -23,7 +23,7 @@ ipwhois
 ipython==7.31.1
 ipython-genutils==0.2.0
 jedi==0.18.0
-lxml==4.6.3
+lxml
 matplotlib-inline==0.1.2
 mysqlclient==2.0.3
 netaddr==0.8.0
