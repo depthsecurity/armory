@@ -105,7 +105,7 @@ class Module(ToolTemplate):
         for cmd in cmds:
             if cmd["cidr"]:
 
-                cidr, _ = CIDR.objects.get_or_create(name=cmd["cidr_name"])
+                cidr, _ = CIDR.objects.get_or_create(name=cmd["cidr"])
                 cidr.meta["whois"] = read_file(cmd["output"])
                 cidr.save()
                 display(cidr.meta["whois"])
