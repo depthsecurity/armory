@@ -1,11 +1,12 @@
-from armory2.armory_main.models import (     
+from armory2.armory_main.models import (
     BaseDomain,
     Domain,
     IPAddress,
     Port,
     CIDR,
     Vulnerability,
-    CVE, )
+    CVE,
+)
 
 import datetime
 import json
@@ -18,9 +19,7 @@ import pdb
 import xml.etree.ElementTree as ET
 
 
-def import_nmap(
-    filename, args
-):  # domains={}, ips={}, rejects=[] == temp while no db
+def import_nmap(filename, args):  # domains={}, ips={}, rejects=[] == temp while no db
     nFile = filename
     # pdb.set_trace()
     try:
@@ -53,7 +52,6 @@ def import_nmap(
                 domain.save()
 
         for port in host.findall("ports/port"):
-
             if port.find("state").get("state"):
                 portState = port.find("state").get("state")
                 hostPort = port.get("portid")
@@ -66,9 +64,9 @@ def import_nmap(
                 ]:
                     db_port, created = Port.objects.get_or_create(
                         port_number=hostPort,
-                        status=portState,
                         proto=portProto,
                         ip_address=ip,
+                        defaults={"status": portState},
                     )
 
                     if port.find("service") is not None:
@@ -84,18 +82,18 @@ def import_nmap(
                     if not info:
                         info = {}
 
-                    if not db_port.meta.get('nmap_scripts'):
-                        db_port.meta['nmap_scripts'] = {}
+                    if not db_port.meta.get("nmap_scripts"):
+                        db_port.meta["nmap_scripts"] = {}
                     for script in port.findall(
                         "script"
                     ):  # just getting commonName from cert
-                        db_port.meta['nmap_scripts'][script.get("id")] = script.get('output')
+                        db_port.meta["nmap_scripts"][script.get("id")] = script.get(
+                            "output"
+                        )
                         # print(script.get("id"))
                         if script.get("id") == "ssl-cert":
                             db_port.cert = script.get("output")
-                            cert_domains = get_domains_from_cert(
-                                script.get("output")
-                            )
+                            cert_domains = get_domains_from_cert(script.get("output"))
 
                             for hostname in cert_domains:
                                 hostname = hostname.lower().replace("www.", "")
@@ -117,7 +115,6 @@ def import_nmap(
                             info["banner"] = script.get("output")
 
                         elif script.get("id") == "http-headers":
-
                             httpHeaders = script.get("output")
                             httpHeaders = httpHeaders.strip().split("\n")
                             keepHeaders = parseHeaders(httpHeaders)
@@ -132,7 +129,6 @@ def import_nmap(
                     db_port.info = info
                     db_port.save()
 
-        
 
 def parseVulners(scriptOutput, db_port):
     urls = re.findall(r"(https://vulners.com/cve/CVE-\d*-\d*)", scriptOutput)
@@ -141,9 +137,7 @@ def parseVulners(scriptOutput, db_port):
         exploitable = False
         cve = url.split("/cve/")[1]
         vulners = requests.get("https://vulners.com/cve/%s" % cve).text
-        exploitdb = re.findall(
-            r"https://www.exploit-db.com/exploits/\d{,7}", vulners
-        )
+        exploitdb = re.findall(r"https://www.exploit-db.com/exploits/\d{,7}", vulners)
         for edb in exploitdb:
             exploitable = True
 
@@ -192,13 +186,8 @@ def parseVulners(scriptOutput, db_port):
                         if db_vuln.exploit_reference is not None:
                             if "edb-id" in db_vuln.exploit_reference:
                                 for ref in vuln_refs:
-                                    if (
-                                        ref
-                                        not in db_vuln.exploit_reference["edb-id"]
-                                    ):
-                                        db_vuln.exploit_reference["edb-id"].append(
-                                            ref
-                                        )
+                                    if ref not in db_vuln.exploit_reference["edb-id"]:
+                                        db_vuln.exploit_reference["edb-id"].append(ref)
 
                             else:
                                 db_vuln.exploit_reference["edb-id"] = vuln_refs
@@ -219,13 +208,10 @@ def parseVulners(scriptOutput, db_port):
                     db_cve.vulnerability_set.add(db_vuln)
                     db_cve.save()
 
-                
             except Exception:
                 print("something went wrong with the vuln/cve info gathering")
                 if vulners:
-                    print(
-                        "Vulners report was found but no exploit-db was discovered"
-                    )
+                    print("Vulners report was found but no exploit-db was discovered")
                     # "Affected vulners items"
                     # print vulners
                 print("Affected CVE")
@@ -239,6 +225,7 @@ def parseVulners(scriptOutput, db_port):
                     db_vulns.ports.add(db_port)
     return
 
+
 def get_domains_from_cert(cert):
     # Shamelessly lifted regex from stack overflow
     regex = r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}"
@@ -246,6 +233,7 @@ def get_domains_from_cert(cert):
     domains = list(set([d for d in re.findall(regex, cert) if "*" not in d]))
 
     return domains
+
 
 def parseHeaders(httpHeaders):
     bsHeaders = [
