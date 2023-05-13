@@ -1,27 +1,3 @@
-# Armory2 Beta Installation Instructions and Usage Notes
-
-## Initial setup
-
-Clone the armory repo:
-
-`git clone https://github.com/depthsecurity/armory`
-
-Change into the directory, and switch over to the armory2 branch.
-
-```bash
-cd armory
-git checkout armory2.0
-```
-
-Create a virtual environment and install into there.
-
-```bash
-mkvirtualenv armory2 -p /usr/bin/python3
-
-pip install django
-python3 setup.py install
-```
-
 ## Setting up the configs
 
 All of the module configs are the same as they always were. The only difference is the main settings file. Instead of _settings.ini_ you now have a python file called _settings.py_ which contains something similar to the following:
