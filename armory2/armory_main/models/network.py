@@ -26,7 +26,6 @@ import tld
 
 
 class ToolRun(BaseModel):
-
     args = models.CharField(max_length=1024, default="")
     port = models.IntegerField(default=0)
     port_obj = models.ForeignKey(
@@ -52,7 +51,6 @@ class BaseDomain(BaseModel):
 
 
 class CIDR(BaseModel):
-
     name = models.CharField(max_length=44, unique=True)
     org_name = models.CharField(max_length=256, unique=False, null=True)
     toolrun = GenericRelation(ToolRun, related_query_name="cidrs")
@@ -86,7 +84,6 @@ class IPAddress(BaseModel):
         return self.ip_address
 
     def add_tool_run(self, tool, args="", port=None, virtualhost=None):
-
         port_obj = None
         if port:
             port_objs = Port.objects.filter(
@@ -158,7 +155,6 @@ class VirtualHost(BaseModel):
 
 
 class Port(BaseModel):
-
     port_number = models.IntegerField(unique=False)
     proto = models.CharField(max_length=32)
     status = models.CharField(max_length=32, default="open")
@@ -171,6 +167,9 @@ class Port(BaseModel):
 
     def __str__(self):
         return "{} / {} / {}".format(self.proto, self.port_number, self.service_name)
+
+    def get_active_virtualhosts(self):
+        return self.virtualhost_set.filter(active=True).order_by("name")
 
     class Meta:
         ordering = ["port_number"]
@@ -256,7 +255,9 @@ def post_save_domain(sender, instance, created, *args, **kwargs):
                 ip.passive_scope = True
 
             for p in ip.port_set.all():
-                vh, created = VirtualHost.objects.get_or_create(ip_address=ip, port=p, name=domain_name)
+                vh, created = VirtualHost.objects.get_or_create(
+                    ip_address=ip, port=p, name=domain_name
+                )
             display_new(
                 "IP and Domain {}/{} scope updated to:  Active Scope: {}     Passive Scope: {}".format(
                     i, domain_name, ip.active_scope, ip.passive_scope
@@ -264,16 +265,22 @@ def post_save_domain(sender, instance, created, *args, **kwargs):
             )
 
             ip.save()
-            vh, created = VirtualHost.objects.get_or_create(ip_address=ip, port=None, name=instance.name)
+            vh, created = VirtualHost.objects.get_or_create(
+                ip_address=ip, port=None, name=instance.name
+            )
             if created:
-                display_new(f"Added {instance.name} to virtualhosts for {ip.ip_address}")
+                display_new(
+                    f"Added {instance.name} to virtualhosts for {ip.ip_address}"
+                )
             instance.ip_addresses.add(ip)
             for p in ip.port_set.filter(service_name__icontains="http"):
                 vh, created = VirtualHost.objects.get_or_create(
                     ip_address=ip, port=p, name=instance.name
                 )
                 if created:
-                    display_new(f"Added {instance.name} to virtualhosts for {ip.ip_address}:{p.port_number}")
+                    display_new(
+                        f"Added {instance.name} to virtualhosts for {ip.ip_address}:{p.port_number}"
+                    )
             instance.save()
 
 
@@ -313,11 +320,15 @@ def pre_save_ip(sender, instance, *args, **kwargs):
             )
         )
 
+
 @receiver(post_save, sender=Port)
 def post_save_port(sender, instance, created, *args, **kwargs):
     if created:
         for vhost in instance.ip_address.virtualhost_set.all():
-            vh, created = VirtualHost.objects.get_or_create(ip_address=instance.ip_address, port=instance, name=vhost.name)
+            vh, created = VirtualHost.objects.get_or_create(
+                ip_address=instance.ip_address, port=instance, name=vhost.name
+            )
+
 
 @receiver(pre_save, sender=CIDR)
 def pre_save_cidr(sender, instance, *args, **kwargs):
@@ -338,7 +349,6 @@ def pre_save_cidr(sender, instance, *args, **kwargs):
 
 
 def get_cidr_info(ip_address):
-
     for p in private_subnets:
         if ip_address in p:
             return str(p), "Non-Public Subnet"
@@ -352,7 +362,6 @@ def get_cidr_info(ip_address):
             display_error("Error trying to resolve whois: {}".format(e))
             res = {}
     if not res.get("nets", []):
-
         display_warning("The networks didn't populate from whois. Defaulting to a /24.")
         # again = raw_input("Would you like to try again? [Y/n]").lower()
         # if again == 'y':
@@ -368,7 +377,6 @@ def get_cidr_info(ip_address):
 
     for net in res["nets"]:
         for cd in net["cidr"].split(", "):
-
             cidr_data.append(
                 [
                     len(IPNetwork(cd)),
