@@ -18,6 +18,11 @@ from armory2.armory_main.included.utilities.color_display import (
 import os
 import time
 
+from armory2.armory_main.models.network import Port
+
+def clean_domain(s):
+    return ''.join([st for st in s.lower() if st in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
+
 
 class Module(ToolTemplate):
 
@@ -64,6 +69,12 @@ class Module(ToolTemplate):
             help="Grabs every domain prefix and tries it against every base domain",
             action="store_true",
         )
+        self.options.add_argument(
+            "--revalidate",
+            help="Revalidates currently discovered virtualhosts, useful to weed out false positives",
+            action="store_true"
+
+        )
         self.options.set_defaults(timeout=600)  # Kick the default timeout to 10 minutes
 
     def get_targets(self, args):
@@ -103,10 +114,10 @@ class Module(ToolTemplate):
         if args.file:
             for vhost in open(args.file).read().split("\n"):
                 if vhost:
-                    self.vhosts.append(vhost)
+                    self.vhosts.append(clean_domain(vhost))
 
         if args.dictionary:
-            prefixes = [p for p in open(args.dictionary).read().split("\n") if p]
+            prefixes = clean_domain([p for p in open(args.dictionary).read().split("\n") if p])
 
             for bd in BaseDomain.objects.filter(passive_scope=True):
                 for pref in prefixes:
@@ -115,7 +126,7 @@ class Module(ToolTemplate):
 
         if args.quick:
             for d in Domain.objects.filter(passive_scope=True):
-                self.vhosts.append(d.name)
+                self.vhosts.append(clean_domain(d.name))
 
         elif args.extensive:
             prefixes = []
@@ -124,13 +135,41 @@ class Module(ToolTemplate):
                     bdl = len(d.basedomain.name) + 1
                     pref = d.name[: len(d.name) - bdl]
                     if pref and pref not in prefixes:
-                        prefixes.append(pref)
+                        prefixes.append(clean_domain(pref))
 
             for bd in BaseDomain.objects.filter(passive_scope=True):
                 for pref in prefixes:
-                    self.vhosts.append(f"{pref}.{bd.name}")
+                    self.vhosts.append(clean_domain(f"{pref}.{bd.name}"))
+        elif args.revalidate:
+            
 
-        # pdb.set_trace()
+            target_obj = Port.objects.filter(virtualhost__active=True, port_number__gte=1, service_name__in=["http","https"]).distinct()
+            
+            res = []
+
+            for target in target_obj:
+                _, tmp = tempfile.mkstemp()
+                t = f"{target.service_name}://{target.ip_address.ip_address}:{target.port_number}"
+                res.append(
+                    {
+                        "target": t,
+                        # "wordlist": file_name,
+                        "new_wl": tmp,
+                        "obj_id": target.id,
+                        "output": os.path.join(
+                            output_path,
+                            t.replace(":", "_")
+                            .replace("/", "_")
+                            .replace("?", "_")
+                            .replace("&", "_")
+                            + ".txt",
+                        ),
+                    }
+                )
+        
+            return res    
+
+        
         res = []
         for t in targets:
             _, tmp = tempfile.mkstemp()
@@ -168,14 +207,22 @@ class Module(ToolTemplate):
         res = []
 
         for t in targets:
-            host = t["target"].split("/")[-1]
-            f = open(t["new_wl"], "w")
-            f.write(f"{host}\n")
+            if t.get("obj_id"):
+                host = t["target"].split("/")[-1]
+                with open(t["new_wl"], "w") as f:
+                    for v in VirtualHost.objects.filter(port_id=t['obj_id'], active=True):
+                        f.write(clean_domain(v.name)+ "\n")
 
-            for vhost in self.vhosts:
-                f.write(f"{vhost}\n")
 
-            f.close()
+            else:
+                host = t["target"].split("/")[-1]
+                f = open(t["new_wl"], "w")
+                f.write(f"{host}\n")
+
+                for vhost in self.vhosts:
+                    f.write(f"{vhost}\n")
+
+                f.close()
 
         return super().populate_cmds(cmd, timeout, targets)
 
@@ -199,13 +246,14 @@ class Module(ToolTemplate):
                         )
                     else:
                         res_str = f"{data['status']}-{data['words']}-{data['lines']}"
-
+                    # pdb.set_trace()
                     if data["host"] == host:
                         vhost_data[res_str] = host
                     elif not vhost_data.get(res_str):
                         vhost_data[res_str] = data["host"]
 
                 vhosts = [v for k, v in vhost_data.items() if v != host]
+                # pdb.set_trace()
                 if vhosts:
                     display_new(
                         f"The following vhosts were found for {host}: {', '.join(vhosts)}"
