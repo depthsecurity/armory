@@ -96,6 +96,11 @@ class Module(ModuleTemplate):
             help="API Key for HunterIO"
         )
 
+        self.options.add_argument(
+            "--cookie",
+            help="'li_at' cookie for LinkedIn (to be used instead of login/password)"
+        )
+
     def run(self, args):
         # pdb.set_trace()
         if not args.binary:
@@ -205,7 +210,9 @@ class Module(ModuleTemplate):
         if args.email_format:
             command_args += " -f " + args.email_format
 
-        if args.login and args.password:
+        if args.cookie:
+            command_args += f" --li_at {args.cookie} "
+        elif args.login and args.password:
             command_args += " --login {} --password {} ".format(args.login, args.password)
 
         if args.apikey:
