@@ -68,7 +68,6 @@ class Module(ToolTemplate):
         )
 
     def get_targets(self, args):
-
         timestamp = str(int(time()))
         targets = []
         if args.import_file:
@@ -83,11 +82,9 @@ class Module(ToolTemplate):
                 )
 
         if args.scan_folder:
-
             files = os.listdir(args.scan_folder)
             counter_max = str(args.counter_max)
             for f in files:
-
                 if f.count("_") == 4:
                     counter = 0
                     http, _, _, domain, port = f.split("-dir.txt")[0].split("_")
@@ -134,9 +131,9 @@ class Module(ToolTemplate):
         return res
 
     def build_cmd(self, args):
-
         command = (
-            self.binary + " file -f {target} -D {output}/gowitness.db -P {output}  "
+            self.binary
+            + " file -f {target} -D sqlite://{output}/gowitness.sqlite3 -P {output}  "
         )
 
         if args.tool_args:
@@ -187,7 +184,6 @@ class Module(ToolTemplate):
                 )
             )
             for name in domains:
-
                 domain, created = Domain.objects.get_or_create(name=name.lower())
 
             url_domain_data = {}
@@ -206,7 +202,6 @@ class Module(ToolTemplate):
                     display_error("Port not found: {}".format(u[1]))
                 else:
                     if not port.meta.get("Gowitness"):
-
                         port.meta["Gowitness"] = []
 
                     data = {
@@ -224,7 +219,6 @@ class Module(ToolTemplate):
                     }
 
                     for dmn in url_domain_data.get(u[1], []):
-
                         dn, created = VirtualHost.objects.get_or_create(
                             ip_address=port.ip_address, name=dmn, port=port
                         )
