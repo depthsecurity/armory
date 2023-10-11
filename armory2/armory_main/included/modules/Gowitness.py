@@ -168,7 +168,7 @@ class Module(ToolTemplate):
 
             # subprocess.Popen(cmd, shell=False).wait()
 
-            conn = sqlite3.connect(os.path.join(output, "gowitness.db"))
+            conn = sqlite3.connect(os.path.join(output, "gowitness.sqlite3"))
 
             cr = conn.cursor()
             sql = """
