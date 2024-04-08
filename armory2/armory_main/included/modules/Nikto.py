@@ -4,10 +4,14 @@ from armory2.armory_main.models import (
     IPAddress,
     Domain,
     Port,
- 
 )
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
-from armory2.armory_main.included.utilities.get_urls import run, add_tool_url, get_port_object, get_urls_with_virtualhosts
+from armory2.armory_main.included.utilities.get_urls import (
+    run,
+    add_tool_url,
+    get_port_object,
+    get_urls_with_virtualhosts,
+)
 from armory2.armory_main.included.utilities.color_display import display_warning
 import os
 import time
@@ -68,7 +72,9 @@ class Module(ToolTemplate):
                 if args.rescan:
                     targets += run(scope_type="active")
                 else:
-                    targets += run(tool=self.name, args=self.args.tool_args, scope_type="active")
+                    targets += run(
+                        tool=self.name, args=self.args.tool_args, scope_type="active"
+                    )
 
         if args.output_path[0] == "/":
             output_path = os.path.join(
@@ -88,7 +94,7 @@ class Module(ToolTemplate):
             os.makedirs(output_path)
 
         res = self.build_generic_targets(targets, output_path)
-        
+
         return res
 
     # def build_cmd(self, args):
@@ -100,7 +106,7 @@ class Module(ToolTemplate):
 
     #     return ''
 
-    def populate_cmds(self, cmd, timeout, targets):
+    def populate_cmds(self, cmd, timeout, targets, nikto):
 
         res = []
         # pdb.set_trace()
@@ -113,30 +119,32 @@ class Module(ToolTemplate):
 
             cmd += self.args.tool_args
 
-            res.append(shlex.split(cmd) + [timeout])
+            res.append(shlex.split(cmd) + [timeout, nikto])
 
         return res
+
     def process_output(self, cmds):
 
         for t in cmds:
             vhost = t.get("virtualhost")
 
-            add_tool_url(url=t['target'], tool=self.name, args=self.args.tool_args, vhost=vhost)
+            add_tool_url(
+                url=t["target"], tool=self.name, args=self.args.tool_args, vhost=vhost
+            )
             # pdb.set_trace()
-            port = get_port_object(t['target'])
+            port = get_port_object(t["target"])
             if not port:
                 display_warning(f"Port object for {t['target']} not found")
             else:
-                if not port.meta.get('Nikto'):
-                    port.meta['Nikto'] = {}
-                if not port.meta['Nikto'].get(t['target']):
-                    port.meta['Nikto'][t['target']] = []
-                if t['output'] not in port.meta['Nikto'][t['target']]:
+                if not port.meta.get("Nikto"):
+                    port.meta["Nikto"] = {}
+                if not port.meta["Nikto"].get(t["target"]):
+                    port.meta["Nikto"][t["target"]] = []
+                if t["output"] not in port.meta["Nikto"][t["target"]]:
 
-                    port.meta['Nikto'][t['target']].append(t['output'])
+                    port.meta["Nikto"][t["target"]].append(t["output"])
                 port.save()
 
         display_warning(
             "There is currently no post-processing for this module. For the juicy results, refer to the output file paths."
         )
-
