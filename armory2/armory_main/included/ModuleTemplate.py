@@ -338,7 +338,7 @@ class ToolTemplateNoOutput(ToolTemplate):
                 cmd = self.build_cmd(args).strip()
 
                 cmds = [
-                    (shlex.split(cmd.format(**t)) + [timeout], t["output", delay])
+                    (shlex.split(cmd.format(**t)) + [timeout, delay], t["output"])
                     for t in targets
                 ]
 
