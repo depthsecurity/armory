@@ -20,8 +20,11 @@ import time
 
 from armory2.armory_main.models.network import Port
 
+
 def clean_domain(s):
-    return ''.join([st for st in s.lower() if st in 'abcdefghijklmnopqrstuvwxyz.-0123456789'])
+    return "".join(
+        [st for st in s.lower() if st in "abcdefghijklmnopqrstuvwxyz.-0123456789"]
+    )
 
 
 class Module(ToolTemplate):
@@ -72,8 +75,7 @@ class Module(ToolTemplate):
         self.options.add_argument(
             "--revalidate",
             help="Revalidates currently discovered virtualhosts, useful to weed out false positives",
-            action="store_true"
-
+            action="store_true",
         )
         self.options.set_defaults(timeout=600)  # Kick the default timeout to 10 minutes
 
@@ -117,7 +119,9 @@ class Module(ToolTemplate):
                     self.vhosts.append(clean_domain(vhost))
 
         if args.dictionary:
-            prefixes = clean_domain([p for p in open(args.dictionary).read().split("\n") if p])
+            prefixes = clean_domain(
+                [p for p in open(args.dictionary).read().split("\n") if p]
+            )
 
             for bd in BaseDomain.objects.filter(passive_scope=True):
                 for pref in prefixes:
@@ -141,10 +145,13 @@ class Module(ToolTemplate):
                 for pref in prefixes:
                     self.vhosts.append(clean_domain(f"{pref}.{bd.name}"))
         elif args.revalidate:
-            
 
-            target_obj = Port.objects.filter(virtualhost__active=True, port_number__gte=1, service_name__in=["http","https"]).distinct()
-            
+            target_obj = Port.objects.filter(
+                virtualhost__active=True,
+                port_number__gte=1,
+                service_name__in=["http", "https"],
+            ).distinct()
+
             res = []
 
             for target in target_obj:
@@ -166,10 +173,9 @@ class Module(ToolTemplate):
                         ),
                     }
                 )
-        
-            return res    
 
-        
+            return res
+
         res = []
         for t in targets:
             _, tmp = tempfile.mkstemp()
@@ -202,7 +208,7 @@ class Module(ToolTemplate):
 
         return cmd
 
-    def populate_cmds(self, cmd, timeout, targets):
+    def populate_cmds(self, cmd, timeout, targets, delay):
 
         res = []
 
@@ -210,9 +216,10 @@ class Module(ToolTemplate):
             if t.get("obj_id"):
                 host = t["target"].split("/")[-1]
                 with open(t["new_wl"], "w") as f:
-                    for v in VirtualHost.objects.filter(port_id=t['obj_id'], active=True):
-                        f.write(clean_domain(v.name)+ "\n")
-
+                    for v in VirtualHost.objects.filter(
+                        port_id=t["obj_id"], active=True
+                    ):
+                        f.write(clean_domain(v.name) + "\n")
 
             else:
                 host = t["target"].split("/")[-1]
@@ -224,7 +231,7 @@ class Module(ToolTemplate):
 
                 f.close()
 
-        return super().populate_cmds(cmd, timeout, targets)
+        return super().populate_cmds(cmd, timeout, targets, delay)
 
     def process_output(self, cmds):
 

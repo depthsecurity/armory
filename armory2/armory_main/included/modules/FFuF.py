@@ -152,7 +152,7 @@ class Module(ToolTemplate):
 
         return ""
 
-    def populate_cmds(self, cmd, timeout, targets):
+    def populate_cmds(self, cmd, timeout, targets, delay):
 
         res = []
         # pdb.set_trace()
@@ -165,7 +165,7 @@ class Module(ToolTemplate):
 
             cmd += self.args.tool_args
 
-            res.append(shlex.split(cmd) + [timeout])
+            res.append(shlex.split(cmd) + [timeout, delay])
 
         return res
 

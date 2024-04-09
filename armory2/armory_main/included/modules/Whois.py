@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import pdb
 from armory2.armory_main.models import BaseDomain, CIDR
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities.color_display import display
@@ -38,11 +39,16 @@ class Module(ToolTemplate):
 
     def get_targets(self, args):
         targets = []
+        if args.delay:
+            delay = int(args.delay)
+
         if args.domain:
-            targets.append({"domain": args.domain, "cidr": ""})
+            targets.append({"domain": args.domain, "cidr": "", "delay": delay})
 
         elif args.cidr:
-            targets.append({"domain": "", "cidr": args.cidr.split("/")[0]})
+            targets.append(
+                {"domain": "", "cidr": args.cidr.split("/")[0], "delay": delay}
+            )
 
         elif args.import_database:
             if args.all_data:
@@ -57,13 +63,16 @@ class Module(ToolTemplate):
                 cidrs = CIDR.get_set(tool=self.name)
 
             for domain in domains:
-                targets.append({"domain": domain.name, "cidr": "", "cidr_name": ""})
+                targets.append(
+                    {"domain": domain.name, "cidr": "", "cidr_name": "", "delay": delay}
+                )
             for cidr in cidrs:
                 targets.append(
                     {
                         "domain": "",
                         "cidr": cidr.name.split("/")[0],
                         "cidr_name": cidr.name,
+                        "delay": delay,
                     }
                 )
 
@@ -102,7 +111,8 @@ class Module(ToolTemplate):
 
         for cmd in cmds:
             if cmd["cidr"]:
-                cidr, _ = CIDR.objects.get_or_create(name__icontains=cmd["cidr"])
+
+                cidr, _ = CIDR.objects.get_or_create(name__icontains=cmd["cidr_name"])
                 cidr.meta["whois"] = read_file(cmd["output"])
                 cidr.save()
                 display(cidr.meta["whois"])

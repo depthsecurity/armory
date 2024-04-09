@@ -82,6 +82,9 @@ class ToolTemplate(ModuleTemplate):
             nargs=argparse.REMAINDER,
         )
         self.options.add_argument(
+            "--delay", help="Delay in between requests", default=0, type=int
+        )
+        self.options.add_argument(
             "--no_binary",
             help="Runs through without actually running the binary. Useful for if you already ran the tool and just want to process the output.",
             action="store_true",
@@ -115,6 +118,7 @@ class ToolTemplate(ModuleTemplate):
 
     def run(self, args):
         self.args = args
+        delay = args.delay
         if self.args.tool_args:
             tool_args = []
             for t in self.args.tool_args:
@@ -163,7 +167,7 @@ class ToolTemplate(ModuleTemplate):
 
             if not self.args.no_binary and targets:
                 cmd = self.build_cmd(self.args).strip()
-                cmds = self.populate_cmds(cmd, timeout, targets)
+                cmds = self.populate_cmds(cmd, timeout, targets, delay)
 
                 # if hard_timeout:
                 #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
@@ -214,12 +218,12 @@ class ToolTemplate(ModuleTemplate):
 
         return ""
 
-    def populate_cmds(self, cmd, timeout, targets):
+    def populate_cmds(self, cmd, timeout, targets, delay):
         """
         Populate the cmds, if you need to do it in a custom manner.
         """
 
-        return [shlex.split(cmd.format(**t)) + [timeout] for t in targets]
+        return [shlex.split(cmd.format(**t)) + [timeout, delay] for t in targets]
 
     def pre_run(self, args):
         """
@@ -241,9 +245,9 @@ class ToolTemplate(ModuleTemplate):
         """
 
     def build_generic_targets(self, targets, output_path):
-        '''
+        """
         Helper function that can be used to create targets dictionary
-        '''
+        """
         res = []
         for t in targets:
             if type(t) == list and len(t) > 1 and t[1]:
@@ -283,12 +287,14 @@ class ToolTemplate(ModuleTemplate):
 
         return res
 
+
 class ToolTemplateNoOutput(ToolTemplate):
     """
     Generic template for running a tool, and ingesting the output.
     """
 
     def run(self, args):
+        delay = args.delay
         if args.tool_args:
             args.tool_args = " ".join(args.tool_args)
         else:
@@ -332,7 +338,7 @@ class ToolTemplateNoOutput(ToolTemplate):
                 cmd = self.build_cmd(args).strip()
 
                 cmds = [
-                    (shlex.split(cmd.format(**t)) + [timeout], t["output"])
+                    (shlex.split(cmd.format(**t)) + [timeout], t["output", delay])
                     for t in targets
                 ]
 
@@ -367,8 +373,9 @@ def run_cmd(cmd):
     #         c.append('"' + cm + '"')
     #     else:
     #         c.append(cm)
-    c = cmd[:-1]
-    timeout = cmd[-1]
+    c = cmd[:-2]
+    timeout = cmd[-2]
+    delay = cmd[-1]
     display("Executing command: %s" % " ".join(c))
 
     current_time = time.time()
@@ -388,14 +395,18 @@ def run_cmd(cmd):
     else:
         Popen(c).wait()
 
+    if delay:
+        display("Sleeping for {delay} seconds")
+        time.sleep(delay)
     return cmd
 
 
 def run_cmd_noout(cmd_data):
     cmd = cmd_data[0]
     output = cmd_data[1]
-    c = cmd[:-1]
-    timeout = cmd[-1]
+    c = cmd[:-2]
+    timeout = cmd[-2]
+    delay = cmd[-1]
     display("Executing command: %s" % " ".join(c))
 
     current_time = time.time()
@@ -416,4 +427,7 @@ def run_cmd_noout(cmd_data):
     else:
         Popen(c, stdout=f, stderr=STDOUT).wait()
     f.close()
+    if delay:
+        display("Sleeping for {delay} seconds")
+        time.sleep(delay)
     return cmd_data
