@@ -72,7 +72,6 @@ class Module(ToolTemplate):
                         "domain": "",
                         "cidr": cidr.name.split("/")[0],
                         "cidr_name": cidr.name,
-                        "delay": delay,
                     }
                 )
 
