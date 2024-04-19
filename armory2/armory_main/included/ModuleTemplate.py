@@ -396,7 +396,7 @@ def run_cmd(cmd):
         Popen(c).wait()
 
     if delay:
-        display("Sleeping for {delay} seconds")
+        display(f"Sleeping for {delay} seconds")
         time.sleep(delay)
     return cmd
 
