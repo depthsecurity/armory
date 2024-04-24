@@ -39,16 +39,12 @@ class Module(ToolTemplate):
 
     def get_targets(self, args):
         targets = []
-        if args.delay:
-            delay = int(args.delay)
 
         if args.domain:
-            targets.append({"domain": args.domain, "cidr": "", "delay": delay})
+            targets.append({"domain": args.domain, "cidr": ""})
 
         elif args.cidr:
-            targets.append(
-                {"domain": "", "cidr": args.cidr.split("/")[0], "delay": delay}
-            )
+            targets.append({"domain": "", "cidr": args.cidr.split("/")[0]})
 
         elif args.import_database:
             if args.all_data:
@@ -63,9 +59,7 @@ class Module(ToolTemplate):
                 cidrs = CIDR.get_set(tool=self.name)
 
             for domain in domains:
-                targets.append(
-                    {"domain": domain.name, "cidr": "", "cidr_name": "", "delay": delay}
-                )
+                targets.append({"domain": domain.name, "cidr": "", "cidr_name": ""})
             for cidr in cidrs:
                 targets.append(
                     {
