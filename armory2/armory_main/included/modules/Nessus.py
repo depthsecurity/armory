@@ -423,7 +423,7 @@ class Module(ModuleTemplate):
         else:
 
             return False
-
+    
     def getVulns(self, ip, ReportHost):
         """Gets vulns and associated services"""
         # display("Processing IP: {}".format(ip))
@@ -582,32 +582,54 @@ class Module(ModuleTemplate):
             # if not self.args.disable_mitre:
             for cve in cves:
                 if not self.cve_data.get(cve):
-
                     # if not CVE.objects.all().filter(name=cve):
                     if self.args.disable_mitre:
                         cveDescription = ""
                         cvss = 0.0
                     else:
+                        cveDescription = ""
+                        cvss = 0.0
+                        rating = ""
+                        url = f"https://cveawg.mitre.org/api/cve/{cve}"
 
                         try:
+                            #print(f"[*] Trying to request data for {cve}")
 
-                            url = "https://nvd.nist.gov/vuln/detail/{}/"
-                            res = requests.get(url.format(cve)).text
+                            res = requests.get(url, verify=False)
+                            res_code = res.status_code
 
-                            cveDescription = res.split(
-                                '<p data-testid="vuln-description">'
-                            )[1].split("</p>")[0]
+                            if res_code == 200:
+                                #print(f"[+] Got {cve} data")
+                                res = res.json()
+                                
+                            # get the cve description and remove newlines
+                            for desc in res["containers"]["cna"]["descriptions"]:
+                                if desc["lang"] == "en":
+                                    cveDescription = desc["value"].replace('\n', ' ').replace('\r', ' ')
 
-                            cvss = float(
-                                res.split("Base Score:")[1].split(" ")[3].split(";")[-1]
-                            )
+                            # check to see if metrics are in the response
+                            if "metrics" in res["containers"]["cna"]:
+                                # try to get cvss data starting from v4 down
+                                cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV4_0", None)
+                                if not cvvs:
+                                    cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV3_1", None)
+                                if not cvvs:
+                                    cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV3_0", None)
+                                if not cvvs:
+                                    cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV2_0", None)
+                                
+                                # if there's no cvss data try to get the rating text instead
+                                if not cvvs:
+                                    rating = res["containers"]["cna"]["metrics"][0]["other"]["content"]["text"]
+                                    cveDescription = f"Rating: {rating.lower()} - " + cveDescription
 
-                            # cveDescription = res["summary"]
-                            # cvss = float(res["cvss"])
-
-                        except Exception:
-                            cveDescription = ""
-                            cvss = 0.0
+                                # get the cvss score
+                                if not rating:
+                                    cvss = cvvs["baseScore"]
+                        
+                            
+                        except Exception as e:
+                            print(f"[-] Error processing data for {cve}: {e}")
 
                     # if not CVE.objects.all().filter(name=cve):
                     self.cve_data[cve] = [cveDescription, cvss]
