@@ -1,0 +1,12 @@
+{
+    "name": "GowitnessPage",
+    "pretty_name": "GowitnessPage",
+    "authors":[
+        {
+            "name": "jk-mayne",
+            "url": "https://github.com/jk-mayne"
+        }
+    ],
+    "description": "Browse Gowitness previews in a gallery layout.",
+    "category": "Custom"
+}
