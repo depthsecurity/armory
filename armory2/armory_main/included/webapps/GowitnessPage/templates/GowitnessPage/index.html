@@ -61,35 +61,37 @@ body {
   background-color: red;
 }
 </style>
+{% load static %}
 
-<div class="row">
+<script src="{% static 'js/jquery-3.7.1.js' %}"></script>
+<script src="{% static 'js/jquery.waypoints.min.js' %}"></script>
+<!--<script src="{% static 'js/infinite.pkgd.min.js' %}"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/shortcuts/infinite.js"></script>
 
-{% for x in data %}
-  <div class="column">
-    <a href="{{ x.1|last }}" target="_blank">
-      <img src="{{ x.1.0 }}"/>
-    </a>
+
+
+{% block content %}
+
+  <div class="row infinite-container">
+    {% for x in data %}
+        <div class="column infinite-item">
+          <a href="{{ x.1|last }}" target="_blank">
+            <img src="/GowitnessPage/output{{ x.1.0 }}"/>
+          </a>
+        </div>
+    {% endfor %}
   </div>
-{% endfor %}
-</div>
 
-
-<div class="pagination">
-  <span class="step-links">
-    {% if data.has_previous %}
-      <a href="?page=1">&laquo; first</a>
-      <a href="?page={{ data.previous_page_number }}">previous</a>
-    {% endif %}
-  <span class="current">
-    Page {{ data.number }} of {{ data.paginator.num_pages }}.
-  </span>
   {% if data.has_next %}
-    <a href="?page={{ data.next_page_number }}">next</a>
-    <a href="?page={{ data.paginator.num_pages }}">last &raquo;</a>
+    <a class="infinite-more-link" href="?page={{ data.next_page_number }}">More</a>
   {% endif %}
-</span>
-</div>
 
+  <script>
+    var infinite = new Waypoint.Infinite({
+      element: $('.infinite-container')[0]
+    });
+  </script>
+{% endblock %}
 
 
 

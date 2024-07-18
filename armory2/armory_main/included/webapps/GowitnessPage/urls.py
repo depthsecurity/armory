@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf.urls.static import static
+from django.conf import settings
 import os
 
 # from armory2.armory_main.views import domain_scoping_views as views
@@ -16,5 +18,7 @@ spec.loader.exec_module(views)
 
 urlpatterns = [
     path('', views.index, name="index"),
-    path('gowitnessPage/<int:port_id>', views.get_gowitness2, name="get_gowitness2"),
-]
+    path('GowitnessPage/<int:port_id>', views.get_test, name="get_test"),
+    #path(r'^output/(?P<path>.*)$',serve,{'document_root':settings.MEDIA_ROOT}),
+    #path(r'^output/(?P<path>.*)$',serve,kwargs={'document_root':settings.MEDIA_ROOT}),
+] + static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

@@ -8,9 +8,6 @@ from django.views.decorators.csrf import csrf_exempt
 from pathlib import Path
 from base64 import b64encode
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-#from armory2.armory_main.included.utilities import get_urls
-
-# from armory2.
 
 def index(request):
 
@@ -31,7 +28,7 @@ def index(request):
                     #data[p.id].append('Gowitness')
                     #data[p.id].append(p.service_name + '://' + str(ip.ip_address) + ':' + str(p.port_number))
                     for gw in p.meta['Gowitness']:
-                        data[p.id].append(get_file_data(gw['screenshot_file']))
+                        data[p.id].append(gw['screenshot_file'].split("/output")[1])
                     port_ids.append(p.id)
                     #now we need to get domains to make the hrefs later on
                     if ip.domain_set.all().exists():
@@ -47,7 +44,7 @@ def index(request):
     
     data_t = tuple(data.items())
     #print(data_t)
-    paginator = Paginator(data_t, 20)
+    paginator = Paginator(data_t, 5)
     page = request.GET.get('page', 1)
 
     #print(page)
@@ -58,7 +55,7 @@ def index(request):
         data2 = paginator.get_page(1)
     except EmptyPage:
         data2 = paginator.get_page(paginator.num_pages)
-    return render(request, 'gowitnessPage/index.html', {'data': data2})   #, 'port_ids':port_ids})
+    return render(request, 'GowitnessPage/index.html', {'data': data2})   #, 'port_ids':port_ids})
 
 def get_ips(request, pkid):
     obj = get_object_or_404(CIDR, pk=pkid)
@@ -68,12 +65,7 @@ def get_ips(request, pkid):
     return render(request, 'host_scoping/ips.html', {'ips': ips})
 
 def get_file_data(file_name):
-    try:
-        return "data:image/png;base64," + b64encode(open(file_name, 'rb').read()).decode()
-    except:
-        print("Image File Not Found!")
-        return None 
-
+    return "data:image/png;base64," + b64encode(open(file_name, 'rb').read()).decode()
 
 #This alows dictionary lookups within the template
 @register.filter
@@ -81,7 +73,7 @@ def get_item(dictionary, key):
     #print(dictionary.get(key))
     return dictionary.get(key)
 
-def get_gowitness2(request, port_id):
+def get_test(request, port_id):
     port = Port.objects.get(id=port_id)
     print('hello!')
-    return render(request, 'gowitnessPage/gowitness.html', {'port':port})
+    return render(request, 'test_app/test.html', {'port':port})
