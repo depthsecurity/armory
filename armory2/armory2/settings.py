@@ -185,6 +185,8 @@ if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
         template_paths = [f"{url}templates" for url in glob.glob(f"{p}/*/")]
 
         TEMPLATES[0]['DIRS'] += template_paths
+        static_folders = [f"{url}static" for url in glob.glob(f"{p}/*/")]
+    STATICFILES_DIRS = static_folders
 
 
 # pdb.set_trace()
