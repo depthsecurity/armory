@@ -117,6 +117,9 @@ class ToolTemplate(ModuleTemplate):
             "--profile4_data", help="Additional arguments to be appended", default=""
         )
 
+        self.options.add_argument(
+            "--docker_options", help="Options to pass to docker", default = ""
+        )
         # self.options.add_argument('--profile1', help="Use first profile options")
 
     def run(self, args):

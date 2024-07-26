@@ -450,7 +450,7 @@ def main():
         "-v", "--version", help="Display the current version", action="store_true"
     )
     parser.add_argument(
-        "--docker", help="Use Docker versions of modules if available"
+        "--docker", help="Use Docker versions of modules if available", action="store_true"
     )
 
     base_args, _ = parser.parse_known_args(cmd_args)
