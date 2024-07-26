@@ -449,8 +449,11 @@ def main():
     parser.add_argument(
         "-v", "--version", help="Display the current version", action="store_true"
     )
+    parser.add_argument(
+        "--docker", help="Use Docker versions of modules if available"
+    )
 
-    base_args, unknown = parser.parse_known_args(cmd_args)
+    base_args, _ = parser.parse_known_args(cmd_args)
     if base_args.generate_defaults:
         generate_default_configs()
     if base_args.version:
@@ -505,9 +508,11 @@ def main():
         if custom_modules:
                 
             Module = load_module(os.path.join(custom_modules[-1][1], custom_modules[-1][0]))
+            Module.use_docker = True
             run_module(Module, mod_args, custom_modules[-1][0])
         elif modules:
             Module = load_module(".armory_main.included.modules.%s" % modules[0])
+            Module.use_docker = True
             run_module(Module, mod_args, modules[0])
 
         else:

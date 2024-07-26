@@ -52,6 +52,9 @@ class ToolTemplate(ModuleTemplate):
     timeout = 0
     binary_name = ""
     no_threading = False
+    can_docker = False
+    use_docker = False
+    docker_repo = None
 
     def set_options(self):
         super(ToolTemplate, self).set_options()
@@ -141,7 +144,9 @@ class ToolTemplate(ModuleTemplate):
         elif self.args.profile4:
             self.args.tool_args += " " + self.args.profile4_data
 
-        if not self.args.binary:
+        if self.use_docker and self.can_docker:
+            self_binary = "docker run --it -rm {self.args.docker_options} {self.docker_repo} "
+        elif not self.args.binary:
             self.binary = which.run(self.binary_name)
         else:
             self.binary = which.run(self.args.binary)
