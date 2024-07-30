@@ -11,7 +11,8 @@ import os
 class Module(ToolTemplate):
     name = "Whois"
     binary_name = "whois"
-
+    docker_name = "whois"
+    docker_repo = "https://github.com/tool-dockers/docker-whois.git"
     def set_options(self):
         super(Module, self).set_options()
 

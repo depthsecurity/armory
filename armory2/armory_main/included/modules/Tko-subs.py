@@ -12,7 +12,8 @@ class Module(ToolTemplate):
 
     name = "Tko-subs"
     binary_name = "tko-subs"
-
+    docker_name = 'tkosubs'
+    docker_repo = 'https://github.com/anshumanbh/tko-subs.git'
     def set_options(self):
         super(Module, self).set_options()
 
