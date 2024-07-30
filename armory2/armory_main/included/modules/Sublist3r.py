@@ -11,7 +11,8 @@ class Module(ToolTemplate):
 
     name = "Sublist3r"
     binary_name = "sublist3r"
-
+    docker_name = "sublist3r"
+    docker_repo = "https://github.com/e3net/Sublist3r-docker.git"
     def set_options(self):
         super(Module, self).set_options()
 
@@ -75,8 +76,11 @@ class Module(ToolTemplate):
         return res
 
     def build_cmd(self, args):
-
-        cmd = "env python3 " + self.binary + " -o {output} -d {target} "
+        cmd = ''
+        if not self.use_docker:
+            cmd += "env python3 "
+        
+        cmd += self.binary + " -o {output} -d {target} "
         if args.tool_args:
             cmd += args.tool_args
         return cmd

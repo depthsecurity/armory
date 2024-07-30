@@ -10,7 +10,8 @@ class Module(ToolTemplate):
 
     name = "SSLScan"
     binary_name = "sslscan"
-
+    docker_repo = "https://github.com/rbsec/sslscan.git"
+    docker_name = "sslscan"
 
     def set_options(self):
         super(Module, self).set_options()

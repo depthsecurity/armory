@@ -43,6 +43,7 @@ class Module(ToolTemplate):
 
     name = "Nmap"
     binary_name = "nmap"
+    docker_name = "instrumentisto/nmap"
 
     def set_options(self):
         super(Module, self).set_options()
@@ -144,9 +145,9 @@ class Module(ToolTemplate):
             for t in targets:
                 ips = [str(i) for i in list(IPNetwork(t))]
                 data += ips
-
-        _, file_name = tempfile.mkstemp()
-        open(file_name, "w").write("\n".join(list(set(data))))
+        
+        # _, file_name = tempfile.mkstemp()
+        # open(file_name, "w").write("\n".join(list(set(data))))
 
         if args.output_path[0] == "/":
             self.path = os.path.join(
@@ -160,6 +161,11 @@ class Module(ToolTemplate):
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
+        f = tempfile.NamedTemporaryFile(dir=self.path, delete=False, mode='w')
+        file_name = f.name
+        f.write("\n".join(list(set(data))))
+        f.close()
+        
         if args.filename:
             output_path = os.path.join(self.path, args.filename)
         else:
@@ -172,8 +178,12 @@ class Module(ToolTemplate):
         return [{"target": file_name, "output": output_path}]
 
     def build_cmd(self, args):
-
-        command = "sudo " + self.binary + " -oX {output} -iL {target} "
+        command = ""
+        
+        
+        if os.getuid() > 0:
+            command = "sudo "
+        command += self.binary + " -oX {output} -iL {target} "
 
         if args.tool_args:
             command += args.tool_args

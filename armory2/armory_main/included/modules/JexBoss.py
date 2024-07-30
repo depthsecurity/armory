@@ -17,7 +17,7 @@ class Module(ToolTemplate):
 
     name = "JexBoss"
     binary_name = "jexboss.py"
-
+    docker_name = 'jonasthambert/jexboss'
     def set_options(self):
         super(Module, self).set_options()
 
@@ -28,7 +28,7 @@ class Module(ToolTemplate):
             action="store_true",
         )
         self.options.add_argument("-f", "--import_file", help="Import URLs from file")
-        self.options.add_argument("--rescan", help="Rescan already-scanned URLs")
+        self.options.add_argument("--rescan", help="Rescan already-scanned URLs", action="store_true")
         self.options.add_argument("--group_size", help="Size of each file to be scanned (Default 50 URLs)", default=50)
 
     def get_targets(self, args):
@@ -68,9 +68,12 @@ class Module(ToolTemplate):
             for url_chunk in self.chunks(targets, args.group_size):
                 i += 1
 
-                _, file_name = tempfile.mkstemp()
-                open(file_name, "w").write("\n".join(url_chunk))
-
+                # _, file_name = tempfile.mkstemp()
+                # open(file_name, "w").write("\n".join(url_chunk))
+                f = tempfile.NamedTemporaryFile(dir=self.path, delete=False, mode='w')
+                file_name = f.name
+                f.write("\n".join(list(set(url_chunk))))
+                f.close()
                 res.append(
                     {
                         "target": file_name,
@@ -84,9 +87,10 @@ class Module(ToolTemplate):
             sys.exit(1)
 
     def build_cmd(self, args):
-
-        command = "python3 " + self.binary + " -m file-scan -file {target} -out {output} "
-
+        if self.use_docker:
+            command = self.binary + " -m file-scan -file {target} -out {output} "
+        else:
+            command = "python3 " + self.binary + " -m file-scan -file {target} -out {output} "
         if args.tool_args:
             command += args.tool_args
 

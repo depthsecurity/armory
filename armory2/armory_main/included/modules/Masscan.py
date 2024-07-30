@@ -34,7 +34,9 @@ class Module(ToolTemplate):
 
     name = "Masscan"
     binary_name = "masscan"
-
+    docker_name = "masscan"
+    docker_repo = "https://github.com/security-dockerfiles/masscan.git"
+    
 
     def set_options(self):
         super(Module, self).set_options()
@@ -114,9 +116,10 @@ class Module(ToolTemplate):
             ips = [str(i) for i in list(IPNetwork(t))]
             data += ips
 
-        _, file_name = tempfile.mkstemp()
-        open(file_name, "w").write("\n".join(set(data)))
+        # _, file_name = tempfile.mkstemp()
+        # open(file_name, "w").write("\n".join(set(data)))
 
+        
         if args.output_path[0] == "/":
             self.path = os.path.join(
                 self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
@@ -138,11 +141,20 @@ class Module(ToolTemplate):
                 % datetime.datetime.now().strftime("%Y.%m.%d-%H.%M.%S"),
             )
 
+        f = tempfile.NamedTemporaryFile(dir=self.path, delete=False, mode='w')
+        file_name = f.name
+        f.write("\n".join(list(set(data))))
+        f.close()
+
         return [{"target": file_name, "output": output_path}]
 
     def build_cmd(self, args):
 
-        command = "sudo " + self.binary + " -oX {output} -iL {target} "
+        command = ""
+        if os.getuid() > 0:
+            command = "sudo "
+        
+        command = self.binary + " -oX {output} -iL {target} "
 
         if args.tool_args:
             command += args.tool_args

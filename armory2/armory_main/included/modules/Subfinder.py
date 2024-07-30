@@ -14,6 +14,9 @@ import os
 class Module(ToolTemplate):
     name = "Subfinder"
     binary_name = "subfinder"
+    docker_name = "subfinder"
+    docker_repo = 'https://github.com/projectdiscovery/subfinder.git'
+    
 
     def set_options(self):
         super(Module, self).set_options()
@@ -86,7 +89,7 @@ class Module(ToolTemplate):
         if args.binary:
             cmd = "{} ".format(args.binary)
         else:
-            cmd = "{} ".format(self.binary_name)
+            cmd = "{} ".format(self.binary)
         cmd = "{} -o {} -d {}".format(cmd, "{output}", "{target}")
         return cmd
 

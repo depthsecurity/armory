@@ -22,6 +22,8 @@ class Module(ToolTemplate):
 
     name = "Nikto"
     binary_name = "nikto"
+    docker_repo = "https://github.com/sullo/nikto.git"
+    docker_name = "nikto"
 
     def set_options(self):
         super(Module, self).set_options()

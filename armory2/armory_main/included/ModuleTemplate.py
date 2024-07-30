@@ -19,7 +19,7 @@ else:
     from subprocess import Popen, STDOUT
 
 import pdb
-
+from armory2.armory_cmd import get_config_options
 
 class ModuleTemplate(object):
     """
@@ -52,7 +52,7 @@ class ToolTemplate(ModuleTemplate):
     timeout = 0
     binary_name = ""
     no_threading = False
-    can_docker = False
+    docker_name = ''
     use_docker = False
     docker_repo = None
 
@@ -124,6 +124,7 @@ class ToolTemplate(ModuleTemplate):
 
     def run(self, args):
         self.args = args
+        
         delay = args.delay
         if self.args.tool_args:
             tool_args = []
@@ -147,19 +148,28 @@ class ToolTemplate(ModuleTemplate):
         elif self.args.profile4:
             self.args.tool_args += " " + self.args.profile4_data
 
-        if self.use_docker and self.can_docker:
-            self_binary = "docker run --it -rm {self.args.docker_options} {self.docker_repo} "
+        
+        if self.use_docker and self.docker_name:
+            config = get_config_options()
+            
+            base_path = config['ARMORY_BASE_PATH']
+            docker_extra = config['DOCKER_FOLDERS']
+            
+            self.binary = f"docker run -it --rm {self.args.docker_options[1:-1]} {docker_extra} -v \"{base_path}:{base_path}\" {self.docker_name} "
+
+            if hasattr(self, 'docker_run_binary'):
+                self.binary += f" {self.docker_run_binary}"
         elif not self.args.binary:
             self.binary = which.run(self.binary_name)
         else:
             self.binary = which.run(self.args.binary)
-
+        
         if not self.binary:
             print(
                 "%s binary not found. Please explicitly provide path with --binary"
                 % self.name
             )
-
+        
         else:
             if self.args.timeout and self.args.timeout != "0":
                 timeout = int(self.args.timeout)
@@ -176,7 +186,7 @@ class ToolTemplate(ModuleTemplate):
             if not self.args.no_binary and targets:
                 cmd = self.build_cmd(self.args).strip()
                 cmds = self.populate_cmds(cmd, timeout, targets, delay)
-
+                
                 # if hard_timeout:
                 #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
 

@@ -37,7 +37,9 @@ class Module(ToolTemplate):
 
     name = "Gowitness"
     binary_name = "gowitness"
-
+    docker_name = "gowitness"
+    docker_repo = "https://github.com/sensepost/gowitness.git"
+    docker_run_binary = "gowitness"
     def set_options(self):
         super(Module, self).set_options()
 
@@ -121,11 +123,15 @@ class Module(ToolTemplate):
 
         for url_chunk in self.chunks(targets, args.group_size):
             i += 1
-
-            _, file_name = tempfile.mkstemp()
-            open(file_name, "w").write("\n".join(url_chunk))
+            
             if not os.path.exists(self.path.format(i)):
                 os.makedirs(self.path.format(i))
+
+            f = tempfile.NamedTemporaryFile(dir=self.path.rsplit('/', 1)[0], delete=False, mode='w')
+            file_name = f.name
+            f.write("\n".join(list(set(url_chunk))))
+            f.close()
+
             res.append({"target": file_name, "output": self.path.format(i)})
 
         return res

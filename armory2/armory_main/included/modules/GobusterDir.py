@@ -18,6 +18,9 @@ class Module(ToolTemplate):
     name = "GobusterDir"
     binary_name = "gobuster"
 
+    docker_name = 'gobuster'
+    docker_repo = "https://github.com/Oj/gobuster.git"
+    
     def set_options(self):
         super(Module, self).set_options()
 

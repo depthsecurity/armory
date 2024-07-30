@@ -8,8 +8,8 @@ class Module(ToolTemplate):
 
     name = "Hydra"
     binary_name = "hydra"
-
-
+    docker_name = "vanhauser/hydra"
+    
     def set_options(self):
         super(Module, self).set_options()
 

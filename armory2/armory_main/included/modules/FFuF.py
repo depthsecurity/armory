@@ -28,6 +28,9 @@ class Module(ToolTemplate):
 
     name = "FFuF"
     binary_name = "ffuf"
+    # docker_repo = "secsi/ffuf"
+    docker_name = "secsi/ffuf"
+    
     # no_threading = True
 
     def set_options(self):

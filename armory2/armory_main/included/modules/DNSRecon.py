@@ -13,6 +13,8 @@ import json
 class Module(ToolTemplate):
     name = "DNSRecon"
     binary_name = "dnsrecon"
+    docker_name = "dnsrecon"
+    docker_repo = "https://github.com/darkoperator/dnsrecon.git"
     """
     This module runs DNSRecon on a domain or set of domains. This will extract found DNS entries.
     It can also run over IP ranges, looking for additional domains in the PTR records.

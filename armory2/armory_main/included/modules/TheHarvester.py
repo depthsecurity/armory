@@ -14,7 +14,8 @@ class Module(ToolTemplate):
 
     name = "TheHarvester"
     binary_name = "theHarvester"
-
+    docker_name = 'theharvester'
+    docker_repo = "https://github.com/laramies/theHarvester.git"
     def set_options(self):
         super(Module, self).set_options()
 

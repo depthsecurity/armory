@@ -21,7 +21,8 @@ class Module(ToolTemplate):
 
     name = "NmapTargeted"
     binary_name = "nmap"
-
+        
+    docker_name = "instrumentisto/nmap"
 
     def set_options(self):
         super(Module, self).set_options()
@@ -93,7 +94,10 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
 
-        cmd = "sudo " + self.binary + " {cmd_str} -oA {output} {host} -Pn "
+        cmd = ""
+        if os.getuid > 0:
+            cmd += 'sudo '
+        cmd += self.binary + " {cmd_str} -oA {output} {host} -Pn "
 
         if args.tool_args:
             cmd += args.tool_args

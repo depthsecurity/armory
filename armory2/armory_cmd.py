@@ -285,7 +285,7 @@ def get_report_options(module, module_name):
 
     return options
 
-def run_module(Module, argv, module):
+def run_module(Module, argv, module, use_docker=False):
     # Get the basic settings and database set up
 
     config = get_config_options()
@@ -295,7 +295,9 @@ def run_module(Module, argv, module):
 
     # Populate the options
     m.set_options()
-
+    if use_docker:
+        m.use_docker = True
+        
     # A bunch of fun stuff to check if arguments provided on command line
     # and override config file if found.
     module_config_data = get_config_options(module + ".ini")
@@ -508,12 +510,13 @@ def main():
         if custom_modules:
                 
             Module = load_module(os.path.join(custom_modules[-1][1], custom_modules[-1][0]))
-            Module.use_docker = True
-            run_module(Module, mod_args, custom_modules[-1][0])
+            
+            
+            run_module(Module, mod_args, custom_modules[-1][0], use_docker=base_args.docker)
         elif modules:
             Module = load_module(".armory_main.included.modules.%s" % modules[0])
             Module.use_docker = True
-            run_module(Module, mod_args, modules[0])
+            run_module(Module, mod_args, modules[0], use_docker=base_args.docker)
 
         else:
             print("Module %s is not a valid module." % base_args.module)
