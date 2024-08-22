@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from armory2.armory_cmd import get_config_options
 from armory2.armory_main.models import BaseDomain, User
 from collections import Counter
 from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
@@ -30,11 +31,20 @@ def get_words(txt):
             res.append(w.lower())
     return res
 
+def support_docker(func):
+
+    def wrapper():
+
+        original_cmd = func()
+
+    return wrapper
 class Module(ModuleTemplate):
 
     name = "LinkedInt"
     binary_name = "LinkedInt.py"
-
+    docker_name = "linkedint"
+    docker_repo = "https://github.com/fang0654/LinkedInt.git"
+    use_docker = False
     def set_options(self):
         super(Module, self).set_options()
 
@@ -223,7 +233,15 @@ class Module(ModuleTemplate):
         # new_dir = "/".join(self.binary.split("/")[:-1])
 
         os.chdir(output_path)
+        if self.use_docker:
+            config = get_config_options()
+            
+            base_path = config['ARMORY_BASE_PATH']
+            docker_extra = config['DOCKER_FOLDERS']
+            
+            self.binary = f"docker run -it --rm {self.args.docker_options[1:-1]} {docker_extra} -v \"{base_path}:{base_path}\" {self.docker_name} "
 
+        
         cmd = shlex.split(self.binary + command_args)
         print("Executing: %s" % " ".join(cmd))
 

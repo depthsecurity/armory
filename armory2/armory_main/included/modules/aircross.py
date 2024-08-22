@@ -44,6 +44,7 @@ class Module(ModuleTemplate):
     performs basic aircross check based on aircross.go by Optiv
     '''
     name = "airCross Check"
+    
 
     def set_options(self):
         super(Module, self).set_options()

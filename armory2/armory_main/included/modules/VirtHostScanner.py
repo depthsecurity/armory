@@ -3,6 +3,7 @@
 import json
 import pdb
 import tempfile
+import uuid
 from armory2.armory_main.models import (
     BaseDomain,
     Domain,
@@ -32,7 +33,7 @@ class Module(ToolTemplate):
     name = "VirtHostScanner"
     # binary_name = "vhost_scanner.py"
     binary_name = "ffuf"
-
+    docker_name = "secsi/ffuf"
     def set_options(self):
         super(Module, self).set_options()
 
@@ -155,7 +156,7 @@ class Module(ToolTemplate):
             res = []
 
             for target in target_obj:
-                _, tmp = tempfile.mkstemp()
+                tmp = temp_filename(output_path)
                 t = f"{target.service_name}://{target.ip_address.ip_address}:{target.port_number}"
                 res.append(
                     {
@@ -178,7 +179,7 @@ class Module(ToolTemplate):
 
         res = []
         for t in targets:
-            _, tmp = tempfile.mkstemp()
+            tmp = temp_filename(output_path)
             res.append(
                 {
                     "target": t,
@@ -284,3 +285,7 @@ class Module(ToolTemplate):
             except Exception as e:
                 print(f"An error occurred getting the results from {c['target']}: {e}")
             get_urls.add_tool_url(c["target"], tool=self.name, args=self.args.tool_args)
+
+def temp_filename(output_path):
+
+    return os.path.join(output_path, str(uuid.uuid4())+".txt")
