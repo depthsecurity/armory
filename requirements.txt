@@ -62,7 +62,7 @@ sortedcontainers==2.4.0
 soupsieve==2.2.1
 SQLAlchemy==1.4.21
 sqlalchemy-mixins==1.4
-sqlparse==0.4.2
+sqlparse==0.4.4
 termcolor==1.1.0
 thready==0.1.5
 tld==0.12.6
