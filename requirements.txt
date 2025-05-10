@@ -33,7 +33,7 @@ lxml==4.9.2
 matplotlib-inline==0.1.2
 mysqlclient==2.0.3
 netaddr==0.8.0
-numpy==1.24.3
+numpy
 opencv-python==4.7.0.72
 outcome==1.2.0
 parso==0.8.2
@@ -51,7 +51,7 @@ python-dateutil==2.8.2
 python-docx==0.8.11
 python-Levenshtein==0.12.2
 pytz==2021.1
-PyYAML==6.0
+PyYAML
 redis==3.5.3
 requests==2.29.0
 requests-file==1.5.1

@@ -6,8 +6,8 @@ from picklefield.fields import PickledObjectField
 
 class BaseModel(models.Model):
 
-    meta = PickledObjectField(default=dict)
-    tools = PickledObjectField(default=dict)
+    meta = models.JSONField(default=dict)
+    tools = models.JSONField(default=dict)
     active_scope = models.BooleanField(default=False)
     passive_scope = models.BooleanField(default=False)
     source_tool = models.CharField(max_length=64)
