@@ -81,6 +81,7 @@ setup(
         "django-picklefield",
         "django_q",
         "redis",
+        "opencv-python-headless"
     ],
     test_suite="nose.collector",
     tests_require=["nose"],
