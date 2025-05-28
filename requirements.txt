@@ -34,7 +34,6 @@ matplotlib-inline==0.1.2
 mysqlclient==2.0.3
 netaddr==0.8.0
 numpy
-opencv-python==4.7.0.72
 outcome==1.2.0
 parso==0.8.2
 pexpect==4.8.0
