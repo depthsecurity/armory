@@ -14,7 +14,7 @@ from armory2.armory_main.included.utilities.color_display import (
     display_new,
     display,
 )
-font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
+font = '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'
 
 font_height = 15
 font_width = font_height * .6
