@@ -95,7 +95,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = ""
-        if os.getuid > 0:
+        if os.getuid() > 0:
             cmd += 'sudo '
         cmd += self.binary + " {cmd_str} -oA {output} {host} -Pn "
 
