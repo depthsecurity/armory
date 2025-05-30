@@ -75,3 +75,4 @@ whois==0.9.13
 wsproto==1.2.0
 xmltodict==0.12.0
 opencv-python-headless
+jsonlines
