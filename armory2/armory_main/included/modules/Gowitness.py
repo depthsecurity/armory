@@ -139,7 +139,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
         command = (
             self.binary
-            + " file -f {target} -D sqlite://{output}/gowitness.sqlite3 -P {output}  "
+            + " scan file -f {target} --write-db-uri sqlite://{output}/gowitness.sqlite3 --write-db -s {output}  "
         )
 
         if args.tool_args:
@@ -178,10 +178,9 @@ class Module(ToolTemplate):
 
             cr = conn.cursor()
             sql = """
-                select u.url, d.name from tls_certificate_dns_names as d
-                inner join tls_certificates as c on c.id = d.tls_certificate_id
-                inner join tls as t on t.id = c.tls_id
-                inner join urls as u on u.id = t.url_id
+                select u.url, d.value from tls_san_lists as d
+                inner join tls as c on c.id = d.tls_id              
+                inner join results as u on u.id = c.result_id
             """
             domain_data = cr.execute(sql).fetchall()
             domains = sorted(
@@ -201,7 +200,7 @@ class Module(ToolTemplate):
                     url_domain_data[d].append(n)
 
             for u in cr.execute(
-                "select id, url, filename, final_url, response_code from urls"
+                "select id, url, filename, final_url, response_code from results"
             ).fetchall():
                 port = get_port_object(u[1])
                 if not port:
@@ -217,7 +216,7 @@ class Module(ToolTemplate):
                         "headers": [
                             {"key": k[0], "value": k[1]}
                             for k in cr.execute(
-                                "select key, value from headers where url_id = ?",
+                                "select key, value from headers where result_id = ?",
                                 (u[0],),
                             )
                         ],
