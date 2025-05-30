@@ -23,7 +23,7 @@ class Module(ModuleTemplate):
     binary_name = "asnlookup.py"
 
     docker_name = 'asnlookup'
-    docker_repo = 'https://github.com/fang0654/armory_dockerfiles#main:/asnlookup'
+    docker_repo = 'https://github.com/fang0654/armory_dockerfiles.git#main:/asnlookup'
     
         
     def set_options(self):

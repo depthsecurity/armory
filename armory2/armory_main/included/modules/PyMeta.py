@@ -19,7 +19,7 @@ class Module(ToolTemplate):
     name = "PyMeta"
     binary_name = "pymeta"
     docker_name = "pymeta"
-    docker_repo = "https://github.com/fang0654/armory_dockerfiles#main:/pymeta"
+    docker_repo = "https://github.com/fang0654/armory_dockerfiles.git#main:/pymeta"
     def set_options(self):
         super(Module, self).set_options()
 
