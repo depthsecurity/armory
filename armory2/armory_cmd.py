@@ -4,7 +4,7 @@
 # Django specific settings
 
 import os
-from pkg_resources import resource_string
+from importlib.resources import read_text, files
 
 # Ensuring the Armory config exists before loading the Django stuff.
 
@@ -23,9 +23,7 @@ if not os.path.exists(CONFIG_FOLDER):
 if not os.path.exists(os.path.join(CONFIG_FOLDER, CONFIG_FILE)):
     with open(os.path.join(CONFIG_FOLDER, CONFIG_FILE), "w") as out:
         out.write(
-            resource_string(
-                "armory2.default_configs", "settings.py"
-            ).decode("UTF-8")
+            files("armory2.default_configs").joinpath("settings.py").read_text()
         )    
     NEW_CONFIG_FOLDER = True
 else:

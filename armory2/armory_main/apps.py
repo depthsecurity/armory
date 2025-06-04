@@ -3,7 +3,8 @@ import os
 import json
 import glob
 from django.conf import settings
-
+from django.core.management import call_command
+from armory2.armory_main.included.utilities.database_utils import discover_webapp_models
 def get_armory_webapps():
         """
         Return dictionary of webapps available in Armory
@@ -42,5 +43,9 @@ class ArmoryMainConfig(AppConfig):
     webapps = get_armory_webapps()
     webapps_grouped = get_armory_webapps_grouped(webapps)
     
+    # def ready(self):
+    #     discover_webapp_models()
+    #     call_command('makemigrations', interactive=False)
+    #     call_command('migrate', interactive=False)
 
     

@@ -11,14 +11,22 @@ ARMORY_CONFIG = {
     'ARMORY_BASE_PATH': '/home/dlawson/data/clients/random_client/external/2_results/armory2/',
 
     'ARMORY_CUSTOM_MODULES': [
-#        '/home/dlawson/src/armory_custom/modules',
-        '/home/dlawson/src/dev/armory_custom/armory_custom/modules',
+
+        '/home/user/armory_custom/modules',
     ],
 
     'ARMORY_CUSTOM_REPORTS': [
-#        '/home/dlawson/src/armory_custom/reports',
-        '/home/dlawson/src/dev/armory_custom/armory_custom/reports',
+
+        '/home/user/armory_custom/reports',
     ],
+    'ARMORY_CUSTOM_WEBAPPS': [
+        '/home/user/armory_custom/webapps',
+
+    ],
+    'ARMORY_CUSTOM_MODELS': [
+        '/home/user/armory_custom/models',
+    ]
+
 }
 
 DATABASES = {

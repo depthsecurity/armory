@@ -192,7 +192,8 @@ def pre_save_basedomain(sender, instance, *args, **kwargs):
 @receiver(pre_save, sender=Domain)
 def pre_save_domain(sender, instance, *args, **kwargs):
     if not instance.id:
-        instance.name = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', instance.name.lower())
+        instance.name = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', instance.name)
+        
         domain_name = "".join(
             [
                 i

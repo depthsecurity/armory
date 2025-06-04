@@ -202,6 +202,7 @@ class Module(ToolTemplate):
             for u in cr.execute(
                 "select id, url, filename, final_url, response_code from results"
             ).fetchall():
+                # pdb.set_trace()
                 port = get_port_object(u[1])
                 if not port:
                     display_error("Port not found: {}".format(u[1]))
