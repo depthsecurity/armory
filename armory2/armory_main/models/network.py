@@ -70,6 +70,59 @@ class Domain(BaseModel):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.name = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', self.name)
+            
+            domain_name = "".join(
+                [
+                    i
+                    for i in self.name.lower()
+                    if i in "abcdefghijklmnopqrstuvwxyz.-0123456789"
+                ]
+            )
+            if domain_name.count(".") < 1:
+                domain_name = domain_name + ".badfqdn.local"
+
+            try:
+                base_domain = tld.get_fld(f"http://{domain_name}")
+            except Exception as e:
+                # if tld fails try to extract the basedomain out of the hostname
+                if domain_name.count(".") == 1:
+                    base_domain = domain_name
+                elif domain_name.count(".") == 2:
+                    base_domain = domain_name.partition(".")[2]
+                elif domain_name.count(".") == 3:
+                    base_domain = domain_name.partition(".")[2].partition(".")[2]
+                else:
+                    base_domain = "local"
+
+
+            bd, created = BaseDomain.objects.get_or_create(
+                name=base_domain,
+                defaults={
+                    "active_scope": self.active_scope,
+                    "passive_scope": self.passive_scope,
+                },
+            )
+
+            if not created:
+                self.passive_scope = bd.passive_scope
+                self.active_scope = bd.active_scope
+
+            self.basedomain = bd
+
+            if not Domain.objects.filter(name=self.name).exists():
+                super().save(*args, **kwargs)
+            else:
+                return Domain.objects.get(name=self.name)
+            display_new(
+                "New domain added: {}  Active Scope: {}    Passive Scope: {}".format(
+                    self.name, self.active_scope, self.passive_scope
+                )
+            )
+
+            return self
 
 class IPAddress(BaseModel):
     ip_address = models.CharField(max_length=39, unique=True)
@@ -189,53 +242,9 @@ def pre_save_basedomain(sender, instance, *args, **kwargs):
         )
 
 
-@receiver(pre_save, sender=Domain)
-def pre_save_domain(sender, instance, *args, **kwargs):
-    if not instance.id:
-        instance.name = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', instance.name)
-        
-        domain_name = "".join(
-            [
-                i
-                for i in instance.name.lower()
-                if i in "abcdefghijklmnopqrstuvwxyz.-0123456789"
-            ]
-        )
-        if domain_name.count(".") < 1:
-            domain_name = domain_name + ".badfqdn.local"
+# @receiver(pre_save, sender=Domain)
+# def pre_save_domain(sender, instance, *args, **kwargs):
 
-        try:
-            base_domain = tld.get_fld(f"http://{domain_name}")
-        except Exception as e:
-            # if tld fails try to extract the basedomain out of the hostname
-            if domain_name.count(".") == 1:
-                base_domain = domain_name
-            elif domain_name.count(".") == 2:
-                base_domain = domain_name.partition(".")[2]
-            elif domain_name.count(".") == 3:
-                base_domain = domain_name.partition(".")[2].partition(".")[2]
-            else:
-                base_domain = "local"
-
-        bd, created = BaseDomain.objects.get_or_create(
-            name=base_domain,
-            defaults={
-                "active_scope": instance.active_scope,
-                "passive_scope": instance.passive_scope,
-            },
-        )
-
-        if not created:
-            instance.passive_scope = bd.passive_scope
-            instance.active_scope = bd.active_scope
-
-        instance.basedomain = bd
-
-        display_new(
-            "New domain added: {}  Active Scope: {}    Passive Scope: {}".format(
-                instance.name, instance.active_scope, instance.passive_scope
-            )
-        )
 
 
 @receiver(post_save, sender=Domain)
