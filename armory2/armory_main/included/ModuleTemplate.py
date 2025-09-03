@@ -153,7 +153,7 @@ class ToolTemplate(ModuleTemplate):
             config = get_config_options()
             
             base_path = config['ARMORY_BASE_PATH']
-            docker_extra = config['DOCKER_FOLDERS']
+            docker_extra = config.get('DOCKER_FOLDERS', [])
             
             self.binary = f"docker run -it --rm {self.args.docker_options[1:-1]} {docker_extra} -v \"{base_path}:{base_path}\" {self.docker_name} "
 
