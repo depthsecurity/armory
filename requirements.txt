@@ -16,7 +16,7 @@ cryptography
 decorator
 Django
 django-picklefield
-django-q
+django-q2
 dnspython
 exceptiongroup
 filelock
