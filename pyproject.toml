@@ -1,0 +1,85 @@
+[build-system]
+requires = ["flit_core >=3.11,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "depth-armory"
+authors = [{name = "Dan Lawson", email = "dlawson@depthsecurity.com"}]
+readme = "Readme.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+dynamic = ["version", "description"]
+
+
+dependencies = [
+"argcomplete",
+"arrow",
+"asgiref",
+"async-generator",
+"attrs",
+"backcall",
+"beautifulsoup4",
+"blessed",
+"bs4",
+"certifi",
+"cffi",
+"chardet",
+"charset-normalizer",
+"configparser",
+"cryptography",
+"decorator",
+"Django",
+"django-picklefield",
+"django-q2",
+"dnspython",
+"exceptiongroup",
+"filelock",
+"fuzzywuzzy",
+"greenlet",
+"h11",
+"idna",
+"ipaddr",
+"ipwhois",
+"ipython",
+"ipython-genutils",
+"jedi",
+"lxml",
+"matplotlib-inline",
+"mysqlclient",
+"netaddr",
+"numpy",
+"outcome",
+"parso",
+"pexpect",
+"pickleshare",
+"Pillow",
+"prompt-toolkit",
+"ptyprocess",
+"pycparser",
+"Pygments",
+"pyOpenSSL",
+"pyperclip",
+"PySocks",
+"python-dateutil",
+"python-docx",
+"python-Levenshtein",
+"pytz",
+"PyYAML",
+"requests",
+"selenium",
+"tld",
+"urllib3",
+"xmltodict",
+"opencv-python-headless",
+]
+
+[project.scripts]
+armory2 = "armory2.armory_cmd:main"
+armory2-manage = "armory2.manage:main"
+armory2-shell = "armory2.shell:main"
+
+[tool.flit.module]
+name = "armory2"
+
+[project.urls]
+Home = "https://github.com/depthsecurity/armory"
