@@ -2,9 +2,9 @@
 
 ## The tool itself
 
-- Get the original tool working again outside of Docker, as an installable pipx package
-- Set up a repo on pypy for installation
-- Clean out all of the old dependencies
+- ~~Get the original tool working again outside of Docker, as an installable pipx package~~
+- Set up a repo on pypy for installation - In progress
+- ~~Clean out all of the old dependencies~~
 - Create a guided configuration script for setting up a new install
 - Add an option for docker build/update that checks if the tool is installed locally and only build the docker image if it is not
 
