@@ -22,6 +22,7 @@ class ReportTemplate(object):
 
     name = "ReportTemplate"
 
+    requirements = []
     silent_run = False
 
     depth_marker = "\t"

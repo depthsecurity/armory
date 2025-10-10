@@ -28,7 +28,8 @@ class ModuleTemplate(object):
     """
 
     name = "Template"
-
+    requirements = []
+    
     def __init__(self):
 
         pass

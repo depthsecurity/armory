@@ -1,0 +1,46 @@
+[build-system]
+requires = ["flit_core >=3.11,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "depth-armory"
+authors = [{name = "Dan Lawson", email = "dlawson@depthsecurity.com"}]
+readme = "Readme.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+dynamic = ["version", "description"]
+
+
+dependencies = [
+"argcomplete",
+"configparser",
+#"distutils",
+"Django",
+"django-q2",
+"fuzzywuzzy",
+"ipaddr",
+"ipwhois",
+"ipython",
+"mysqlclient",
+"netaddr",
+"numpy",
+"pyperclip",
+"requests",
+"selenium",
+"tld",
+"urllib3",
+"xmltodict",
+"opencv-python-headless",
+
+]
+
+[project.scripts]
+armory = "armory2.armory_cmd:main"
+armory-manage = "armory2.manage:main"
+armory-shell = "armory2.shell:main"
+
+[tool.flit.module]
+name = "armory2"
+
+[project.urls]
+Home = "https://github.com/depthsecurity/armory"

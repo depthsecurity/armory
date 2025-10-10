@@ -51,28 +51,28 @@ python-docx
 python-Levenshtein
 pytz
 PyYAML
-redis
+# redis
 requests
-requests-file
+# requests-file
 selenium
-six
-sniffio
-sortedcontainers
-soupsieve
-SQLAlchemy
-sqlalchemy-mixins
-sqlparse
-termcolor
-thready
+# six
+# sniffio
+# sortedcontainers
+# soupsieve
+# SQLAlchemy
+# sqlalchemy-mixins
+# sqlparse
+# termcolor
+# thready
 tld
-tldextract
-traitlets
-trio
-trio-websocket
+# tldextract
+# traitlets
+# trio
+# trio-websocket
 urllib3
-wcwidth
-whois
-wsproto
+# wcwidth
+# whois
+# wsproto
 xmltodict
 opencv-python-headless
-jsonlines
+# jsonlines
