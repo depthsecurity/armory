@@ -38,6 +38,7 @@ dependencies = [
 armory = "armory2.armory_cmd:main"
 armory-manage = "armory2.manage:main"
 armory-shell = "armory2.shell:main"
+armory-web = "armory2.manage:web"
 
 [tool.flit.module]
 name = "armory2"

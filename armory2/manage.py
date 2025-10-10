@@ -41,5 +41,9 @@ def main(or_args=""):
         execute_from_command_line(sys.argv)
 
 
+def web():
+
+    main(["manage", "runserver", "0.0.0.0:8099"])
+
 if __name__ == '__main__':
     main()
