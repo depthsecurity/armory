@@ -21,10 +21,6 @@ ARMORY_CONFIG = {
     ],
     'ARMORY_CUSTOM_WEBAPPS': [
         '/home/user/armory_custom/webapps',
-
-    ],
-    'ARMORY_CUSTOM_MODELS': [
-        '/home/user/armory_custom/models',
     ]
 
 }

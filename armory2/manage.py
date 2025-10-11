@@ -42,7 +42,7 @@ def main(or_args=""):
 
 
 def web():
-
+    
     main(["manage", "runserver", "0.0.0.0:8099"])
 
 if __name__ == '__main__':
