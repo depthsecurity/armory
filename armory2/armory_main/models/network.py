@@ -22,7 +22,7 @@ from armory2.armory_main.included.utilities.network_tools import (
 
 from netaddr import IPNetwork, IPAddress as IPAddr
 from ipwhois import IPWhois
-import tld
+import tldextract
 import re
 
 
@@ -85,7 +85,10 @@ class Domain(BaseModel):
                 domain_name = domain_name + ".badfqdn.local"
 
             try:
-                base_domain = tld.get_fld(f"http://{domain_name}")
+                # Disable PSL fetching by giving an empty suffix list
+                ext = tldextract.TLDExtract(suffix_list_urls=())
+                result = ext(domain_name)
+                base_domain = f"{result.domain}.{result.suffix}"
             except Exception as e:
                 # if tld fails try to extract the basedomain out of the hostname
                 if domain_name.count(".") == 1:
