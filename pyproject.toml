@@ -31,6 +31,7 @@ dependencies = [
 "urllib3",
 "xmltodict",
 "opencv-python-headless",
+"tldextract",
 
 ]
 
