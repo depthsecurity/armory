@@ -40,6 +40,8 @@ armory = "armory2.armory_cmd:main"
 armory-manage = "armory2.manage:main"
 armory-shell = "armory2.shell:main"
 armory-web = "armory2.manage:web"
+armory-init = "armory2.manage:init"
+armory-docker = "armory2.manage:docker"
 
 [tool.flit.module]
 name = "armory2"

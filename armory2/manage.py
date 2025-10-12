@@ -2,6 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import pdb
 
 if os.getenv("ARMORY_HOME"):
     CONFIG_FOLDER = os.getenv("ARMORY_HOME")
@@ -44,6 +45,14 @@ def main(or_args=""):
 def web():
     
     main(["manage", "runserver", "0.0.0.0:8099"])
+
+def init():
+    main(["manage", "migrate"])
+
+def docker():
+    args = sys.argv[1:]
+    
+    main(["manage", "build_docker"] + args)
 
 if __name__ == '__main__':
     main()

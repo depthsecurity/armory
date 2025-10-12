@@ -25,6 +25,9 @@ ARMORY_CONFIG = {
 	[
 	   # Add in any custom module paths in here
 	],
+    'ARMORY_CUSTOM_WEBAPPS': [
+        # Add in any custom webapp paths in here
+    ],
 }
 
 
