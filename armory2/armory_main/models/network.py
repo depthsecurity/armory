@@ -3,7 +3,7 @@ from picklefield.fields import PickledObjectField
 from .base_model import BaseModel
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-
+import json
 import pdb
 from django.db.models.signals import pre_save, post_save
 from django.db.models import Q
@@ -20,10 +20,11 @@ from armory2.armory_main.included.utilities.network_tools import (
     private_subnets,
 )
 
-from netaddr import IPNetwork, IPAddress as IPAddr
+from netaddr import IPNetwork, IPAddress as IPAddr, IPRange
 # from ipwhois import IPWhois
 
-import whodap
+import whoisit
+from datetime import datetime, date, time
 
 import tldextract
 import re
@@ -335,17 +336,21 @@ def pre_save_ip(sender, instance, *args, **kwargs):
         try:
             cidr = instance.cidr
         except CIDR.DoesNotExist:
-            cidr_name, cidr_data = get_cidr_info(instance.ip_address)
+            cidr_name, org_name, cidr_data = get_cidr_info(instance.ip_address)
 
-            org_name = cidr_data["entities"][0]["handle"]
-
-            size = IPRange(cidr_name).size
+            # org_name = cidr_data["entities"][0]["handle"]
+            
+            size = IPNetwork(cidr_name).size
 
             cidr, created = CIDR.objects.get_or_create(
-                name=cidr_data, defaults={"org_name": org_name, "size": size}
+                name=cidr_name, defaults={"org_name": org_name, "size": size}
             )
             instance.cidr = cidr
             cidr.meta['rdap'] = cidr_data
+            try:
+                json.dumps(cidr_data)
+            except Exception as e:
+                pdb.set_trace()
             cidr.save()
         display_new(
             "New IP added: {}  Active Scope: {}    Passive Scope: {}".format(
@@ -366,10 +371,10 @@ def post_save_port(sender, instance, created, *args, **kwargs):
 @receiver(pre_save, sender=CIDR)
 def pre_save_cidr(sender, instance, *args, **kwargs):
     if not instance.id and not instance.org_name:
-        cidr_name, cidr_data = get_cidr_info(instance.name.split("/")[0])
-
-        instance.org_name = cidr_data["entities"][0]["handle"]
-        instance.size = IPRange(cidr_name).size
+        cidr_name, org_name,cidr_data = get_cidr_info(instance.name.split("/")[0])
+        
+        instance.org_name = org_name
+        instance.size = IPNetwork(cidr_name).size
 
     if not instance.id:
         display_new(
@@ -386,22 +391,24 @@ def get_cidr_info(ip_address):
     for p in private_subnets:
         if ip_address in p:
             return str(p), {"entities": [{"handle": "Non-Public Subnet"}]}
-
-    try:
-        res = whodap.lookup_ipv4(ip_address)
     
-        cidr_data = res.cidr0_cidr
+    try:
+        whoisit.bootstrap()
 
-        cidr = f"{cidr_data['v4prefix']}/{cidr_data['length']}"
+        res = whoisit.ip(ip_address)
+        # res = whodap.lookup_ipv4(ip_address)
+        cidr = str(res['network'])
 
-        display_warning("The networks didn't populate from whois. Defaulting to a /24.")
-        # again = raw_input("Would you like to try again? [Y/n]").lower()
-        # if again == 'y':
-        #     time.sleep(5)
-        # else:
+        if len(res['description']) > 0:
+            org_name = res['description'][0]
+        else:
+            org_name = res['entities']['registrant'][0]['name']
 
+        res['network'] = cidr
+
+        
         return (
-            cidr, res.to_json()
+            cidr, org_name, convert_datetime_to_string(res)
         )
 
     except Exception as e:
@@ -409,4 +416,29 @@ def get_cidr_info(ip_address):
         res = {}
         return None, {}
     
+
+def convert_datetime_to_string(data: dict) -> dict:
+    """
+    Recursively traverse a dictionary/list structure and convert any datetime objects to strings.
     
+    Args:
+        data: The data structure to process (dict, list, or any other type)
+        
+    Returns:
+        The same data structure with datetime objects converted to ISO format strings
+    """
+    if isinstance(data, dict):
+        return {key: convert_datetime_to_string(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [convert_datetime_to_string(item) for item in data]
+    elif isinstance(data, (datetime, date, time)):
+        # Convert datetime objects to ISO format strings
+        if isinstance(data, datetime):
+            return data.isoformat()
+        elif isinstance(data, date):
+            return data.isoformat()
+        elif isinstance(data, time):
+            return data.isoformat()
+    else:
+        # Return other types unchanged
+        return data

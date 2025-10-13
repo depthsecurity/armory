@@ -31,7 +31,7 @@ dependencies = [
 "xmltodict",
 "opencv-python-headless",
 "tldextract",
-"whodap",
+"whoisit",
 ]
 
 [project.scripts]
