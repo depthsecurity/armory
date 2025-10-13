@@ -44,7 +44,7 @@ def main(or_args=""):
 
 def web():
     
-    main(["manage", "runserver", "0.0.0.0:8099"])
+    main(["manage", "runserver", "127.0.0.1:8099"])
 
 def init():
     main(["manage", "migrate"])

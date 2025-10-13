@@ -109,6 +109,14 @@ def index(request):
                 } 
             }
         webapps_stats[category] = stats
-            
-    return render(request, 'armory_main/index.html', {'webapp_stats': webapps_stats, 'title': 'Armory Web - Dashboard', 'hide_nav':""})
+
+    
+    return render(request, 'armory_main/index.html', 
+        {
+            'webapp_stats': webapps_stats, 
+            'armory_webapps_grouped': webapps_grouped, 
+            'title': 'Armory Web - Dashboard', 
+            'hide_nav':""
+        }
+    )
 

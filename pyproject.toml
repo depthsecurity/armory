@@ -19,7 +19,6 @@ dependencies = [
 "django-q2",
 "fuzzywuzzy",
 "ipaddr",
-"ipwhois",
 "ipython",
 #"mysqlclient",
 "netaddr",
@@ -32,7 +31,7 @@ dependencies = [
 "xmltodict",
 "opencv-python-headless",
 "tldextract",
-
+"whodap",
 ]
 
 [project.scripts]

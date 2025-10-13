@@ -69,19 +69,10 @@ options:
   -m, --modules MODULES
                         Module to build the docker image for, or 'all' for every image. (default: all)
   -r, --rebuild         Rebuild docker image without cache
-  --version             Show program's version number and exit.
-  -v, --verbosity {0,1,2,3}
-                        Verbosity level; 0=minimal output, 1=normal output, 2=verbose output, 3=very
-                        verbose output
-  --settings SETTINGS   The Python path to a settings module, e.g. "myproject.settings.main". If this
-                        isn't provided, the DJANGO_SETTINGS_MODULE environment variable will be used.
-  --pythonpath PYTHONPATH
-                        A directory to add to the Python path, e.g. "/home/djangoprojects/myproject".
-  --traceback           Display a full stack trace on CommandError exceptions.
-  --no-color            Don't colorize the command output.
-  --force-color         Force colorization of the command output.
-  --skip-checks         Skip system checks.
+
 ```
+
+By default, the command will pull/build dockerfiles for all discovered modules. Using `-s` will avoid building dockerfiles for tools that are discovered within the PATH.
 
 # Usage
 
@@ -106,6 +97,12 @@ Reports are similar to modules, except they are meant to pull data from the data
 To view available report options:
 
 `armory -r <report> -R`
+
+## Web Apps
+
+Armory has a web app engine, with a couple of provided web apps. This can be launched with:
+
+`armory-web` which will listen on http://127.0.0.1:8099, or `armory-manage runserver 0.0.0.0:8099` if you'd like to modify the bind IP address and/or port.
 
 ## Interactive Shell
 

@@ -21,7 +21,10 @@ from armory2.armory_main.included.utilities.network_tools import (
 )
 
 from netaddr import IPNetwork, IPAddress as IPAddr
-from ipwhois import IPWhois
+# from ipwhois import IPWhois
+
+import whodap
+
 import tldextract
 import re
 
@@ -54,6 +57,8 @@ class BaseDomain(BaseModel):
 class CIDR(BaseModel):
     name = models.CharField(max_length=44, unique=True)
     org_name = models.CharField(max_length=256, unique=False, null=True)
+    size = models.IntegerField(default=256)
+    cloud = models.BooleanField(default=False)
     toolrun = GenericRelation(ToolRun, related_query_name="cidrs")
 
     def __str__(self):
@@ -84,6 +89,12 @@ class Domain(BaseModel):
             if domain_name.count(".") < 1:
                 domain_name = domain_name + ".badfqdn.local"
 
+            if domain_name.count(".") > 1:
+                base_domain = domain_name.partition(".")[2]
+                if BaseDomain.objects.filter(name=base_domain).exists():
+                    self.basedomain = BaseDomain.objects.get(name=base_domain)
+                    self.save()
+                    return
             try:
                 # Disable PSL fetching by giving an empty suffix list
                 ext = tldextract.TLDExtract(suffix_list_urls=())
@@ -312,7 +323,7 @@ def pre_save_ip(sender, instance, *args, **kwargs):
 
         # addr = IPAddress(instance.ip_address)
 
-        cidrs = CIDR.objects.all()
+        cidrs = CIDR.objects.all().order_by("size")
 
         for c in cidrs:
             if instance.ip_address in IPNetwork(c.name):
@@ -324,11 +335,18 @@ def pre_save_ip(sender, instance, *args, **kwargs):
         try:
             cidr = instance.cidr
         except CIDR.DoesNotExist:
-            cidr_data, org_name = get_cidr_info(instance.ip_address)
+            cidr_name, cidr_data = get_cidr_info(instance.ip_address)
+
+            org_name = cidr_data["entities"][0]["handle"]
+
+            size = IPRange(cidr_name).size
+
             cidr, created = CIDR.objects.get_or_create(
-                name=cidr_data, defaults={"org_name": org_name}
+                name=cidr_data, defaults={"org_name": org_name, "size": size}
             )
             instance.cidr = cidr
+            cidr.meta['rdap'] = cidr_data
+            cidr.save()
         display_new(
             "New IP added: {}  Active Scope: {}    Passive Scope: {}".format(
                 instance.ip_address, instance.active_scope, instance.passive_scope
@@ -348,9 +366,10 @@ def post_save_port(sender, instance, created, *args, **kwargs):
 @receiver(pre_save, sender=CIDR)
 def pre_save_cidr(sender, instance, *args, **kwargs):
     if not instance.id and not instance.org_name:
-        cidr_data, org_name = get_cidr_info(instance.name.split("/")[0])
+        cidr_name, cidr_data = get_cidr_info(instance.name.split("/")[0])
 
-        instance.org_name = org_name
+        instance.org_name = cidr_data["entities"][0]["handle"]
+        instance.size = IPRange(cidr_name).size
 
     if not instance.id:
         display_new(
@@ -366,17 +385,15 @@ def pre_save_cidr(sender, instance, *args, **kwargs):
 def get_cidr_info(ip_address):
     for p in private_subnets:
         if ip_address in p:
-            return str(p), "Non-Public Subnet"
+            return str(p), {"entities": [{"handle": "Non-Public Subnet"}]}
 
     try:
-        res = IPWhois(ip_address).lookup_whois(get_referral=True)
-    except Exception:
-        try:
-            res = IPWhois(ip_address).lookup_whois()
-        except Exception as e:
-            display_error("Error trying to resolve whois: {}".format(e))
-            res = {}
-    if not res.get("nets", []):
+        res = whodap.lookup_ipv4(ip_address)
+    
+        cidr_data = res.cidr0_cidr
+
+        cidr = f"{cidr_data['v4prefix']}/{cidr_data['length']}"
+
         display_warning("The networks didn't populate from whois. Defaulting to a /24.")
         # again = raw_input("Would you like to try again? [Y/n]").lower()
         # if again == 'y':
@@ -384,24 +401,12 @@ def get_cidr_info(ip_address):
         # else:
 
         return (
-            "{}.0/24".format(".".join(ip_address.split(".")[:3])),
-            "Whois failed to resolve.",
+            cidr, res.to_json()
         )
 
-    cidr_data = []
-
-    for net in res["nets"]:
-        for cd in net["cidr"].split(", "):
-            cidr_data.append(
-                [
-                    len(IPNetwork(cd)),
-                    cd,
-                    net["description"] if net["description"] else "",
-                ]
-            )
-    try:
-        cidr_data.sort()
     except Exception as e:
-        display_error("Error occured: {}".format(e))
-        pdb.set_trace()
-    return cidr_data[0][1], cidr_data[0][2]
+        display_error("Error trying to resolve whois: {}".format(e))
+        res = {}
+        return None, {}
+    
+    

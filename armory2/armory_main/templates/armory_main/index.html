@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="container">
-      {% for category, category_stats in webapp_stats.items|dictsort:"0.lower" %}
+      {% for category, category_stats in webapp_stats.items %}
       <div class="row">
         <div class="col-lg-12">
           <h6 class="text-uppercase">
