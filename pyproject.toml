@@ -15,6 +15,7 @@ dependencies = [
 "argcomplete",
 "configparser",
 #"distutils",
+"dnspython",
 "Django",
 "django-q2",
 "fuzzywuzzy",
