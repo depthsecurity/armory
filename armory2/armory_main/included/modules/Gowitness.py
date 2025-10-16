@@ -14,7 +14,6 @@ import os
 import re
 import subprocess
 import tempfile
-from distutils.version import LooseVersion
 from time import time
 import sys
 import json
@@ -154,14 +153,6 @@ class Module(ToolTemplate):
         """
 
         cwd = os.getcwd()
-        # ver_pat = re.compile("gowitness:\s?(?P<ver>\d+\.\d+\.\d+)")
-        # version = subprocess.getoutput("gowitness version")
-        # command_change = LooseVersion("1.0.8")
-        # gen_command = ["report", "generate"]
-        # m = ver_pat.match(version)
-        # if m:
-        #     if LooseVersion(m.group("ver")) <= command_change:
-        #         gen_command = ["generate"]
 
         for cmd in cmds:
             output = cmd["output"]

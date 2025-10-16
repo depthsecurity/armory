@@ -95,8 +95,9 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = ""
-        if os.getuid() > 0:
-            cmd += 'sudo '
+        if not "docker run" in self.binary:
+            if os.getuid() > 0:
+                cmd += 'sudo '
         cmd += self.binary + " {cmd_str} -oA {output} {host} -Pn "
 
         if args.tool_args:
