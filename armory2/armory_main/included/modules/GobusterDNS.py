@@ -88,7 +88,7 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
 
         cmd = self.binary + " dns "
-        cmd += " -o {output} -d {target} "
+        cmd += " -o {output} --domain {target} "
 
         if args.tool_args:
             cmd += args.tool_args
