@@ -393,7 +393,7 @@ def pre_save_cidr(sender, instance, *args, **kwargs):
 def get_cidr_info(ip_address):
     for p in private_subnets:
         if ip_address in p:
-            return str(p), {"entities": [{"handle": "Non-Public Subnet"}]}
+            return str(p), 'Non-Public Subnet',{}
     
     try:
         whoisit.bootstrap()
