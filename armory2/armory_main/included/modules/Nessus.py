@@ -19,7 +19,7 @@ from armory2.armory_main.included.utilities.color_display import (
 from armory2.armory_main.included.utilities.nessus import NessusRequest
 from armory2.armory_main.included.utilities.sort_ranges import merge_ranges
 from armory2.armory_main.included.utilities.network_tools import validate_ip
-
+from armory2.armory_main.included.utilities.cve_tools import get_cve_data
 import json
 import os
 import requests
@@ -508,10 +508,32 @@ class Module(ModuleTemplate):
                     vuln_refs["edb-id"].append(tmp.text)
 
             tmpcves = tag.findall("cve")
-            for c in tmpcves:
-                if c.text not in cves:
-                    cves.append(c.text)
+            
+            source3 = tag.find('cvss3_score_source').text if tag.find('cvss3_score_source') is not None else ""
+            source2 = tag.find('cvss_score_source').text if tag.find('cvss_score_source') is not None else ""
 
+            for c in tmpcves:
+                name = c.text
+                if name == source3:
+                    cve_data = {
+                        'name': name,
+                        'score': tag.find('cvss3_base_score').text,
+                    }
+                elif name == source2:
+                    
+                    cve_data = {
+                        'name': name,
+                        'score': tag.find('cvss_base_score').text,
+                    }
+                else:
+                    cve_data = {
+                        'name': name,
+                        'score': 0.0,
+                    }
+                
+                if cve_data not in cves:
+                    cves.append(cve_data)
+            
             cwe_ids = [c.text for c in tag.findall("cwe")]
             references = [c.text for c in tag.findall("see_also")]
 
@@ -581,60 +603,12 @@ class Module(ModuleTemplate):
 
             # if not self.args.disable_mitre:
             for cve in cves:
-                if not self.cve_data.get(cve):
+                if not self.cve_data.get(cve['name']):
                     # if not CVE.objects.all().filter(name=cve):
-                    if self.args.disable_mitre:
-                        cveDescription = ""
-                        cvss = 0.0
-                    else:
-                        cveDescription = ""
-                        cvss = 0.0
-                        rating = ""
-                        url = f"https://cveawg.mitre.org/api/cve/{cve}"
+                    desc, cvss = get_cve_data(cve['name'], quiet=True)
+                    self.cve_data[cve['name']] = [desc, cve['score']]
 
-                        try:
-                            #print(f"[*] Trying to request data for {cve}")
-
-                            res = requests.get(url, verify=False)
-                            res_code = res.status_code
-
-                            if res_code == 200:
-                                #print(f"[+] Got {cve} data")
-                                res = res.json()
-                                
-                            # get the cve description and remove newlines
-                            for desc in res["containers"]["cna"]["descriptions"]:
-                                if desc["lang"] == "en":
-                                    cveDescription = desc["value"].replace('\n', ' ').replace('\r', ' ')
-
-                            # check to see if metrics are in the response
-                            if "metrics" in res["containers"]["cna"]:
-                                # try to get cvss data starting from v4 down
-                                cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV4_0", None)
-                                if not cvvs:
-                                    cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV3_1", None)
-                                if not cvvs:
-                                    cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV3_0", None)
-                                if not cvvs:
-                                    cvvs = res["containers"]["cna"]["metrics"][0].get("cvssV2_0", None)
-                                
-                                # if there's no cvss data try to get the rating text instead
-                                if not cvvs:
-                                    rating = res["containers"]["cna"]["metrics"][0]["other"]["content"]["text"]
-                                    cveDescription = f"Rating: {rating.lower()} - " + cveDescription
-
-                                # get the cvss score
-                                if not rating:
-                                    cvss = cvvs["baseScore"]
-                        
-                            
-                        except Exception as e:
-                            print(f"[-] Error processing data for {cve}: {e}")
-
-                    # if not CVE.objects.all().filter(name=cve):
-                    self.cve_data[cve] = [cveDescription, cvss]
-
-                self.cve_map.append(f"{cve}|{db_vuln.id}")
+                self.cve_map.append(f"{cve['name']}|{db_vuln.id}")
                 # db_cve.vulnerability_set.add(db_vuln)
                 # else:
                 #     db_cve = CVE.objects.get(name=cve)
@@ -747,10 +721,13 @@ class Module(ModuleTemplate):
                     break
 
             if not hasattr(instance, "cidr"):
-                cidr_data, org_name = get_cidr_info(instance.ip_address)
+                cidr_name, org_name, cidr_data = get_cidr_info(instance.ip_address)
                 cidr, created = CIDR.objects.get_or_create(
-                    name=cidr_data, defaults={"org_name": org_name}
+                    name=cidr_name, defaults={"org_name": org_name, "size": IPNetwork(cidr_name).size}
                 )
+                if created:
+                    cidr.meta['rdap'] = cidr_data
+                    cidr.save()
                 instance.cidr = cidr
                 cidrs[cidr.name] = cidr.id
 
