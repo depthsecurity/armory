@@ -246,7 +246,15 @@ class Port(BaseModel):
     class Meta:
         ordering = ["port_number"]
 
-
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.service_name = self.service_name.lower()
+            if 'https' in self.service_name and self.service_name != 'https':
+                self.service_name = 'https'
+            elif 'http' in self.service_name and self.service_name != 'http' and self.service_name != 'https':
+                self.service_name = 'http'
+            
+        super().save(*args, **kwargs)
 # pre_save.connect(Domain.pre_save, sender=Domain)
 
 
