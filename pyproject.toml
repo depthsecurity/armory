@@ -50,7 +50,7 @@ armory-docker = "armory2.manage:docker"
 name = "armory2"
 
 [tool.setuptools.package-data]
-"armory2" = ["liberation-fonts-ttf-2.1.5/*.ttf"]
+"armory2.fonts" = ["*.ttf"]
 
 [project.urls]
 Home = "https://github.com/depthsecurity/armory"
