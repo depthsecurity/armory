@@ -20,7 +20,7 @@ from armory2.armory_main.included.utilities.color_display import (
 font_height = 15
 font_width = font_height * .6
 border = 10
-font_path = importlib.resources.files('armory2.liberation-fonts-ttf-2.1.5').joinpath('LiberationMono-Regular.ttf')
+font_path = importlib.resources.files('armory2.armory_main.fonts').joinpath('LiberationMono-Regular.ttf')
 font = str(font_path)
 fnt = ImageFont.truetype(font, font_height)
 
