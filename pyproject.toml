@@ -15,7 +15,6 @@ dependencies = [
 "argcomplete",
 "bs4",
 "docx",
-"exceptions",
 "configparser",
 #"distutils",
 "dnspython",
