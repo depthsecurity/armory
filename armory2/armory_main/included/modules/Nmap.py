@@ -180,9 +180,9 @@ class Module(ToolTemplate):
     def build_cmd(self, args):
         command = ""
         
-        
-        if os.getuid() > 0:
-            command = "sudo "
+        if not "docker run" in self.binary:
+            if os.getuid() > 0:
+                command = "sudo "
         command += self.binary + " -oX {output} -iL {target} "
 
         if args.tool_args:

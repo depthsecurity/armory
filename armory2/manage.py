@@ -3,7 +3,7 @@
 import os
 import sys
 import pdb
-
+from importlib import resources
 if os.getenv("ARMORY_HOME"):
     CONFIG_FOLDER = os.getenv("ARMORY_HOME")
 else:
@@ -18,10 +18,11 @@ if not os.path.exists(CONFIG_FOLDER):
     os.mkdir(CONFIG_FOLDER)
 if not os.path.exists(os.path.join(CONFIG_FOLDER, CONFIG_FILE)):
     with open(os.path.join(CONFIG_FOLDER, CONFIG_FILE), "w") as out:
+        
         out.write(
-            resource_string(
+            resources.read_text(
                 "armory2.default_configs", "settings.py"
-            ).decode("UTF-8")
+            )
         )    
 
 

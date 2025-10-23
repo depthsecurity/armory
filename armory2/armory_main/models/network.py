@@ -94,38 +94,41 @@ class Domain(BaseModel):
                 base_domain = domain_name.partition(".")[2]
                 if BaseDomain.objects.filter(name=base_domain).exists():
                     self.basedomain = BaseDomain.objects.get(name=base_domain)
-                    self.save()
-                    return
+                    
             try:
-                # Disable PSL fetching by giving an empty suffix list
-                ext = tldextract.TLDExtract(suffix_list_urls=())
-                result = ext(domain_name)
-                base_domain = f"{result.domain}.{result.suffix}"
-            except Exception as e:
-                # if tld fails try to extract the basedomain out of the hostname
-                if domain_name.count(".") == 1:
-                    base_domain = domain_name
-                elif domain_name.count(".") == 2:
-                    base_domain = domain_name.partition(".")[2]
-                elif domain_name.count(".") == 3:
-                    base_domain = domain_name.partition(".")[2].partition(".")[2]
-                else:
-                    base_domain = "local"
+                bd = self.basedomain
+            except BaseDomain.DoesNotExist:
+                bd = None
+            if not bd:        
+                try:
+                    # Disable PSL fetching by giving an empty suffix list
+                    ext = tldextract.TLDExtract(suffix_list_urls=())
+                    result = ext(domain_name)
+                    base_domain = f"{result.domain}.{result.suffix}"
+                except Exception as e:
+                    # if tld fails try to extract the basedomain out of the hostname
+                    if domain_name.count(".") == 1:
+                        base_domain = domain_name
+                    elif domain_name.count(".") == 2:
+                        base_domain = domain_name.partition(".")[2]
+                    elif domain_name.count(".") == 3:
+                        base_domain = domain_name.partition(".")[2].partition(".")[2]
+                    else:
+                        base_domain = "local"
 
 
-            bd, created = BaseDomain.objects.get_or_create(
-                name=base_domain,
-                defaults={
-                    "active_scope": self.active_scope,
-                    "passive_scope": self.passive_scope,
-                },
-            )
+                bd, created = BaseDomain.objects.get_or_create(
+                    name=base_domain,
+                    defaults={
+                        "active_scope": self.active_scope,
+                        "passive_scope": self.passive_scope,
+                    },
+                )
+                self.basedomain = bd
 
-            if not created:
-                self.passive_scope = bd.passive_scope
-                self.active_scope = bd.active_scope
-
-            self.basedomain = bd
+                if not created:
+                    self.passive_scope = self.basedomain.passive_scope
+                    self.active_scope = self.basedomain.active_scope
 
             if not Domain.objects.filter(name=self.name).exists():
                 super().save(*args, **kwargs)
@@ -243,7 +246,19 @@ class Port(BaseModel):
     class Meta:
         ordering = ["port_number"]
 
+    def save(self, *args, **kwargs):
+        if not self.id:
 
+            
+            self.service_name = self.service_name.lower()
+            if self.port_number in [5985, 5986, 47001]:
+                self.service_name = "winrm"
+            elif 'https' in self.service_name and self.service_name != 'https':
+                self.service_name = 'https'
+            elif 'http' in self.service_name and self.service_name != 'http' and self.service_name != 'https':
+                self.service_name = 'http'
+            
+        super().save(*args, **kwargs)
 # pre_save.connect(Domain.pre_save, sender=Domain)
 
 
@@ -390,7 +405,7 @@ def pre_save_cidr(sender, instance, *args, **kwargs):
 def get_cidr_info(ip_address):
     for p in private_subnets:
         if ip_address in p:
-            return str(p), {"entities": [{"handle": "Non-Public Subnet"}]}
+            return str(p), 'Non-Public Subnet',{}
     
     try:
         whoisit.bootstrap()
