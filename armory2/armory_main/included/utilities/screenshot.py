@@ -218,19 +218,19 @@ def run_command(cmd, leader="$ ", exclude_cmd=False, cols=100, lines=None, **kwa
                 lower_line = len(text_data) - lines - 1
 
             if exclude_cmd:
-                txt = f"head -n {upper_line} | tail -n {lines}\n\n{text_data[lower_line:upper_line]}\n"
+                txt = '\n'.join(text_data[lower_line:upper_line]) + '\n'
             else:
                 txt = f"{leader}{cmd}| head -n {upper_line} | tail -n {lines}\n" + '\n'.join(text_data[lower_line:upper_line])  + '\n'
 
         else:
             if exclude_cmd:
-                txt = f"head -n {lines}\n\n{text_data[:lines]}\n"
+                txt = '\n'.join(text_data[:lines]) + '\n'
             else:
                 txt = f"{leader}{cmd}| head -n {lines}\n" + '\n'.join(text_data[:lines]) + '\n'
 
     else:
         if exclude_cmd:
-            txt = f"\n{text_data}"
+            txt = '\n'.join(text_data)
         else:
             txt = f"{leader}{cmd}\n" + "\n".join(text_data)
 
