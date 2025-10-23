@@ -19,7 +19,10 @@ font = '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'
 font_height = 15
 font_width = font_height * .6
 border = 10
-fnt = ImageFont.truetype(font, font_height)
+try:
+    fnt = ImageFont.truetype(font, font_height)
+except OSError:
+    fnt = ImageFont.load_default()
 
 def merge_txt(txt1, txt2):
     res = ''
