@@ -29,6 +29,8 @@ verify_ssl = true
   fuzzywuzzy = {extras = ["speedup"]}
   xmltodict = "*"
   bs4 = "*"
+  docx = "*"
+  exceptions = "*"
   thready = "*"
   argcomplete = "*"
   tldextract = "*"
