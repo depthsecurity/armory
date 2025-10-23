@@ -605,7 +605,7 @@ class Module(ModuleTemplate):
             for cve in cves:
                 if not self.cve_data.get(cve['name']):
                     # if not CVE.objects.all().filter(name=cve):
-                    desc, cvss = get_cve_data(cve['name'], quiet=True)
+                    cvss, desc = get_cve_data(cve['name'], quiet=True)
                     self.cve_data[cve['name']] = [desc, cve['score']]
 
                 self.cve_map.append(f"{cve['name']}|{db_vuln.id}")
