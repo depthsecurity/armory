@@ -6,6 +6,7 @@ attrs
 backcall
 beautifulsoup4
 blessed
+docx
 bs4
 certifi
 cffi
