@@ -46,5 +46,11 @@ armory-docker = "armory2.manage:docker"
 [tool.flit.module]
 name = "armory2"
 
+[tool.poetry]
+version = "3.0"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<=3.14"
+
 [project.urls]
 Home = "https://github.com/depthsecurity/armory"
