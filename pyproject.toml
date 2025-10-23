@@ -14,7 +14,7 @@ dynamic = ["version", "description"]
 dependencies = [
 "argcomplete",
 "bs4",
-"docx",
+"python-docx",
 "configparser",
 #"distutils",
 "dnspython",
