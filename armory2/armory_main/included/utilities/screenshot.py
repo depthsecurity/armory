@@ -161,7 +161,7 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
     else:
         return True
 
-def run_command(cmd, leader="$ ", cols=100, lines=None, **kwargs):
+def run_command(cmd, leader="$ ", exclude_cmd=False, cols=100, lines=None, **kwargs):
 
     try:
         cmd_txt = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode().replace('\r', '')
@@ -213,14 +213,23 @@ def run_command(cmd, leader="$ ", cols=100, lines=None, **kwargs):
             elif upper_line > len(text_data):
                 upper_line = len(text_data) - 1
                 lower_line = len(text_data) - lines - 1
-                
-            txt = f"{leader}{cmd}| head -n {upper_line} | tail -n {lines}\n" + '\n'.join(text_data[lower_line:upper_line])  + '\n'
+
+            if exclude_cmd:
+                txt = f"head -n {upper_line} | tail -n {lines}\n\n{text_data[lower_line:upper_line]}\n"
+            else:
+                txt = f"{leader}{cmd}| head -n {upper_line} | tail -n {lines}\n" + '\n'.join(text_data[lower_line:upper_line])  + '\n'
 
         else:
-            txt = f"{leader}{cmd}| head -n {lines}\n" + '\n'.join(text_data[:lines]) + '\n'
+            if exclude_cmd:
+                txt = f"head -n {lines}\n\n{text_data[:lines]}\n"
+            else:
+                txt = f"{leader}{cmd}| head -n {lines}\n" + '\n'.join(text_data[:lines]) + '\n'
 
     else:
-        txt = f"{leader}{cmd}\n" + "\n".join(text_data)
+        if exclude_cmd:
+            txt = f"\n{text_data}"
+        else:
+            txt = f"{leader}{cmd}\n" + "\n".join(text_data)
 
     res = create_screenshot(txt, cols=cols, **kwargs)
     return res
