@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
+import importlib.resources
 import pdb
 from time import sleep
 import subprocess
@@ -14,15 +16,13 @@ from armory2.armory_main.included.utilities.color_display import (
     display_new,
     display,
 )
-font = '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'
 
 font_height = 15
 font_width = font_height * .6
 border = 10
-try:
-    fnt = ImageFont.truetype(font, font_height)
-except OSError:
-    fnt = ImageFont.load_default()
+font_path = importlib.resources.files('armory2.armory_main.included.fonts').joinpath('LiberationMono-Regular.ttf')
+font = str(font_path)
+fnt = ImageFont.truetype(font, font_height)
 
 def merge_txt(txt1, txt2):
     res = ''
