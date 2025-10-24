@@ -13,6 +13,7 @@ dynamic = ["version", "description"]
 
 dependencies = [
 "argcomplete",
+"pillow",
 "configparser",
 #"distutils",
 "dnspython",
@@ -51,6 +52,9 @@ version = "3.0"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<=3.14"
+
+[tool.setuptools.package-data]
+"armory2.armory_main.fonts" = ["*.ttf"]
 
 [project.urls]
 Home = "https://github.com/depthsecurity/armory"

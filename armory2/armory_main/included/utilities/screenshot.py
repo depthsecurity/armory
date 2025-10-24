@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
+import importlib.resources
 import pdb
 from time import sleep
 import subprocess
@@ -14,11 +16,12 @@ from armory2.armory_main.included.utilities.color_display import (
     display_new,
     display,
 )
-font = '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'
 
 font_height = 15
 font_width = font_height * .6
 border = 10
+font_path = importlib.resources.files('armory2.armory_main.fonts').joinpath('LiberationMono-Regular.ttf')
+font = str(font_path)
 fnt = ImageFont.truetype(font, font_height)
 
 def merge_txt(txt1, txt2):
@@ -161,7 +164,7 @@ def create_screenshot(txt, cols=100, save_path=None, highlight_text=[], box_text
     else:
         return True
 
-def run_command(cmd, leader="$ ", cols=100, lines=None, **kwargs):
+def run_command(cmd, leader="$ ", exclude_cmd=False, cols=100, lines=None, **kwargs):
 
     try:
         cmd_txt = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT).decode().replace('\r', '')
@@ -213,14 +216,23 @@ def run_command(cmd, leader="$ ", cols=100, lines=None, **kwargs):
             elif upper_line > len(text_data):
                 upper_line = len(text_data) - 1
                 lower_line = len(text_data) - lines - 1
-                
-            txt = f"{leader}{cmd}| head -n {upper_line} | tail -n {lines}\n" + '\n'.join(text_data[lower_line:upper_line])  + '\n'
+
+            if exclude_cmd:
+                txt = '\n'.join(text_data[lower_line:upper_line]) + '\n'
+            else:
+                txt = f"{leader}{cmd}| head -n {upper_line} | tail -n {lines}\n" + '\n'.join(text_data[lower_line:upper_line])  + '\n'
 
         else:
-            txt = f"{leader}{cmd}| head -n {lines}\n" + '\n'.join(text_data[:lines]) + '\n'
+            if exclude_cmd:
+                txt = '\n'.join(text_data[:lines]) + '\n'
+            else:
+                txt = f"{leader}{cmd}| head -n {lines}\n" + '\n'.join(text_data[:lines]) + '\n'
 
     else:
-        txt = f"{leader}{cmd}\n" + "\n".join(text_data)
+        if exclude_cmd:
+            txt = '\n'.join(text_data)
+        else:
+            txt = f"{leader}{cmd}\n" + "\n".join(text_data)
 
     res = create_screenshot(txt, cols=cols, **kwargs)
     return res
