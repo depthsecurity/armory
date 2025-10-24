@@ -13,6 +13,9 @@ dynamic = ["version", "description"]
 
 dependencies = [
 "argcomplete",
+"bs4",
+"python-docx",
+"pillow",
 "configparser",
 #"distutils",
 "dnspython",
@@ -45,6 +48,9 @@ armory-docker = "armory2.manage:docker"
 
 [tool.flit.module]
 name = "armory2"
+
+[tool.setuptools.package-data]
+"armory2.armory_main.fonts" = ["*.ttf"]
 
 [project.urls]
 Home = "https://github.com/depthsecurity/armory"
