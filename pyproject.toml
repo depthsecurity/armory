@@ -13,8 +13,6 @@ dynamic = ["version", "description"]
 
 dependencies = [
 "argcomplete",
-"bs4",
-"python-docx",
 "pillow",
 "configparser",
 #"distutils",
