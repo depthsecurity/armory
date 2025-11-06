@@ -100,20 +100,21 @@ class Command(BaseCommand):
                 self.stdout.write(f"  - {req}")
             
             # Build pip command
-            pip_cmd = [sys.executable, '-m', 'pip', 'install', '-r', tmp_file_path]
-            if pip_args:
-                # Split pip_args and add to command
-                pip_cmd.extend(pip_args.split())
+            cmd = self.build_install_command(tmp_file_path, single=False)
             
-            self.stdout.write(f"\nRunning command: {' '.join(pip_cmd)}")
+            # if pip_args:
+            #     # Split pip_args and add to command
+            #     pip_cmd.extend(pip_args.split())
+            
+            self.stdout.write(f"\nRunning command: {' '.join(cmd)}")
             
             # Run pip install
-            result = subprocess.run(pip_cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True)
             
             if result.returncode == 0:
                 self.stdout.write("✅ Successfully installed all requirements!")
                 if result.stdout:
-                    self.stdout.write("Pip output:")
+                    self.stdout.write("Install output:")
                     self.stdout.write(result.stdout)
             else:
                 self.stdout.write("❌ Failed to install some requirements.")
@@ -184,5 +185,28 @@ class Command(BaseCommand):
 
     def manual_install(self, library):
         self.stdout.write(f"Manually installing library: {library}")
-        subprocess.run([sys.executable, '-m', 'pip', 'install', library])
+        
+        cmd = self.build_install_command([library], single=True)
+        subprocess.run(cmd)
         self.stdout.write(f"Successfully installed {library}")
+
+
+    def build_install_command(self, requirements, single=False):
+        try:
+            import pip
+            if single:
+                cmd = [sys.executable, '-m', 'pip', 'install', requirements]
+            else:
+                cmd = [sys.executable, '-m', 'pip', 'install', '-r', requirements]
+            
+        except Exception as e:
+        
+            # check if uv is installed
+            if single:
+                cmd = ['uv', 'tool', 'install', '--with', requirements, 'depth-armory']
+            else:
+                cmd = ['uv', 'tool', 'install', '--with-requirements', requirements, 'depth-armory']
+            
+
+
+        return cmd
