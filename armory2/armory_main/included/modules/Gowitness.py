@@ -158,7 +158,7 @@ class Module(ToolTemplate):
             output = cmd["output"]
             for t in open(cmd["target"]).read().split("\n"):
                 if t:
-                    display(f"Adding {t} with {self.args.tool_args}")
+                    display(f"Adding {t} with {self.args.tool_args if self.args.tool_args else 'no tool args'}")
                     add_tool_url(t, tool=self.name, args=self.args.tool_args)
             # cmd = [self.binary] + gen_command
             os.chdir(output)
