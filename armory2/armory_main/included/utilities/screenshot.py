@@ -16,7 +16,7 @@ from armory2.armory_main.included.utilities.color_display import (
     display_new,
     display,
 )
-
+from armory2.armory_main.included.utilities.which import run as which
 font_height = 15
 font_width = font_height * .6
 border = 10
@@ -246,7 +246,9 @@ def web_screenshot(url, save_path, draw_box = None, arrow = False, paddingh=10, 
     options.add_argument("--headless")
     options.add_argument(f"--window-size={windowsize}")
     options.add_argument('--no-sandbox')
-    options.binary_location = "/usr/bin/chromium"
+
+    
+    options.binary_location = which('chromium')
     driver = webdriver.Chrome(options=options)
 
     try:

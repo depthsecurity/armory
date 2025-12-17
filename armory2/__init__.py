@@ -4,4 +4,4 @@ data from a lot of tools, add it to a database and correlate all of
 related information.
 '''
 
-__version__ = "3.0.0b10"
+__version__ = "3.0.0b13"
