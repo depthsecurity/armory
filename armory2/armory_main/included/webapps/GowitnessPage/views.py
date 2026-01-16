@@ -10,52 +10,64 @@ from base64 import b64encode
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 def index(request):
+    # Get filter parameter from URL
+    status_filter = request.GET.get('status', 'all')
 
-    data = {} #holds all of the port data and gowitness flag. this is a dictionary of lists
-    ips = IPAddress.objects.all()
-    good_ips = [] #weeds out port zeros and such
-    #using code from get_sorted...
-    port_ids = []
-    domains = Domain.objects.all()
-    #for x in domains:
-    for ip in ips:
-        for p in ip.port_set.all():
-            if p.port_number > 0:
-                if ip not in good_ips:
-                    good_ips.append(ip)
-                if p.meta.get('Gowitness'):
-                    data[p.id] = []
-                    #data[p.id].append('Gowitness')
-                    #data[p.id].append(p.service_name + '://' + str(ip.ip_address) + ':' + str(p.port_number))
-                    for gw in p.meta['Gowitness']:
-                        data[p.id].append(gw['screenshot_file'].split("/output")[1])
-                    port_ids.append(p.id)
-                    #now we need to get domains to make the hrefs later on
-                    if ip.domain_set.all().exists():
-                        #print("made it!")
-                        for domain in ip.domain_set.all():
-                            data[p.id].append(p.service_name + "://" + domain.name + ":" + str(p.port_number))
-                    else:
-                        data[p.id].append(p.service_name + '://' + str(ip.ip_address) + ':' + str(p.port_number))
+    # Use select_related and prefetch_related to reduce queries
+    ports = Port.objects.filter(
+        port_number__gt=0
+    ).select_related('ip_address').prefetch_related('ip_address__domain_set')
 
-    #trying pagination stuffs
-    #data_list = range(1,1000)
+    # Build data dictionary and collect all unique status codes
+    data = {}
+    all_status_codes = set()
 
-    
-    data_t = tuple(data.items())
-    #print(data_t)
-    paginator = Paginator(data_t, 5)
+    for port in ports:
+        # Skip ports without Gowitness data
+        if not port.meta.get('Gowitness'):
+            continue
+
+        # Get the response code from the first Gowitness entry
+        response_code = port.meta['Gowitness'][0].get('response_code_string', 'Unknown')
+        all_status_codes.add(response_code)
+
+        # Apply filter if not 'all'
+        if status_filter != 'all' and response_code != status_filter:
+            continue
+
+        ip = port.ip_address
+        data[port.id] = []
+
+        # Add response code as first item
+        data[port.id].append(response_code)
+
+        # Add screenshot paths
+        for gw in port.meta['Gowitness']:
+            data[port.id].append(gw['screenshot_file'].split("/output")[1])
+
+        # Add domain or IP URL
+        domains = list(ip.domain_set.all())
+        if domains:
+            for domain in domains:
+                data[port.id].append(f"{port.service_name}://{domain.name}:{port.port_number}")
+        else:
+            data[port.id].append(f"{port.service_name}://{ip.ip_address}:{port.port_number}")
+
+    # Paginate
+    data_items = list(data.items())
+    paginator = Paginator(data_items, 20)
     page = request.GET.get('page', 1)
 
-    #print(page)
-    #print(data_t)
     try:
-        data2 = paginator.get_page(page)
-    except PageNotAnInteger:
-        data2 = paginator.get_page(1)
-    except EmptyPage:
-        data2 = paginator.get_page(paginator.num_pages)
-    return render(request, 'GowitnessPage/index.html', {'data': data2})   #, 'port_ids':port_ids})
+        data_page = paginator.get_page(page)
+    except (PageNotAnInteger, EmptyPage):
+        data_page = paginator.get_page(1)
+
+    return render(request, 'GowitnessPage/index.html', {
+        'data': data_page,
+        'status_codes': sorted(all_status_codes),
+        'current_filter': status_filter
+    })
 
 def get_ips(request, pkid):
     obj = get_object_or_404(CIDR, pk=pkid)
