@@ -9,20 +9,23 @@ body {
     display: flex;
     flex-wrap: wrap;
     padding: 0 4px;
-    background: 
 }
-
 .column {
-    flex: 15%;
+    flex: 20%;
     max-width: 25%;
     padding: 0 4px;
 }
 
+.image-container {
+    position: relative;
+    margin-top: 8px;
+}
 
 .column img {
-  margin-top: 8px;
+  margin-top: 0;
   vertical-align: middle;
   width: 100%;
+  display: block;
 }
 
 /* Responsive layout - makes a two column-layout instead of four columns */
@@ -32,7 +35,6 @@ body {
     max-width: 50%;
   }
 }
-
 /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
 @media screen and (max-width: 600px) {
   .column {
@@ -40,7 +42,6 @@ body {
     max-width: 100%;
   }
 }
-
 #myBtn {
   display: none;
   position: fixed;
@@ -56,54 +57,127 @@ body {
   padding: 15px;
   border-radius: 4px;
 }
-
 #myBtn:hover {
   background-color: red;
 }
+
+.filter-bar {
+    background: #1a7a87;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+}
+
+.filter-bar label {
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.filter-bar select {
+    padding: 5px 10px;
+    border-radius: 3px;
+    border: none;
+}
+
+.status-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 6px 10px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.status-2xx {
+    background: #28a745;
+    color: white;
+}
+
+.status-3xx {
+    background: #6c757d;
+    color: black;
+}
+
+.status-4xx {
+    background: #ffc107;
+    color: white;
+}
+
+.status-5xx {
+    background: #dc3545;
+    color: white;
+}
+
+.status-unknown {
+    background: #17a2b8;
+    color: white;
+}
 </style>
 {% load static %}
-
-<script src="{% static 'js/jquery-3.7.1.js' %}"></script>
-<script src="{% static 'js/jquery.waypoints.min.js' %}"></script>
-<!--<script src="{% static 'js/infinite.pkgd.min.js' %}"></script>-->
+<script src="/GowitnessPage/static/js/jquery-3.7.1.js"></script>
+<script src="/GowitnessPage/static/js/jquery.waypoints.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/shortcuts/infinite.js"></script>
 
-
+<!-- Add filter bar -->
+<div class="filter-bar">
+    <label for="statusFilter">Filter by Status Code:</label>
+    <select id="statusFilter" onchange="filterByStatus(this.value)">
+        <option value="all" {% if current_filter == 'all' %}selected{% endif %}>All</option>
+        {% for code in status_codes %}
+            <option value="{{ code }}" {% if current_filter == code %}selected{% endif %}>{{ code }}</option>
+        {% endfor %}
+    </select>
+</div>
 
 {% block content %}
-
   <div class="row infinite-container">
     {% for x in data %}
         <div class="column infinite-item">
-          <a href="{{ x.1|last }}" target="_blank">
-            <img src="/GowitnessPage/output{{ x.1.0 }}"/>
-          </a>
+          <div class="image-container">
+            {% with status=x.1.0 %}
+              {% if status|slice:":1" == "2" %}
+                <div class="status-badge status-2xx">{{ status }}</div>
+              {% elif status|slice:":1" == "3" %}
+                <div class="status-badge status-3xx">{{ status }}</div>
+              {% elif status|slice:":1" == "4" %}
+                <div class="status-badge status-4xx">{{ status }}</div>
+              {% elif status|slice:":1" == "5" %}
+                <div class="status-badge status-5xx">{{ status }}</div>
+              {% else %}
+                <div class="status-badge status-unknown">{{ status }}</div>
+              {% endif %}
+            {% endwith %}
+            <a href="{{ x.1|last }}" target="_blank">
+              <img src="/GowitnessPage/output{{ x.1.1 }}"/>
+            </a>
+          </div>
         </div>
     {% endfor %}
   </div>
-
   {% if data.has_next %}
-    <a class="infinite-more-link" href="?page={{ data.next_page_number }}">More</a>
+    <a class="infinite-more-link" href="?page={{ data.next_page_number }}&status={{ current_filter }}">More</a>
   {% endif %}
-
   <script>
+    function filterByStatus(status) {
+        window.location.href = '?status=' + status;
+    }
+    
     var infinite = new Waypoint.Infinite({
       element: $('.infinite-container')[0]
     });
   </script>
 {% endblock %}
-
-
-
-
 <button onclick="topFunction()" id="myBtn" title="Go to top">Top</button>
 <script>
 //Get the button
 var mybutton = document.getElementById("myBtn");
-
 // When the user scrolls down 20px from the top of the document, show the button
 window.onscroll = function() {scrollFunction()};
-
 function scrollFunction() {
   if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
     mybutton.style.display = "block";
@@ -111,7 +185,6 @@ function scrollFunction() {
     mybutton.style.display = "none";
   }
 }
-
 // When the user clicks on the button, scroll to the top of the document
 function topFunction() {
   document.body.scrollTop = 0;
