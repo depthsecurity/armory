@@ -42,6 +42,18 @@ class Report(ReportTemplate):
             ),
             default="(Excluded from Scope)",
         )
+        self.options.add_argument(
+            "-all",
+            "--show_all",
+            help="Show both resolved and non-resolvable DNS records.",
+            action="store_true",
+        )
+        self.options.add_argument(
+            "-nr",
+            "--non_resolved_only",
+            help="Show only non-resolvable DNS records.",
+            action="store_true",
+        )
 
     def run(self, args):
         # Cidrs = self.CIDR.
@@ -86,6 +98,8 @@ class Report(ReportTemplate):
                 domain_data[bd_name] = {}
 
             if d.ip_addresses.count() > 0:
+                if args.non_resolved_only:
+                    continue
                 for ip in d.ip_addresses.all():
                     ip_msg = "{}".format(ip)
                     if initial_domains and bd_name == dname:
@@ -99,9 +113,14 @@ class Report(ReportTemplate):
                         domain_data[bd_name][dname] = set()
                     domain_data[bd_name][dname].add(ip_msg)
             else:
+                if not args.show_all and not args.non_resolved_only:
+                    continue
                 domain_data[bd_name][dname] = set("")
 
         for b in sorted(domain_data.keys()):
+            # Skip base domains that have no subdomains after filtering
+            if not domain_data[b]:
+                continue
 
             results.append(b)
 

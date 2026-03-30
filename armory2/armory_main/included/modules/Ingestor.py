@@ -228,6 +228,7 @@ class Module(ModuleTemplate):
                     "Updating %s to match forced scope. Updating to Active Scope: %s Passive Scope: %s"
                     % (ip_str, self.active_scope, self.passive_scope)
                 )
+                ip.save()
 
         return ip
 
