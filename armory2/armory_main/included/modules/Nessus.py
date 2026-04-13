@@ -605,7 +605,7 @@ class Module(ModuleTemplate):
             for cve in cves:
                 if not self.cve_data.get(cve['name']):
                     # if not CVE.objects.all().filter(name=cve):
-                    cvss, desc = get_cve_data(cve['name'], quiet=True)
+                    cvss, desc = get_cve_data(cve['name'], self.proxies, quiet=True)
                     self.cve_data[cve['name']] = [desc, cve['score']]
 
                 self.cve_map.append(f"{cve['name']}|{db_vuln.id}")
@@ -648,6 +648,11 @@ class Module(ModuleTemplate):
         just_domains = []
 
         self.args = args
+        if args.proxy:
+            self.proxies = {"http": args.proxy, "https": args.proxy}
+        else:
+            self.proxies = None
+            
         print("Preprocessing IPs/Domains")
         for ReportHost in root.iter("ReportHost"):
             hostname = ""
