@@ -11,9 +11,9 @@ from base64 import b64encode
 import json
 import uuid
 import re
-
-
-# from armory2.
+from armory2.armory2.settings import ARMORY_CONFIG
+from armory2.armory2 import settings
+from django.template import loader
 
 @register.filter
 def get_item(dictionary, key):
@@ -34,7 +34,7 @@ def unique_ffuf(l):
     endpoints = []
 
     for item in l:
-        endpoint = item['input']['FUZZ']
+        endpoint = item['input']['FUZZ'] if type(item['input']) == dict else item['input']
 
         if endpoint not in endpoints:
             res.append(item)
@@ -146,10 +146,13 @@ def get_hosts(request):
                         data[p.id].append('Xsstrike')
                     if ffuf and p.meta.get('FFuF'):
                         ffuf_good = False
-
+                        
                         for f in p.meta.get('FFuF'):
-                            if os.path.exists(f):
-                                res = json.load(open(f))
+                            rel = f.split('armory2/')[1]
+                            abs_path = os.path.join(ARMORY_CONFIG['ARMORY_BASE_PATH'], rel)
+                            
+                            if os.path.exists(abs_path):
+                                res = json.load(open(abs_path))
                                 if len(res['results']) > 0:
                                     ffuf_good = True
 
@@ -314,31 +317,43 @@ def get_ffuf(request, port_id):
     ffuf_data = {}
 
     for f in port.meta['FFuF']:
-        if os.path.exists(f):
-            data = json.loads(open(f).read())
+        rel = f.split('armory2/')[1]
+        abs_path = os.path.join(ARMORY_CONFIG['ARMORY_BASE_PATH'], rel)
+        if os.path.exists(abs_path):
+            data = json.loads(open(abs_path).read())
             
-            for r in data['results']:
+            if data.get('config'):
                 url = data['config']['url']
-                url_orig = r['url']
-                r['host_url'] = '/'.join(url_orig.split('/')[:2] + [r['host']] + url_orig.split('/')[3:])
+            else:
+                url = data['commandline'].split(' -u ')[1].split(' ')[0]
+                if 'FUZZ' in url:
+                    url = url.replace('FUZZ', '')
+
+            for r in data['results']:
+                if r.get('url'):
+                    
+                    url_orig = r['url']
+                else:
+                    url_orig = os.path.join(url, r['input'])
+
+                host = url_orig.split('/')[2].split(':')[0]    
+                # r['host_url'] = '/'.join(url_orig.split('/')[:2] + [r['host']] + url_orig.split('/')[3:])
                 
-                if not ffuf_data.get(r['host']):
-                    ffuf_data[r['host']] = {}
-                if not ffuf_data[r['host']].get(url):
-                    ffuf_data[r['host']][url] = {}
+                if not ffuf_data.get(host):
+                    ffuf_data[host] = {}
+                if not ffuf_data[host].get(url):
+                    ffuf_data[host][url] = {}
 
-                if not ffuf_data[r['host']][url].get(r['status']):
-                    ffuf_data[r['host']][url][r['status']] = []
+                if not ffuf_data[host][url].get(r['status']):
+                    ffuf_data[host][url][r['status']] = []
 
-                if len(ffuf_data[r['host']][url][r['status']]) < max_status and r not in ffuf_data[r['host']][url][r['status']]:
-                    
-
-                    if r.get('host') and r.get('host') not in r['url']:
-                        r['url'] = get_virtualhost_url(r['url'], r['host'])
-                    
-                    ffuf_data[r['host']][url][r['status']].append(r)
-                    
-    # pdb.set_trace()            
+                if len(ffuf_data[host][url][r['status']]) < max_status and r not in ffuf_data[host][url][r['status']]:
+                    if type(r['input']) == dict:
+                        input = r['input']['FUZZ']
+                    else:
+                        input = r['input']
+                    ffuf_data[host][url][r['status']].append({'url': url_orig, 'input': input, 'length': r['length']})
+               
     return render(request, 'host_summary/ffuf.html', {'ffuf_data':ffuf_data})
 
                 

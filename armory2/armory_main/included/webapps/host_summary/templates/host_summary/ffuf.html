@@ -2,14 +2,14 @@
   <div class="card-header">
     <h4>FFuF Findings</h4>
   </div>
-  
+
   <div class="row">
-  {% for host, host_data in ffuf_data.items %}
-  
+    {% for host, host_data in ffuf_data.items %}
+
     <div class="col-md-6">
 
       {% for url, data in host_data.items %}
-      
+
       <div class="card">
         <div class="card-body">
           <div class="row">
@@ -24,7 +24,7 @@
             <div class="col-md-4">Hostname</div>
             <div class="col-md-8">{{ host }}</div>
           </div>
-          
+
           {% for header in data.headers %}
           <div class="row">
             <div class="col-md-4">{{ header }}</div>
@@ -32,7 +32,7 @@
           </div>
           {% endfor %}
           {% for status_code, status_info in data.items %}
-          
+
           <div class="row">
             <div class="col-md-8">
               Status Code - {{ status_code }}
@@ -42,10 +42,10 @@
             </div>
           </div>
 
-           {% for result in status_info|unique_ffuf %}
+          {% for result in status_info|unique_ffuf %}
           <div class="row">
             <div class="col-md-8">
-              <a href="{{ result.url }}">{{ result.input.FUZZ }}</a>
+              <a href="{{ result.url }}">{{ result.input }}</a>
             </div>
             <div class="col-md-4">
               {{ result.length }}
@@ -53,18 +53,18 @@
           </div>
 
           {% endfor %}
-          
-      
-        {% endfor %}
+
+
+          {% endfor %}
         </div>
       </div>
 
-      
-      
+
+
       {% endfor %}
     </div>
-     
+
     <br />
-  {% endfor %}
-  </div>   
+    {% endfor %}
+  </div>
 </div>

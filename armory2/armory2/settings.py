@@ -176,22 +176,37 @@ if not os.path.exists(ARMORY_CONFIG['ARMORY_BASE_PATH']):
 
 # pdb.set_trace()
 
+template_paths = {}
+static_paths = {}
 
-TEMPLATES[0]['DIRS'] += [f"{url}templates" for url in glob.glob(f"{BASE_DIR}/armory_main/included/webapps/*/")]
+
+# TEMPLATES[0]['DIRS'] += [f"{url}templates" for url in glob.glob(f"{BASE_DIR}/armory_main/included/webapps/*/")]
 
 if ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
 
     templates = ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']
     static_folders = []
     for p in templates:
-        template_paths = [f"{url}templates" for url in glob.glob(f"{p}/*/")]
 
-        TEMPLATES[0]['DIRS'] += template_paths
-        static_folders = [f"{url}static" for url in glob.glob(f"{p}/*/")]
+        for url in glob.glob(f"{p}/*/"):
+            
+            mod_name = url.split("/")[-2]
+            if not template_paths.get(mod_name):
 
-    existing_folders = [f for f in static_folders if os.path.exists(f)]
-    STATICFILES_DIRS = existing_folders
+                template_paths[mod_name] = f"{url}templates"
+                static_paths[mod_name] = f"{url}static"
 
+for p in glob.glob(f"{BASE_DIR}/armory_main/included/webapps/*/"):
+    mod_name = p.split("/included/webapps/")[1].split("/")[0]
+    if mod_name not in template_paths:
+        template_paths[mod_name] = f"{p}templates"
+        static_paths[mod_name] = f"{p}static"
+
+for _, template_path in template_paths.items():
+    TEMPLATES[0]['DIRS'].append(template_path)
+
+
+STATICFILES_DIRS = [static_path for _, static_path in static_paths.items() if os.path.exists(static_path)]
 
 # pdb.set_trace()
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
