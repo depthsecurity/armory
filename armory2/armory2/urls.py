@@ -29,22 +29,6 @@ urlpatterns = [
 ]
 # pdb.set_trace()
 
-for module_path in glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-2])}/armory_main/included/webapps/*/"):
-
-    module_name = module_path.split("/")[-2]
-    
-    
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        module_name, module_path + "urls.py"
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-    urlpatterns.append(path(f"{module_name}/", include(module)))
-
-
 if settings.ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
 
     for module_template in settings.ARMORY_CONFIG['ARMORY_CUSTOM_WEBAPPS']:
@@ -63,3 +47,21 @@ if settings.ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
             spec.loader.exec_module(module)
 
             urlpatterns.append(path(f"{module_name}/", include(module)))
+for module_path in glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-2])}/armory_main/included/webapps/*/"):
+
+    module_name = module_path.split("/")[-2]
+    
+    
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        module_name, module_path + "urls.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    urlpatterns.append(path(f"{module_name}/", include(module)))
+
+
+
+
