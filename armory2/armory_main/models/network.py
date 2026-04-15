@@ -429,7 +429,7 @@ def get_cidr_info(ip_address):
     except Exception as e:
         display_error("Error trying to resolve whois: {}".format(e))
         res = {}
-        return None, {}
+        return "Not resolved", "Not resolved", {}
     
 
 def convert_datetime_to_string(data: dict) -> dict:
