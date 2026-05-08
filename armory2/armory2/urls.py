@@ -29,21 +29,7 @@ urlpatterns = [
 ]
 # pdb.set_trace()
 
-for module_path in glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-2])}/armory_main/included/webapps/*/"):
-
-    module_name = module_path.split("/")[-2]
-    
-    
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        module_name, module_path + "urls.py"
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-    urlpatterns.append(path(f"{module_name}/", include(module)))
-
+url_endpoints = {}
 
 if settings.ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
 
@@ -54,12 +40,39 @@ if settings.ARMORY_CONFIG.get('ARMORY_CUSTOM_WEBAPPS'):
             module_name = module_path.split("/")[-2]
             
             
-            import importlib.util
+            if not url_endpoints.get(module_name):
+                import importlib.util
 
-            spec = importlib.util.spec_from_file_location(
-                module_name, module_path + "urls.py"
-            )
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+                spec = importlib.util.spec_from_file_location(
+                    module_name, module_path + "urls.py"
+                )
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
 
-            urlpatterns.append(path(f"{module_name}/", include(module)))
+                
+                url_endpoints[module_name] = path(f"{module_name}/", include(module))
+
+
+            # urlpatterns.append(path(f"{module_name}/", include(module)))
+for module_path in glob.glob(f"{'/'.join(os.path.realpath(__file__).split('/')[:-2])}/armory_main/included/webapps/*/"):
+
+    module_name = module_path.split("/")[-2]
+    
+    if not url_endpoints.get(module_name):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            module_name, module_path + "urls.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+    # urlpatterns.append(path(f"{module_name}/", include(module)))
+    
+        url_endpoints[module_name] = path(f"{module_name}/", include(module))
+
+for module_name, module_path in url_endpoints.items():
+    urlpatterns.append(module_path)
+
+
+

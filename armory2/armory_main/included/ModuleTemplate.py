@@ -149,8 +149,12 @@ class ToolTemplate(ModuleTemplate):
         elif self.args.profile4:
             self.args.tool_args += " " + self.args.profile4_data
 
+        if not self.args.binary:
+            self.binary = which.run(self.binary_name)
+        else:
+            self.binary = which.run(self.args.binary)
         
-        if self.use_docker and self.docker_name:
+        if (not self.binary and self.docker_name) or (self.use_docker and self.docker_name):
             config = get_config_options()
             
             base_path = config['ARMORY_BASE_PATH']
@@ -160,12 +164,9 @@ class ToolTemplate(ModuleTemplate):
 
             if hasattr(self, 'docker_run_binary'):
                 self.binary += f" {self.docker_run_binary}"
-        elif not self.args.binary:
-            self.binary = which.run(self.binary_name)
-        else:
-            self.binary = which.run(self.args.binary)
         
-        if not self.binary:
+        
+        elif not self.binary:
             print(
                 "%s binary not found. Please explicitly provide path with --binary"
                 % self.name
