@@ -34,6 +34,7 @@ dependencies = [
 "opencv-python-headless",
 "tldextract",
 "whoisit",
+"xlsxwriter (>=3.2.9,<4.0.0)",
 ]
 
 [project.scripts]
@@ -46,6 +47,12 @@ armory-docker = "armory2.manage:docker"
 
 [tool.flit.module]
 name = "armory2"
+
+[tool.poetry]
+version = "3.0"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<=3.14"
 
 [tool.setuptools.package-data]
 "armory2.armory_main.fonts" = ["*.ttf"]
