@@ -72,6 +72,7 @@ class Domain(BaseModel):
     basedomain = models.ForeignKey(BaseDomain, on_delete=models.CASCADE)
     whois = models.TextField()
     toolrun = GenericRelation(ToolRun, related_query_name="domains")
+    dynamic_ip = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -235,6 +236,7 @@ class Port(BaseModel):
     cert = models.TextField(unique=False, null=True)
     certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
+    toolrun = GenericRelation(ToolRun, related_query_name="ports")
     # toolrun = GenericRelation(ToolRun, related_query_name="ports")
 
     def __str__(self):

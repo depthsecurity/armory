@@ -10,6 +10,8 @@ class CVE(BaseModel):
     description = models.TextField()
     updated = models.BooleanField(default=True)
 
+    def __str__(self):
+        return self.name
 
 class Vulnerability(BaseModel):
     name = models.CharField(max_length=256, unique=True)
@@ -20,6 +22,10 @@ class Vulnerability(BaseModel):
     exploitable = models.BooleanField(default=False)
     exploit_reference = PickledObjectField(default=dict)
     cves = models.ManyToManyField(CVE)
+    source = models.CharField(max_length=16, default="nessus")
+
+    def __str__(self):
+        return self.name
 
 class VulnOutput(BaseModel):
     port = models.ForeignKey(Port, on_delete=models.CASCADE)
@@ -32,6 +38,7 @@ class Url(BaseModel):
     method = models.CharField(max_length=32, unique=False, default="get")
     port = models.ForeignKey(Port, on_delete=models.CASCADE)
 
-
+    def __str__(self):
+        return self.name
 
 
