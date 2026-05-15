@@ -14,11 +14,18 @@ import argparse
 import sys
 
 if sys.version_info[0] < 3:
-    from subprocess32 import Popen, STDOUT
+    from subprocess32 import Popen, STDOUT, PIPE
 else:
-    from subprocess import Popen, STDOUT
+    from subprocess import Popen, STDOUT, PIPE
 
+import threading
+import uuid as _uuid
 import pdb
+
+# When set to '1' (by armory-web's module runner), each run_cmd call wraps
+# the subprocess stdout with structured markers so the web UI can route output
+# to per-process terminal windows.
+_STRUCTURED = os.getenv('ARMORY_STRUCTURED_OUTPUT') == '1'
 from armory2.armory_cmd import get_config_options
 
 class ModuleTemplate(object):
@@ -386,33 +393,54 @@ class ToolTemplateNoOutput(ToolTemplate):
 
 
 def run_cmd(cmd):
-    # c = []
-    # for cm in cmd[:-1]:
-    #     if ' ' in cm:
-    #         c.append('"' + cm + '"')
-    #     else:
-    #         c.append(cm)
     c = cmd[:-2]
     timeout = cmd[-2]
     delay = cmd[-1]
-    display("Executing command: %s" % " ".join(c))
+    cmd_str = " ".join(c)
+
+    if _STRUCTURED:
+        proc_id = _uuid.uuid4().hex[:16]
+        print(f'__ARMORY:S:{proc_id}:{cmd_str}', flush=True)
+    else:
+        display("Executing command: %s" % cmd_str)
 
     current_time = time.time()
 
     if timeout:
-        process = Popen(c)
-        while time.time() < current_time + timeout and process.poll() is None:
-            time.sleep(5)
-        if process.poll() is None:
-
-            display_error(
-                "Timeout of %s reached. Aborting thread for command: %s"
-                % (timeout, " ".join(c))
-            )
-            process.terminate()
-
+        if _STRUCTURED:
+            process = Popen(c, stdout=PIPE, stderr=STDOUT, text=True, bufsize=1)
+            print(f'__ARMORY:P:{proc_id}:{process.pid}', flush=True)
+            def _drain():
+                for ln in process.stdout:
+                    print(f'__ARMORY:L:{proc_id}:{ln.rstrip()}', flush=True)
+            t = threading.Thread(target=_drain, daemon=True)
+            t.start()
+            while time.time() < current_time + timeout and process.poll() is None:
+                time.sleep(0.5)
+            if process.poll() is None:
+                display_error("Timeout of %s reached. Aborting thread for command: %s" % (timeout, cmd_str))
+                process.terminate()
+            t.join()
+        else:
+            process = Popen(c)
+            while time.time() < current_time + timeout and process.poll() is None:
+                time.sleep(5)
+            if process.poll() is None:
+                display_error("Timeout of %s reached. Aborting thread for command: %s" % (timeout, cmd_str))
+                process.terminate()
     else:
-        Popen(c).wait()
+        if _STRUCTURED:
+            process = Popen(c, stdout=PIPE, stderr=STDOUT, text=True, bufsize=1)
+            print(f'__ARMORY:P:{proc_id}:{process.pid}', flush=True)
+            for ln in process.stdout:
+                print(f'__ARMORY:L:{proc_id}:{ln.rstrip()}', flush=True)
+            process.wait()
+        else:
+            process = Popen(c)
+            process.wait()
+
+    if _STRUCTURED:
+        print(f'__ARMORY:E:{proc_id}:{process.returncode}', flush=True)
 
     if delay:
         display(f"Sleeping for {delay} seconds")
@@ -426,27 +454,34 @@ def run_cmd_noout(cmd_data):
     c = cmd[:-2]
     timeout = cmd[-2]
     delay = cmd[-1]
-    display("Executing command: %s" % " ".join(c))
+    cmd_str = " ".join(c)
+
+    if _STRUCTURED:
+        proc_id = _uuid.uuid4().hex[:16]
+        print(f'__ARMORY:S:{proc_id}:{cmd_str}', flush=True)
+    else:
+        display("Executing command: %s" % cmd_str)
 
     current_time = time.time()
     f = open(output, "w")
-    if timeout:
 
+    if timeout:
         process = Popen(c, stdout=f, stderr=STDOUT)
         while time.time() < current_time + timeout and process.poll() is None:
             time.sleep(5)
         if process.poll() is None:
-
-            display_error(
-                "Timeout of %s reached. Aborting thread for command: %s"
-                % (timeout, " ".join(c))
-            )
+            display_error("Timeout of %s reached. Aborting thread for command: %s" % (timeout, cmd_str))
             process.terminate()
-
     else:
-        Popen(c, stdout=f, stderr=STDOUT).wait()
+        process = Popen(c, stdout=f, stderr=STDOUT)
+        process.wait()
+
     f.close()
+
+    if _STRUCTURED:
+        print(f'__ARMORY:E:{proc_id}:{process.returncode}', flush=True)
+
     if delay:
-        display("Sleeping for {delay} seconds")
+        display(f"Sleeping for {delay} seconds")
         time.sleep(delay)
     return cmd_data

@@ -1,0 +1,106 @@
+{% if doc %}
+<p class="text-gray-400 text-xs italic mb-4 leading-relaxed">{{ doc }}</p>
+{% endif %}
+
+<form id="run-form" class="space-y-1">
+  {% csrf_token %}
+  <input type="hidden" name="module" value="{{ module_name }}">
+
+  {% if module_fields %}
+  <div class="mb-3">
+    <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 uppercase tracking-wider px-1 pb-1 border-b border-gray-800 mb-2">
+      <div class="col-span-1">On</div>
+      <div class="col-span-3">Option</div>
+      <div class="col-span-4">Value</div>
+      <div class="col-span-4">Help</div>
+    </div>
+    {% for f in module_fields %}
+    <div class="grid grid-cols-12 gap-2 items-start py-1.5 hover:bg-gray-800/40 rounded px-1">
+      <div class="col-span-1 flex items-center pt-1">
+        <input type="checkbox" name="cb_{{ f.key }}" id="cb_{{ f.key }}"
+               class="w-3.5 h-3.5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500 cursor-pointer"
+               {% if f.default and f.widget != 'checkbox' %}checked{% endif %}
+               {% if f.widget == 'checkbox' and f.default == 'true' %}checked{% endif %}>
+      </div>
+      <label for="{{ f.key }}_value" class="col-span-3 text-gray-300 text-xs font-mono pt-1 cursor-pointer">{{ f.flag }}</label>
+      <div class="col-span-4">
+        {% if f.widget == 'checkbox' %}
+          <span class="text-gray-500 text-xs italic">flag (no value)</span>
+        {% elif f.widget == 'select' %}
+          <select name="{{ f.key }}_value" id="{{ f.key }}_value"
+                  class="w-full bg-gray-800 border border-gray-700 text-gray-200 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-green-500">
+            {% for choice in f.choices %}
+            <option value="{{ choice }}" {% if choice == f.default %}selected{% endif %}>{{ choice }}</option>
+            {% endfor %}
+          </select>
+        {% elif f.widget == 'textarea' %}
+          <textarea name="{{ f.key }}_value" id="{{ f.key }}_value" rows="2"
+                    placeholder="space-separated values"
+                    class="w-full bg-gray-800 border border-gray-700 text-gray-200 rounded px-2 py-0.5 text-xs font-mono resize-y focus:outline-none focus:border-green-500">{{ f.default }}</textarea>
+        {% else %}
+          <input type="text" name="{{ f.key }}_value" id="{{ f.key }}_value"
+                 value="{{ f.default }}"
+                 class="w-full bg-gray-800 border border-gray-700 text-gray-200 rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:border-green-500">
+        {% endif %}
+      </div>
+      <div class="col-span-4 text-gray-500 text-xs pt-1 leading-relaxed">{{ f.help }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if tool_fields %}
+  <details class="group">
+    <summary class="text-gray-500 text-xs cursor-pointer hover:text-gray-300 select-none py-1 flex items-center gap-1">
+      <span class="group-open:hidden">▶</span>
+      <span class="hidden group-open:inline">▼</span>
+      Tool options
+    </summary>
+    <div class="mt-2 space-y-0 border-l border-gray-800 pl-3">
+      {% for f in tool_fields %}
+      <div class="grid grid-cols-12 gap-2 items-start py-1.5 hover:bg-gray-800/40 rounded px-1">
+        <div class="col-span-1 flex items-center pt-1">
+          <input type="checkbox" name="cb_{{ f.key }}" id="cb_{{ f.key }}"
+                 class="w-3.5 h-3.5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500 cursor-pointer"
+                 {% if f.default and f.widget != 'checkbox' %}checked{% endif %}>
+        </div>
+        <label for="{{ f.key }}_value" class="col-span-3 text-gray-400 text-xs font-mono pt-1 cursor-pointer">{{ f.flag }}</label>
+        <div class="col-span-4">
+          {% if f.widget == 'checkbox' %}
+            <span class="text-gray-600 text-xs italic">flag</span>
+          {% elif f.widget == 'select' %}
+            <select name="{{ f.key }}_value" id="{{ f.key }}_value"
+                    class="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-green-500">
+              {% for choice in f.choices %}
+              <option value="{{ choice }}" {% if choice == f.default %}selected{% endif %}>{{ choice }}</option>
+              {% endfor %}
+            </select>
+          {% elif f.widget == 'textarea' %}
+            <textarea name="{{ f.key }}_value" id="{{ f.key }}_value" rows="2"
+                      placeholder="space-separated values"
+                      class="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-0.5 text-xs font-mono resize-y focus:outline-none focus:border-green-500">{{ f.default }}</textarea>
+          {% else %}
+            <input type="text" name="{{ f.key }}_value" id="{{ f.key }}_value"
+                   value="{{ f.default }}"
+                   class="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:border-green-500">
+          {% endif %}
+        </div>
+        <div class="col-span-4 text-gray-600 text-xs pt-1 leading-relaxed">{{ f.help }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
+  <div class="flex items-center gap-3 pt-3 border-t border-gray-800">
+    <button type="button" onclick="launchModule()"
+            class="bg-green-600 hover:bg-green-500 active:bg-green-700 text-white px-5 py-1.5 rounded text-sm font-bold font-mono transition-colors flex items-center gap-2">
+      <span>▶</span> Run
+    </button>
+    <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer">
+      <input type="checkbox" name="use_docker" class="w-3.5 h-3.5 rounded bg-gray-700 border-gray-600 text-green-500">
+      Use Docker
+    </label>
+    <span id="run-status" class="text-xs text-gray-500"></span>
+  </div>
+</form>

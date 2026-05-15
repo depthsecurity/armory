@@ -35,6 +35,8 @@ dependencies = [
 "tldextract",
 "whoisit",
 "xlsxwriter (>=3.2.9,<4.0.0)",
+"channels>=4.0",
+"daphne>=4.0",
 ]
 
 [project.scripts]
