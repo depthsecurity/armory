@@ -1,0 +1,12 @@
+{
+    "name": "module_runner",
+    "pretty_name": "Module Runner",
+    "authors": [
+        {
+            "name": "dlawson",
+            "url": "https://github.com/depthsecurity"
+        }
+    ],
+    "description": "Run Armory modules from the web UI with real-time per-process streaming output.",
+    "category": "Tools"
+}

@@ -28,7 +28,7 @@ SECRET_KEY = 'ef23eil#4mb&+2k2^+^u73l=fda2y2+rrmx^td4e)*at7w%+0g'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_q',
+    'channels',
     'armory2.armory_main.apps.ArmoryMainConfig',
 
 ]
@@ -76,6 +77,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'armory2.armory2.wsgi.application'
+ASGI_APPLICATION = 'armory2.armory2.asgi.application'
 
 
 # Database
@@ -210,3 +212,9 @@ STATICFILES_DIRS = [static_path for _, static_path in static_paths.items() if os
 
 # pdb.set_trace()
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}

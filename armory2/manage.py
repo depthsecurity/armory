@@ -44,8 +44,13 @@ def main(or_args=""):
 
 
 def web():
-    
-    main(["manage", "runserver", "127.0.0.1:8099"])
+    import subprocess
+    subprocess.run([
+        sys.executable, '-m', 'daphne',
+        '-b', '127.0.0.1',
+        '-p', '8099',
+        'armory2.armory2.asgi:application',
+    ])
 
 def init():
     main(["manage", "migrate"])

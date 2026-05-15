@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Module Runner — Armory</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'] }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    .module-btn.active { background-color: #1f2937; color: #4ade80; }
+    .ansi-green { color: #4ade80; }
+    .ansi-red   { color: #f87171; }
+    .ansi-yellow{ color: #fbbf24; }
+    .ansi-blue  { color: #60a5fa; }
+    .ansi-dim   { color: #6b7280; }
+    /* Remove ANSI escape codes visually */
+    .terminal-line { white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-mono h-full flex flex-col">
+
+  <!-- Top bar -->
+  <header class="flex-shrink-0 bg-gray-900 border-b border-gray-800 flex items-center px-4 h-10 gap-4">
+    <a href="/" class="text-gray-500 hover:text-gray-300 text-xs transition-colors">← Dashboard</a>
+    <span class="text-green-400 font-bold text-sm">Module Runner</span>
+    <span id="ws-indicator" class="ml-auto w-2 h-2 rounded-full bg-gray-700" title="WebSocket status"></span>
+  </header>
+
+  <!-- Main layout -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar: module list -->
+    <aside class="w-56 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden">
+      <div class="flex-shrink-0 p-2 border-b border-gray-800">
+        <input
+          id="module-search"
+          type="text"
+          placeholder="Filter modules…"
+          oninput="filterModules(this.value)"
+          class="w-full bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-green-500 placeholder-gray-600">
+      </div>
+      <ul id="module-list" class="flex-1 overflow-y-auto py-1">
+        {% for module in all_modules %}
+        <li>
+          <button
+            class="module-btn w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-800 hover:text-green-400 transition-colors truncate"
+            data-module="{{ module }}"
+            hx-get="/module_runner/options/{{ module }}/"
+            hx-target="#options-panel"
+            hx-swap="innerHTML"
+            hx-indicator="#options-loading"
+            onclick="setActiveModule(this)">
+            {{ module }}
+          </button>
+        </li>
+        {% endfor %}
+      </ul>
+    </aside>
+
+    <!-- Right side: options + output -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- Options panel -->
+      <div class="flex-shrink-0 bg-gray-900 border-b border-gray-800 overflow-y-auto" style="max-height: 45vh; min-height: 120px;">
+        <div class="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-950/50">
+          <h2 id="options-title" class="text-green-400 text-xs font-bold uppercase tracking-widest">
+            Select a module
+          </h2>
+          <span id="options-loading" class="htmx-indicator text-xs text-gray-500">Loading…</span>
+        </div>
+        <div id="options-panel" class="p-4">
+          <p class="text-gray-600 text-xs">← Click a module to see its options</p>
+        </div>
+      </div>
+
+      <!-- Output area -->
+      <div class="flex-1 flex flex-col overflow-hidden bg-gray-950">
+        <div class="flex-shrink-0 flex items-center justify-between px-4 py-1.5 border-b border-gray-800">
+          <span class="text-xs text-gray-500 uppercase tracking-widest">Output</span>
+          <div class="flex items-center gap-3">
+            <span id="run-badge" class="hidden text-xs px-2 py-0.5 rounded-full font-bold"></span>
+            <button onclick="clearOutput()" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Clear</button>
+          </div>
+        </div>
+        <div id="output-area" class="flex-1 overflow-y-auto p-3 space-y-3">
+          <p class="text-gray-700 text-xs">Run a module to see output here.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+// ─── Module list filter ────────────────────────────────────────────────────
+
+function filterModules(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#module-list .module-btn').forEach(btn => {
+    btn.closest('li').style.display =
+      btn.dataset.module.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function setActiveModule(el) {
+  document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('options-title').textContent = el.dataset.module;
+}
+
+// ─── WebSocket state ───────────────────────────────────────────────────────
+
+let _ws = null;
+
+function _setWsStatus(status) {
+  const dot = document.getElementById('ws-indicator');
+  dot.className = 'ml-auto w-2 h-2 rounded-full transition-colors ' + {
+    connected:    'bg-green-500',
+    connecting:   'bg-yellow-500 animate-pulse',
+    disconnected: 'bg-gray-700',
+    error:        'bg-red-500',
+  }[status];
+  dot.title = 'WebSocket: ' + status;
+}
+
+// ─── Launch ────────────────────────────────────────────────────────────────
+
+function launchModule() {
+  const form = document.getElementById('run-form');
+  if (!form) return;
+
+  const status = document.getElementById('run-status');
+  status.textContent = 'Starting…';
+
+  const data = new FormData(form);
+
+  fetch('/module_runner/run/', {
+    method: 'POST',
+    body: data,
+  })
+  .then(r => r.json())
+  .then(json => {
+    if (json.error) {
+      status.textContent = 'Error: ' + json.error;
+      return;
+    }
+    status.textContent = '';
+    openRun(json.run_id);
+  })
+  .catch(err => {
+    status.textContent = 'Request failed: ' + err;
+  });
+}
+
+// ─── WebSocket / output rendering ──────────────────────────────────────────
+
+function openRun(runId) {
+  clearOutput();
+
+  if (_ws) _ws.close();
+  _setWsStatus('connecting');
+
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  _ws = new WebSocket(`${proto}://${location.host}/ws/module_runner/${runId}/`);
+
+  _ws.onopen = () => _setWsStatus('connected');
+  _ws.onerror = () => _setWsStatus('error');
+  _ws.onclose = () => _setWsStatus('disconnected');
+  _ws.onmessage = e => handleMessage(JSON.parse(e.data));
+}
+
+function handleMessage(msg) {
+  const area = document.getElementById('output-area');
+
+  if (msg.type === 'run.start') {
+    setBadge('running', `${msg.module}`);
+    const banner = mkEl('div', 'text-xs text-gray-500 pb-1 mb-1 border-b border-gray-800');
+    banner.textContent = `$ armory -m ${msg.module} ${msg.args.join(' ')}`;
+    area.appendChild(banner);
+  }
+
+  else if (msg.type === 'proc.start') {
+    const win = createProcessWindow(msg.proc_index, msg.cmd);
+    area.appendChild(win);
+    win.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  else if (msg.type === 'proc.output') {
+    appendLine(msg.proc_index, msg.line);
+    // Auto-scroll the output area
+    area.scrollTop = area.scrollHeight;
+  }
+
+  else if (msg.type === 'proc.end') {
+    const dot = document.getElementById(`proc-dot-${msg.proc_index}`);
+    if (dot) {
+      dot.classList.remove('bg-green-400', 'animate-pulse');
+      dot.classList.add(msg.returncode === 0 ? 'bg-blue-400' : 'bg-red-400');
+    }
+    const stopBtn = document.getElementById(`proc-stop-${msg.proc_index}`);
+    if (stopBtn) stopBtn.remove();
+  }
+
+  else if (msg.type === 'run.end') {
+    const ok = msg.returncode === 0;
+    setBadge(ok ? 'done' : 'error', ok ? 'Done' : `Exit ${msg.returncode}`);
+    const footer = mkEl('div', ok ? 'text-green-500 text-xs' : 'text-red-400 text-xs');
+    footer.textContent = ok ? '✓ Module finished' : `✗ Exit code ${msg.returncode}`;
+    area.appendChild(footer);
+    if (_ws) _ws.close();
+  }
+
+  else if (msg.type === 'run.error') {
+    setBadge('error', 'Error');
+    appendLine(-1, '[ERROR] ' + msg.message);
+  }
+}
+
+function createProcessWindow(procIndex, cmd) {
+  const outer = mkEl('div', 'bg-gray-900 border border-gray-800 rounded-lg overflow-hidden');
+  outer.id = `proc-win-${procIndex}`;
+
+  // Title bar
+  const bar = mkEl('div', 'flex items-center gap-2 px-3 py-1.5 bg-gray-800 border-b border-gray-700');
+  const dot = mkEl('span', 'w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0');
+  dot.id = `proc-dot-${procIndex}`;
+  const title = mkEl('span', 'text-xs text-gray-300 truncate flex-1 font-mono');
+  title.title = cmd;
+  title.textContent = '$ ' + cmd;
+  const toggle = mkEl('button', 'text-gray-600 hover:text-gray-400 text-xs flex-shrink-0 ml-2');
+  toggle.textContent = '−';
+  toggle.onclick = () => {
+    const body = document.getElementById(`proc-body-${procIndex}`);
+    const collapsed = body.style.display === 'none';
+    body.style.display = collapsed ? '' : 'none';
+    toggle.textContent = collapsed ? '−' : '+';
+  };
+
+  const stopBtn = mkEl('button', 'text-red-600 hover:text-red-400 text-xs flex-shrink-0 ml-1');
+  stopBtn.id = `proc-stop-${procIndex}`;
+  stopBtn.textContent = '■';
+  stopBtn.title = 'Kill process';
+  stopBtn.onclick = () => {
+    if (_ws && _ws.readyState === WebSocket.OPEN) {
+      _ws.send(JSON.stringify({type: 'kill', proc_index: procIndex}));
+      stopBtn.disabled = true;
+      stopBtn.classList.add('opacity-30');
+    }
+  };
+
+  bar.append(dot, title, toggle, stopBtn);
+
+  // Output body
+  const body = mkEl('div',
+    'p-2 text-xs overflow-y-auto font-mono leading-relaxed');
+  body.id = `proc-body-${procIndex}`;
+  body.style.maxHeight = '300px';
+  body.style.minHeight = '40px';
+
+  outer.append(bar, body);
+  return outer;
+}
+
+function appendLine(procIndex, text) {
+  let body;
+
+  if (procIndex >= 0) {
+    body = document.getElementById(`proc-body-${procIndex}`);
+  }
+
+  // Pre-command output (module init messages, errors before first cmd)
+  if (!body) {
+    body = document.getElementById('pre-run-output');
+    if (!body) {
+      const win = mkEl('div', 'bg-gray-900 border border-gray-800 rounded-lg overflow-hidden');
+      const bar = mkEl('div', 'flex items-center gap-2 px-3 py-1.5 bg-gray-800 border-b border-gray-700');
+      const lbl = mkEl('span', 'text-xs text-gray-400 font-mono');
+      lbl.textContent = 'module output';
+      bar.appendChild(lbl);
+      body = mkEl('div', 'p-2 text-xs overflow-y-auto font-mono leading-relaxed');
+      body.id = 'pre-run-output';
+      body.style.maxHeight = '300px';
+      win.append(bar, body);
+      document.getElementById('output-area').prepend(win);
+    }
+  }
+
+  const line = mkEl('div', 'terminal-line ' + lineClass(text));
+  line.textContent = stripAnsi(text);
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function lineClass(line) {
+  if (/\[!\]|\[ERROR\]|error|Error|failed|Failed/i.test(line)) return 'ansi-red';
+  if (/\[W\]|Warning|warning/i.test(line))  return 'ansi-yellow';
+  if (/\[\+\]/.test(line))   return 'ansi-green';
+  if (/\[\*\]|\[ \]/.test(line))  return 'ansi-blue';
+  if (/Processing results/.test(line)) return 'ansi-dim';
+  return 'text-gray-300';
+}
+
+function stripAnsi(str) {
+  // Remove ANSI escape codes
+  return str.replace(/\x1B\[[0-9;]*[A-Za-z]/g, '');
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function mkEl(tag, cls) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  return el;
+}
+
+function clearOutput() {
+  const area = document.getElementById('output-area');
+  area.innerHTML = '<p class="text-gray-700 text-xs">Run a module to see output here.</p>';
+  setBadge('hidden', '');
+}
+
+function setBadge(state, text) {
+  const badge = document.getElementById('run-badge');
+  badge.textContent = text;
+  badge.className = {
+    hidden:   'hidden text-xs px-2 py-0.5 rounded-full font-bold',
+    running:  'text-xs px-2 py-0.5 rounded-full font-bold bg-yellow-900 text-yellow-300 animate-pulse',
+    done:     'text-xs px-2 py-0.5 rounded-full font-bold bg-green-900 text-green-300',
+    error:    'text-xs px-2 py-0.5 rounded-full font-bold bg-red-900 text-red-300',
+  }[state] || 'hidden';
+}
+
+// Keep process dots in sync with close-code
+document.addEventListener('DOMContentLoaded', () => {
+  _setWsStatus('disconnected');
+});
+</script>
+</body>
+</html>
