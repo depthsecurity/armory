@@ -51,7 +51,7 @@ import pdb
 from configparser import ConfigParser
 
 
-__version__ = "Armory Version 2.0 Beta"
+
 PATH = os.path.dirname(__file__)
 
 

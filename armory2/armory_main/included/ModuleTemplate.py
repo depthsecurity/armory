@@ -21,12 +21,63 @@ else:
 import threading
 import uuid as _uuid
 import pdb
+from pathlib import Path
 
 # When set to '1' (by armory-web's module runner), each run_cmd call wraps
 # the subprocess stdout with structured markers so the web UI can route output
 # to per-process terminal windows.
 _STRUCTURED = os.getenv('ARMORY_STRUCTURED_OUTPUT') == '1'
 from armory2.armory_cmd import get_config_options
+
+def get_docker_run(obj):
+
+    config = get_config_options()
+
+    base_path = config['ARMORY_BASE_PATH']
+    docker_extra = config.get('DOCKER_FOLDERS', '')
+
+    binary = f"docker run -it --rm {obj.args.docker_options[1:-1]} {docker_extra} -v \"{base_path}:{base_path}\" {obj.docker_name} "
+
+    if hasattr(obj, 'docker_run_binary'):
+        binary += f" {self.docker_run_binary}"
+
+    return binary
+
+def get_binary(obj):
+    use_docker = False
+
+    if obj.docker_name and obj.use_docker:
+        binary = get_docker_run(obj)
+
+        return binary
+
+
+    if not obj.args.binary:
+        binary = which.run(obj.binary_name)
+    else:
+        binary = which.run(obj.args.binary)
+
+    if binary:
+        resolved_path = str(Path(binary).expanduser().resolve())
+        
+        if 'pipx' in resolved_path:
+            pipx_path, pipx_bin = resolved_path.rsplit('/', 1)
+            binary = f"{os.path.join(pipx_path, 'python')} {resolved_path}"
+            
+        return binary
+            # Is a python pipx app. 
+            
+
+    if obj.docker_name:
+        binary = get_docker_run(obj)
+        return binary
+
+    if obj.args.no_binary:
+        return None
+    raise Exception(
+        "%s binary not found. Please explicitly provide path with --binary"
+        % self.name
+    )
 
 class ModuleTemplate(object):
     """
@@ -156,78 +207,57 @@ class ToolTemplate(ModuleTemplate):
         elif self.args.profile4:
             self.args.tool_args += " " + self.args.profile4_data
 
-        if not self.args.binary:
-            self.binary = which.run(self.binary_name)
+        self.binary = get_binary(self)
+        
+        if self.args.timeout and self.args.timeout != "0":
+            timeout = int(self.args.timeout)
         else:
-            self.binary = which.run(self.args.binary)
+            timeout = None
+        # Currently not used, therefor to please flake8 commenting out.
+        # if self.args.hard_timeout and self.args.hard_timeout != "0":
+        #    hard_timeout = int(self.args.hard_timeout)
+        # else:
+        #    hard_timeout = None
 
-        if (not self.binary and self.docker_name) or (self.use_docker and self.docker_name):
-            config = get_config_options()
+        targets = self.get_targets(self.args)
 
-            base_path = config['ARMORY_BASE_PATH']
-            docker_extra = config.get('DOCKER_FOLDERS', '')
+        if not self.args.no_binary and targets:
+            cmd = self.build_cmd(self.args).strip()
+            cmds = self.populate_cmds(cmd, timeout, targets, delay)
 
-            self.binary = f"docker run -it --rm {self.args.docker_options[1:-1]} {docker_extra} -v \"{base_path}:{base_path}\" {self.docker_name} "
+            # if hard_timeout:
+            #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
 
-            if hasattr(self, 'docker_run_binary'):
-                self.binary += f" {self.docker_run_binary}"
+            self.pre_run(self.args)
 
-        if not self.binary:
-            print(
-                "%s binary not found. Please explicitly provide path with --binary"
-                % self.name
-            )
-
-        else:
-            if self.args.timeout and self.args.timeout != "0":
-                timeout = int(self.args.timeout)
+            if self.no_threading:
+                total_commands = len(cmds)
+                for i, cmd in enumerate(cmds):
+                    run_cmd(cmd)
+                    display_purple(
+                        "Processing results from command {} of {}.".format(
+                            i + 1, total_commands
+                        )
+                    )
+                    self.process_output([targets[i]])
             else:
-                timeout = None
-            # Currently not used, therefor to please flake8 commenting out.
-            # if self.args.hard_timeout and self.args.hard_timeout != "0":
-            #    hard_timeout = int(self.args.hard_timeout)
-            # else:
-            #    hard_timeout = None
+                pool = ThreadPool(int(self.args.threads))
 
-            targets = self.get_targets(self.args)
-
-            if not self.args.no_binary and targets:
-                cmd = self.build_cmd(self.args).strip()
-                cmds = self.populate_cmds(cmd, timeout, targets, delay)
-
-                # if hard_timeout:
-                #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
-
-                self.pre_run(self.args)
-
-                if self.no_threading:
-                    total_commands = len(cmds)
-                    for i, cmd in enumerate(cmds):
-                        run_cmd(cmd)
-                        display_purple(
-                            "Processing results from command {} of {}.".format(
-                                i + 1, total_commands
-                            )
+                total_commands = len(cmds)
+                done = 1
+                for i in pool.imap_unordered(run_cmd, cmds):
+                    display_purple(
+                        "Processing results from command {} of {}.".format(
+                            done, total_commands
                         )
-                        self.process_output([targets[i]])
-                else:
-                    pool = ThreadPool(int(self.args.threads))
-
-                    total_commands = len(cmds)
-                    done = 1
-                    for i in pool.imap_unordered(run_cmd, cmds):
-                        display_purple(
-                            "Processing results from command {} of {}.".format(
-                                done, total_commands
-                            )
-                        )
-                        done += 1
-                        # display("DEBUG: i: {}".format(i))
-                        # display("DEBUG: target: {}".format(targets[cmds.index(i)]))
-                        self.process_output([targets[cmds.index(i)]])
-                self.post_run(self.args)
-            if targets and self.args.no_binary:
-                self.process_output(targets)
+                    )
+                    done += 1
+                    # display("DEBUG: i: {}".format(i))
+                    # display("DEBUG: target: {}".format(targets[cmds.index(i)]))
+                    self.process_output([targets[cmds.index(i)]])
+            self.post_run(self.args)
+        if targets and self.args.no_binary:
+            self.process_output(targets)
 
     def get_targets(self, args):
         """
@@ -336,60 +366,51 @@ class ToolTemplateNoOutput(ToolTemplate):
         elif args.profile4:
             args.tool_args += " " + args.profile4_data
 
-        if not args.binary:
-            self.binary = which.run(self.binary_name)
+        self.binary = get_binary(self)
+
+        
+        if args.timeout and args.timeout != "0":
+            timeout = int(args.timeout)
         else:
-            self.binary = which.run(args.binary)
+            timeout = None
+        # Currently not used, therefor to please flake8 commenting out.
+        # if args.hard_timeout and args.hard_timeout != "0":
+        #    hard_timeout = int(args.hard_timeout)
+        # else:
+        #    hard_timeout = None
 
-        if not self.binary:
-            print(
-                "%s binary not found. Please explicitly provide path with --binary"
-                % self.name
-            )
+        targets = self.get_targets(args)
 
-        else:
-            if args.timeout and args.timeout != "0":
-                timeout = int(args.timeout)
-            else:
-                timeout = None
-            # Currently not used, therefor to please flake8 commenting out.
-            # if args.hard_timeout and args.hard_timeout != "0":
-            #    hard_timeout = int(args.hard_timeout)
-            # else:
-            #    hard_timeout = None
+        if not args.no_binary and targets:
+            cmd = self.build_cmd(args).strip()
 
-            targets = self.get_targets(args)
+            cmds = [
+                (shlex.split(cmd.format(**t)) + [timeout, delay], t["output"])
+                for t in targets
+            ]
 
-            if not args.no_binary and targets:
-                cmd = self.build_cmd(args).strip()
+            # if hard_timeout:
+            #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
 
-                cmds = [
-                    (shlex.split(cmd.format(**t)) + [timeout, delay], t["output"])
-                    for t in targets
-                ]
+            self.pre_run(args)
+            pool = ThreadPool(int(args.threads))
 
-                # if hard_timeout:
-                #     Popen(['./kill_process.py', str(os.getpid()), self.binary, str(hard_timeout)], preexec_fn=os.setpgrp)
-
-                self.pre_run(args)
-                pool = ThreadPool(int(args.threads))
-
-                total_commands = len(cmds)
-                done = 1
-                for i in pool.imap_unordered(run_cmd_noout, cmds):
-                    display_purple(
-                        "Processing results from command {} of {}.".format(
-                            done, total_commands
-                        )
+            total_commands = len(cmds)
+            done = 1
+            for i in pool.imap_unordered(run_cmd_noout, cmds):
+                display_purple(
+                    "Processing results from command {} of {}.".format(
+                        done, total_commands
                     )
-                    done += 1
-                    # display("DEBUG: i: {}".format(i))
-                    # display("DEBUG: target: {}".format(targets[cmds.index(i)]))
-                    self.process_output([targets[cmds.index(i)]])
-                self.post_run(args)
-            if targets and args.no_binary:
+                )
+                done += 1
+                # display("DEBUG: i: {}".format(i))
+                # display("DEBUG: target: {}".format(targets[cmds.index(i)]))
+                self.process_output([targets[cmds.index(i)]])
+            self.post_run(args)
+        if targets and args.no_binary:
 
-                self.process_output(targets)
+            self.process_output(targets)
 
 
 def run_cmd(cmd):

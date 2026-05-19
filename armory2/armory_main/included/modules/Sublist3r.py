@@ -77,8 +77,8 @@ class Module(ToolTemplate):
 
     def build_cmd(self, args):
         cmd = ''
-        if not self.use_docker:
-            cmd += "env python3 "
+        # if not self.use_docker:
+        #     cmd += "env python3 "
         
         cmd += self.binary + " -o {output} -d {target} "
         if args.tool_args:
