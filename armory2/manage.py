@@ -44,11 +44,29 @@ def main(or_args=""):
 
 
 def web():
+    import argparse
     import subprocess
+
+    parser = argparse.ArgumentParser(
+        prog='armory-web',
+        description='Start the Armory web server.',
+    )
+    parser.add_argument(
+        '-b', '--bind',
+        default='127.0.0.1',
+        help='IP address to listen on (default: 127.0.0.1)',
+    )
+    parser.add_argument(
+        '-p', '--port',
+        default='8099',
+        help='Port to listen on (default: 8099)',
+    )
+    args = parser.parse_args()
+
     subprocess.run([
         sys.executable, '-m', 'daphne',
-        '-b', '127.0.0.1',
-        '-p', '8099',
+        '-b', args.bind,
+        '-p', str(args.port),
         'armory2.armory2.asgi:application',
     ])
 
