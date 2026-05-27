@@ -20,7 +20,7 @@ armory2/                        # Installable Python package (flit)
       ReportTemplate.py         # Base class for all reports
       modules/                  # 39 built-in modules (one class Module per file)
       reports/                  # 13 built-in reports (one class Report per file)
-      webapps/                  # 5 built-in Django apps (host_scoping, domain_scoping, …)
+      webapps/                  # 7 built-in Django apps (host_scoping, domain_scoping, …)
       utilities/                # Shared helpers (color_display, nmap, get_urls, …)
     models/                     # Django ORM models
       network.py                # BaseDomain, Domain, IPAddress, CIDR, Port, VirtualHost, ToolRun
@@ -30,8 +30,11 @@ armory2/                        # Installable Python package (flit)
     migrations/                 # 36+ Django migrations
     views/                      # Django views for built-in webapps
     urls/                       # URL routing
+    templates/armory_main/      # Shared templates: base.html (legacy Bootstrap), base_tw.html (Tailwind), index.html (dashboard)
+    static/armory_main/         # Vendored assets: css/tailwind.css (built), js/htmx.min.js, legacy bootstrap/jquery
   default_configs/
     settings.py                 # Template written to ~/.armory/settings.py on first run
+tailwind/                       # Tailwind build source (input.css, tailwind.config.js); compiles into static/
 pyproject.toml                  # flit build config, entry points, dependencies
 tests/                          # unittest suite
 ```
@@ -136,9 +139,33 @@ armory -r <Name> -h   # help renders correctly
 - `config.json` must have: `name`, `pretty_name`, `description`, `category`, `authors`.
 - Use `armory2.armory_main.models` and core helpers in views.
 - Built-in webapps live in `armory_main/included/webapps/`; custom ones go in `armory_custom/webapps/` and are registered via `ARMORY_CUSTOM_WEBAPPS`.
+- Each webapp's `templates/` and `static/` dirs are auto-registered in `settings.py` (globbed at startup); the dashboard nav is built from every webapp's `config.json` via the `get_armory_webapps_grouped` context processor.
+
+### Styling
+
+The UI is mid-migration from Bootstrap to **Tailwind CSS + htmx**. Two base templates exist:
+
+| Template | Use |
+|---|---|
+| `armory_main/base_tw.html` | **Preferred.** Tailwind shell with the modern nav, dark/light theme slider (persisted to `localStorage`, no-flash init), and htmx loaded. The dashboard (`index.html`) uses this. |
+| `armory_main/base.html` | Legacy Bootstrap + jQuery shell. Existing webapps still extend this; leave them until migrated. |
+
+- New/migrated webapp templates should `{% extends 'armory_main/base_tw.html' %}` and define blocks `content`, `extra_head`, `extra_body`.
+- Reuse the shared component classes instead of long utility strings (defined in `tailwind/input.css`): `armory-container`, `armory-card` (+ `-body`/`-title`/`-text`), `armory-section-title`, `badge` + `badge-{primary,info,dark,secondary,success,warning,danger}`, `btn` + `btn-{primary,secondary,ghost}`, `armory-input`, `nav-link`/`nav-link-active`. These render without a rebuild.
+- Assets are **vendored** (no runtime CDN, works offline): `static/armory_main/css/tailwind.css` and `static/armory_main/js/htmx.min.js`.
+
+#### Rebuilding Tailwind CSS
+Required only after editing `tailwind/input.css` / `tailwind.config.js`, or after adding **new raw utility classes** in a template (component classes from `input.css` always ship). Commit the regenerated CSS.
+```bash
+cd tailwind
+npm install          # first time only
+npm run build        # one-off minified build
+npm run watch        # rebuild on change during dev
+```
+See `tailwind/README.md` for details.
 
 ### Verify after adding
-Reload the Armory web UI; the new entry should appear under the chosen `category` on the dashboard.
+Reload the Armory web UI; the new entry should appear under the chosen `category` on the dashboard. After editing source, reinstall so the commands pick up changes (`pipx install . --force`, or `flit install --symlink` for an editable install).
 
 ---
 

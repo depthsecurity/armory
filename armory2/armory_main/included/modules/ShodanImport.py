@@ -85,6 +85,11 @@ class Module(ModuleTemplate):
         self.options.add_argument(
             "--target", "-t",
             help="Scan a specific CIDR/IP")
+        self.options.add_argument(
+            "-pd", "--passive_domains",
+            help="Also run on IP addresses associated with passive-scoped domains",
+            action="store_true",
+        )
 
     def run(self, args):
 
@@ -105,12 +110,19 @@ class Module(ModuleTemplate):
                     search += ["net:{}".format(c.name) for c in CIDR.get_set(scope_type="active")]
                 else:
                     cidrs += [c.name for c in CIDR.get_set(scope_type="active")]
-                    
+
                 if not args.cidr_only:
                     ips += [
                         "{}".format(i.ip_address)
                         for i in IPAddress.get_set(scope_type="active")
                     ]
+                    if args.passive_domains:
+                        existing = set(ips)
+                        ips += [
+                            "{}".format(i.ip_address)
+                            for i in IPAddress.objects.filter(domain__passive_scope=True).distinct()
+                            if "{}".format(i.ip_address) not in existing
+                        ]
             else:
                 if args.fast:
                     search += [
@@ -119,12 +131,19 @@ class Module(ModuleTemplate):
                     ]
                 else:
                     cidrs += [c.name for c in CIDR.get_set(scope_type="active")]
-                    
+
                 if not args.cidr_only:
                     ips += [
                         "{}".format(i.ip_address)
                         for i in IPAddress.get_set(scope_type="active", tool=self.name)
                     ]
+                    if args.passive_domains:
+                        existing = set(ips)
+                        ips += [
+                            "{}".format(i.ip_address)
+                            for i in IPAddress.objects.filter(domain__passive_scope=True).exclude(toolrun__tool=self.name).distinct()
+                            if "{}".format(i.ip_address) not in existing
+                        ]
         if args.target:
             
             if '/' not in args.target:

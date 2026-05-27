@@ -5,7 +5,6 @@ from django.shortcuts import render, get_object_or_404
 from django.template.defaulttags import register
 from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
-import pdb
 import os
 from base64 import b64encode
 import json

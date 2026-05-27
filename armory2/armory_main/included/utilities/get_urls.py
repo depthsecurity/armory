@@ -29,7 +29,7 @@ def run(tool=None, args="", scope_type=None, random=True, domain=True):
         )
 
         if domain:
-            domain_list = [d for d in p.ip_address.domain_set.all()]
+            domain_list = [d for d in p.ip_address.domain_set.filter(is_ptr=False)]
 
             for d in domain_list:
 

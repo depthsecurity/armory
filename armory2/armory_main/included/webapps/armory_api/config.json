@@ -1,0 +1,12 @@
+{
+    "name": "armory_api",
+    "pretty_name": "Armory REST API",
+    "authors": [
+        {
+            "name": "dlawson",
+            "url": "https://github.com/depthsecurity"
+        }
+    ],
+    "description": "JSON REST API for Armory data — designed for MCP integration.",
+    "category": "API"
+}

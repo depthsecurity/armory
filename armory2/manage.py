@@ -63,12 +63,16 @@ def web():
     )
     args = parser.parse_args()
 
+    env = os.environ.copy()
+    env['ARMORY_WEB_BIND'] = args.bind
+    env['ARMORY_WEB_PORT'] = str(args.port)
+
     subprocess.run([
         sys.executable, '-m', 'daphne',
         '-b', args.bind,
         '-p', str(args.port),
         'armory2.armory2.asgi:application',
-    ])
+    ], env=env)
 
 def init():
     main(["manage", "migrate"])

@@ -1,41 +1,57 @@
-{% extends "./base.html" %}
+{% extends "./base_tw.html" %}
+{% load static %}
+
+{% block page_header %}
+<header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+  <div class="armory-container flex justify-end py-2">
+    <button type="button" role="switch" class="theme-switch shrink-0" data-theme-toggle aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg class="icon-sun" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      <svg class="icon-moon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      <span class="theme-switch-knob"></span>
+    </button>
+  </div>
+</header>
+{% endblock %}
 
 {% block content %}
-    <div class="container">
-      {% for category, category_stats in webapp_stats.items %}
-      <div class="row">
-        <div class="col-lg-12">
-          <h6 class="text-uppercase">
-            {{ category }}
-            <div class="float-right">
-              {% for stat, stat_data in category_stats.items %}
-              <span class="badge badge-{{ forloop.counter0 | get_context_idx}} mt-2">{{stat_data.display | format_string:stat_data.data}}</span>
-              {% endfor %}
-            </div>
-            <hr class="solid">
-          </h6>
-        </div>
-        {% for app in category|get_value_by_key:armory_webapps_grouped %}
-        <div class="col-lg-6 mb-4">
-          <div class="card">
-            <img class="card-img-top" src="" alt="">
-            <div class="card-body">
-              <h5 class="card-title"><a href="{{ app.name}}">{{ app.pretty_name}}</a></h5>
-              <p class="card-text">
-                {{ app.description}}
-              </p>
-              <div class="float-right">
-                {% for author in app.authors %}
-                <a href="{{ author.url}}" class="badge badge-secondary mt-2">
-                  @{{ author.name }}
-                </a>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-        </div>
+<div class="relative mb-10 overflow-hidden rounded-2xl shadow-lg">
+  <img src="{% static 'armory_main/dashboard_hero.png' %}" alt="Armory Dashboard" class="h-56 w-full object-cover object-center sm:h-72 lg:h-80">
+  <div class="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/50 to-transparent flex flex-col justify-center px-8">
+    <h1 class="text-4xl font-bold tracking-tight text-white drop-shadow">Armory</h1>
+    <p class="mt-2 text-lg text-slate-200 drop-shadow">Security tool correlation framework</p>
+  </div>
+</div>
+
+<div class="armory-container space-y-10">
+  {% for category, category_stats in webapp_stats.items %}
+  <section>
+    <div class="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-800">
+      <h2 class="armory-section-title">{{ category }}</h2>
+      <div class="flex flex-wrap items-center gap-2">
+        {% for stat, stat_data in category_stats.items %}
+        <span class="badge badge-{{ forloop.counter0|get_context_idx }}">{{ stat_data.display|format_string:stat_data.data }}</span>
         {% endfor %}
       </div>
+    </div>
+
+    <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {% for app in category|get_value_by_key:armory_webapps_grouped %}
+      <a href="/{{ app.name }}" class="armory-card flex flex-col">
+        <div class="armory-card-body flex flex-1 flex-col">
+          <h3 class="armory-card-title">{{ app.pretty_name }}</h3>
+          <p class="armory-card-text flex-1">{{ app.description }}</p>
+          {% if app.authors %}
+          <div class="mt-4 flex flex-wrap gap-2">
+            {% for author in app.authors %}
+            <span class="badge badge-secondary">@{{ author.name }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </a>
       {% endfor %}
     </div>
+  </section>
+  {% endfor %}
+</div>
 {% endblock %}

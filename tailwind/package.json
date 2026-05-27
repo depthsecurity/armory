@@ -1,0 +1,16 @@
+{
+  "name": "armory-tailwind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tailwind build tooling for the Armory web UI. Outputs to armory_main/static.",
+  "scripts": {
+    "build": "tailwindcss -i ./input.css -o ../armory2/armory_main/static/armory_main/css/tailwind.css --minify",
+    "watch": "tailwindcss -i ./input.css -o ../armory2/armory_main/static/armory_main/css/tailwind.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}
