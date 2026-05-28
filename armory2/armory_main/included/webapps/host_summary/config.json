@@ -7,6 +7,6 @@
             "url": "https://github.com/fang0654"
         }
     ],
-    "description": "Access and search host data aggregated through Armory by module. ",
+    "description": "Modernized host summary with HTMX and Tailwind CSS.",
     "category": "Hosts"
 }

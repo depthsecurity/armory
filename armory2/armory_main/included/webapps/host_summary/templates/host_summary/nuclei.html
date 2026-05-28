@@ -1,0 +1,32 @@
+<div class="px-3 py-3">
+  <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Nuclei Findings</div>
+  <div class="flex flex-col gap-1">
+  {% for finding in findings %}
+    <div>
+      <button type="button" onclick="toggleSection('nuclei-{{ finding.id }}')"
+              class="w-full text-left px-3 py-1.5 rounded text-xs font-medium border {{ finding.style }} transition-colors flex items-center gap-2">
+        <span class="uppercase tracking-wide opacity-70 shrink-0">{{ finding.severity }}</span>
+        <span>{{ finding.name }}</span>
+        {% if finding.matched_at %}
+        <span class="ml-auto font-mono opacity-60 truncate text-right">{{ finding.matched_at }}</span>
+        {% endif %}
+      </button>
+      <div id="nuclei-{{ finding.id }}" class="mt-1 rounded bg-gray-700/40 border border-gray-700 px-3 py-2 text-xs text-gray-300 flex flex-col gap-1">
+        {% if finding.description %}
+        <div><span class="text-gray-500 font-medium">Description: </span>{{ finding.description }}</div>
+        {% endif %}
+        {% if finding.matched_at %}
+        <div><span class="text-gray-500 font-medium">Matched At: </span><span class="font-mono">{{ finding.matched_at }}</span></div>
+        {% endif %}
+        {% if finding.extracted_results %}
+        <div class="text-gray-500 font-medium">Extracted Results:</div>
+        <pre class="whitespace-pre-wrap break-words font-mono text-gray-300">{% for r in finding.extracted_results %}{{ r }}
+{% endfor %}</pre>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+  <p class="text-xs text-gray-600 px-1 italic">No findings.</p>
+  {% endfor %}
+  </div>
+</div>

@@ -16,9 +16,16 @@
     </div>
   </div>
 
-  {% for cidr in cidrs %}
-  <div id="cidr-{{ cidr.id }}-item">
-    {% include 'host_scoping/cidr.html' %}
+  {% for cidr_id in cidr_ids %}
+  <div id="cidr-{{ cidr_id }}-item"
+       hx-get="get_cidr/{{ cidr_id }}"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <div class="armory-card animate-pulse">
+      <div class="armory-card-body">
+        <div class="h-5 w-56 rounded bg-slate-200 dark:bg-slate-700"></div>
+      </div>
+    </div>
   </div>
   {% endfor %}
 
@@ -93,16 +100,13 @@
       if (clear) {
         var c = clear.id.split("-");
         var type = c[0], act = c[1], scope = c[2], pk = c[3];
-        if (confirm("Are you sure you want to " + act + " " + scope +
-                    " scoping on all of the child objects?")) {
-          getText("clear_scope/" + act + "/" + type + "/" + scope + "/" + pk)
-            .then(function (html) {
-              var target = type === "cidr"
-                ? document.getElementById("cidr-" + pk + "-item")
-                : document.getElementById("ip-" + pk + "-item");
-              if (target) target.innerHTML = html;
-            });
-        }
+        getText("clear_scope/" + act + "/" + type + "/" + scope + "/" + pk)
+          .then(function (html) {
+            var target = type === "cidr"
+              ? document.getElementById("cidr-" + pk + "-item")
+              : document.getElementById("ip-" + pk + "-item");
+            if (target) target.innerHTML = html;
+          });
         return;
       }
 

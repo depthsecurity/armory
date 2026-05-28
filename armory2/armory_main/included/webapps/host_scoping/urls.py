@@ -1,6 +1,5 @@
 from django.urls import path
 import os
-import pdb
 # Glue to import in views relatively
 
 
@@ -24,5 +23,6 @@ urlpatterns = [
     path('clear_scope/<str:act>/<str:item_type>/<str:scope_type>/<int:pkid>', views.clear_scope, name="host_scoping.clear_scope"),
     path('get_ips/<int:pkid>', views.get_ips, name="host_scoping.get_ips"),
     path('get_domains/<int:pkid>', views.get_domains, name="host_scoping.get_domains"),
+    path('get_cidr/<int:pkid>', views.get_cidr, name="host_scoping.get_cidr"),
     ]
 

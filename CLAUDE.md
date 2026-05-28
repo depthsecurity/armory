@@ -139,20 +139,54 @@ armory -r <Name> -h   # help renders correctly
 - `config.json` must have: `name`, `pretty_name`, `description`, `category`, `authors`.
 - Use `armory2.armory_main.models` and core helpers in views.
 - Built-in webapps live in `armory_main/included/webapps/`; custom ones go in `armory_custom/webapps/` and are registered via `ARMORY_CUSTOM_WEBAPPS`.
-- Each webapp's `templates/` and `static/` dirs are auto-registered in `settings.py` (globbed at startup); the dashboard nav is built from every webapp's `config.json` via the `get_armory_webapps_grouped` context processor.
+- Each webapp's `templates/` and `static/` dirs are auto-registered in `settings.py` (globbed at startup); the nav dropdown is built from every webapp's `config.json` via the `get_armory_webapps_grouped` context processor.
+- **Template shadowing**: custom webapp templates are registered before built-in ones. A custom webapp whose `config.json` `name` matches a built-in will shadow it entirely — both URLs and templates.
 
 ### Styling
 
-The UI is mid-migration from Bootstrap to **Tailwind CSS + htmx**. Two base templates exist:
+All webapps use **Tailwind CSS + htmx**. `armory_main/base.html` (Bootstrap) is legacy; do not extend it in new webapps.
 
-| Template | Use |
+All webapp templates should `{% extends 'armory_main/base_tw.html' %}`.
+
+#### Template blocks
+
+| Block | Purpose |
 |---|---|
-| `armory_main/base_tw.html` | **Preferred.** Tailwind shell with the modern nav, dark/light theme slider (persisted to `localStorage`, no-flash init), and htmx loaded. The dashboard (`index.html`) uses this. |
-| `armory_main/base.html` | Legacy Bootstrap + jQuery shell. Existing webapps still extend this; leave them until migrated. |
+| `{% block content %}` | Main page body |
+| `{% block extra_head %}` | Injected into `<head>` — per-page styles, jQuery if needed |
+| `{% block extra_body %}` | Injected before `</body>` — page-specific scripts |
+| `{% block page_header %}` | Empty by default. Override only to add a custom sub-header below the nav bar (rare). |
 
-- New/migrated webapp templates should `{% extends 'armory_main/base_tw.html' %}` and define blocks `content`, `extra_head`, `extra_body`.
-- Reuse the shared component classes instead of long utility strings (defined in `tailwind/input.css`): `armory-container`, `armory-card` (+ `-body`/`-title`/`-text`), `armory-section-title`, `badge` + `badge-{primary,info,dark,secondary,success,warning,danger}`, `btn` + `btn-{primary,secondary,ghost}`, `armory-input`, `nav-link`/`nav-link-active`. These render without a rebuild.
-- Assets are **vendored** (no runtime CDN, works offline): `static/armory_main/css/tailwind.css` and `static/armory_main/js/htmx.min.js`.
+#### Nav bar and title
+
+The nav bar is a single **Armory ▾** dropdown grouping all registered webapps by `category`. The page title and theme toggle are in the nav bar — no separate header is rendered by default.
+
+- Pass `'title': 'My Page Name'` from the view. The nav bar displays it (stripping any `"Armory Web - "` prefix via the `| cut` filter).
+- Do not include `"Armory Web - "` in `title` values for new webapps.
+
+#### Component classes (defined in `tailwind/input.css`, always available without a rebuild)
+
+`armory-container`, `armory-card` / `armory-card-body` / `armory-card-title` / `armory-card-text`, `armory-section-title`, `armory-input`, `btn` + `btn-{primary,secondary,ghost}`, `badge` + `badge-{primary,info,dark,secondary,success,warning,danger}`, `nav-link` / `nav-link-active`
+
+#### Vendored assets (no CDN — works offline)
+
+- Tailwind CSS: `{% static 'armory_main/css/tailwind.css' %}`
+- htmx: `{% static 'armory_main/js/htmx.min.js' %}` — already loaded by `base_tw.html`; do not include again
+- jQuery: `{% static 'armory_main/js/jquery-3.5.1.min.js' %}` — not loaded by default; add to `extra_head` if a webapp needs it for existing jQuery-based AJAX patterns. Prefer htmx for new work.
+
+#### Full-height layouts (sidebar + scrollable content)
+
+For pages that need a full-viewport split (sidebar + results area), `<main id="content">` has `py-8` padding by default. Override it in `extra_head`:
+
+```html
+{% block extra_head %}
+<style>
+  #content { padding: 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+</style>
+{% endblock %}
+```
+
+Then structure `{% block content %}` as a flex column — a sticky filter bar, then a `flex flex-1 overflow-hidden` wrapper containing `aside` (sidebar) and a `flex-1 overflow-y-auto` results pane. See `host_summary/templates/host_summary/index.html` for a complete example.
 
 #### Rebuilding Tailwind CSS
 Required only after editing `tailwind/input.css` / `tailwind.config.js`, or after adding **new raw utility classes** in a template (component classes from `input.css` always ship). Commit the regenerated CSS.
@@ -165,7 +199,7 @@ npm run watch        # rebuild on change during dev
 See `tailwind/README.md` for details.
 
 ### Verify after adding
-Reload the Armory web UI; the new entry should appear under the chosen `category` on the dashboard. After editing source, reinstall so the commands pick up changes (`pipx install . --force`, or `flit install --symlink` for an editable install).
+Reload the Armory web UI; the new entry should appear under the chosen `category` in the Armory nav dropdown. After editing source, reinstall so the commands pick up changes (`pipx install . --force`, or `flit install --symlink` for an editable install).
 
 ---
 
