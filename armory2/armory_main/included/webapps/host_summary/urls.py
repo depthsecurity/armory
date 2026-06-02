@@ -23,4 +23,7 @@ urlpatterns = [
     path('save_notes/<int:ip_id>', views.save_notes, name="hs_save_notes"),
     path('save_service_name/<int:port_id>', views.save_service_name, name="hs_save_service_name"),
     path('toggle_completed/<int:ip_id>', views.toggle_completed, name="hs_toggle_completed"),
+    path('tags/<str:obj_type>/<int:obj_id>', views.get_tag_modal, name="hs_tag_modal"),
+    path('tags/<str:obj_type>/<int:obj_id>/add', views.add_tag, name="hs_add_tag"),
+    path('tags/<str:obj_type>/<int:obj_id>/remove/<int:tag_id>', views.remove_tag, name="hs_remove_tag"),
 ]

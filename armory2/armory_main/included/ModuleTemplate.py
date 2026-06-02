@@ -39,7 +39,7 @@ def get_docker_run(obj):
     binary = f"docker run -it --rm {obj.args.docker_options[1:-1]} {docker_extra} -v \"{base_path}:{base_path}\" {obj.docker_name} "
 
     if hasattr(obj, 'docker_run_binary'):
-        binary += f" {self.docker_run_binary}"
+        binary += f" {obj.docker_run_binary}"
 
     return binary
 

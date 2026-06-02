@@ -59,16 +59,26 @@
 <div id="ip-{{ ip.id }}" class="px-4 pt-4 pb-3">
 
   {# IP header bar #}
-  <div class="flex items-center gap-3 mb-3 sticky top-0 bg-gray-900 py-1.5 z-10 -mx-4 px-4 border-b border-gray-700/50">
-    <h2 class="flex-1 font-mono font-semibold text-cyan-300 text-sm tracking-wide">
-      <a href="#ip-{{ ip.id }}" class="hover:text-cyan-200">{{ ip.ip_address }}</a>
-    </h2>
+  <div class="flex items-center gap-2 mb-3 sticky top-0 bg-gray-900 py-1.5 z-10 -mx-4 px-4 border-b border-gray-700/50">
+    <div class="flex-1 flex items-center gap-2 min-w-0 flex-wrap">
+      <h2 class="font-mono font-semibold text-cyan-300 text-sm tracking-wide shrink-0">
+        <a href="#ip-{{ ip.id }}" class="hover:text-cyan-200">{{ ip.ip_address }}</a>
+      </h2>
+      <button onclick="openTagModal('ip', {{ ip.id }})"
+              class="text-gray-600 hover:text-cyan-400 text-sm font-bold leading-none transition-colors shrink-0"
+              title="Manage tags">+</button>
+      <div id="ip-tags-{{ ip.id }}" class="flex flex-wrap gap-1">
+        {% for tag in ip.tags.all %}
+        <span class="px-1.5 py-0.5 rounded text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700/50">{{ tag.name }}</span>
+        {% endfor %}
+      </div>
+    </div>
     <button onclick="toggleSection('notes-{{ ip.id }}')"
-            class="px-2.5 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors">
+            class="px-2.5 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors shrink-0">
       Notes
     </button>
     {# Completed button – HTMX replaces itself on click #}
-    <button class="px-3 py-1 rounded text-xs font-medium transition-colors {% if ip.completed %}bg-green-700 hover:bg-green-600 text-white{% else %}bg-gray-600 hover:bg-gray-500 text-gray-200{% endif %}"
+    <button class="px-3 py-1 rounded text-xs font-medium transition-colors shrink-0 {% if ip.completed %}bg-green-700 hover:bg-green-600 text-white{% else %}bg-gray-600 hover:bg-gray-500 text-gray-200{% endif %}"
             hx-get="/host_summary/toggle_completed/{{ ip.id }}"
             hx-swap="outerHTML"
             hx-target="this">
@@ -128,7 +138,17 @@
       {# Port row #}
       <tr class="hover:bg-gray-700/20 group/row">
         <td class="px-3 py-2 font-mono text-xs text-gray-400 align-top pt-2.5">
-          {{ port.port_number }}/{{ port.proto }}
+          <div class="flex items-center gap-1.5">
+            <span>{{ port.port_number }}/{{ port.proto }}</span>
+            <button onclick="openTagModal('port', {{ port.id }})"
+                    class="text-gray-600 hover:text-cyan-400 font-bold leading-none transition-colors"
+                    title="Manage tags">+</button>
+          </div>
+          <div id="port-tags-{{ port.id }}" class="flex flex-wrap gap-1 mt-1">
+            {% for tag in port.tags.all %}
+            <span class="px-1.5 py-0.5 rounded text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700/50">{{ tag.name }}</span>
+            {% endfor %}
+          </div>
         </td>
 
         {# Service name with inline edit #}

@@ -1,0 +1,12 @@
+{
+    "name": "data_manager",
+    "pretty_name": "Data Manager",
+    "description": "Full CRUD interface for all Armory models.",
+    "category": "Utilities",
+    "authors": [
+        {
+            "name": "Dan Lawson",
+            "url": "https://github.com/fang0654"
+        }
+    ]
+}

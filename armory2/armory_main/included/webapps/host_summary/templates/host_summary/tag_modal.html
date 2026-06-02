@@ -1,0 +1,48 @@
+{# OOB swap: update the inline tag chips in host_results #}
+<div id="{{ obj_type }}-tags-{{ obj_id }}" hx-swap-oob="true" class="flex flex-wrap gap-1">
+  {% for tag in current_tags %}
+  <span class="px-1.5 py-0.5 rounded text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700/50">{{ tag.name }}</span>
+  {% endfor %}
+</div>
+
+{# Modal body content #}
+<p class="text-xs text-gray-500 mb-4">Tags for <span class="font-mono text-gray-200">{{ label }}</span></p>
+
+<div class="mb-4">
+  <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Current Tags</div>
+  <div class="flex flex-wrap gap-1.5">
+    {% for tag in current_tags %}
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700/50">
+      {{ tag.name }}
+      <button type="button"
+              hx-post="/host_summary/tags/{{ obj_type }}/{{ obj_id }}/remove/{{ tag.id }}"
+              hx-target="#tag-modal-body"
+              hx-swap="innerHTML"
+              class="text-cyan-600 hover:text-red-400 transition-colors ml-0.5 font-bold leading-none">×</button>
+    </span>
+    {% empty %}
+    <span class="text-xs text-gray-600 italic">No tags yet</span>
+    {% endfor %}
+  </div>
+</div>
+
+<div>
+  <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Add Tag</div>
+  <form hx-post="/host_summary/tags/{{ obj_type }}/{{ obj_id }}/add"
+        hx-target="#tag-modal-body"
+        hx-swap="innerHTML"
+        class="flex gap-2">
+    {% csrf_token %}
+    <input type="text" name="tag_name" list="tag-suggestions-{{ obj_type }}-{{ obj_id }}"
+           placeholder="Select existing or type new…"
+           autocomplete="off"
+           class="flex-1 bg-gray-700 border border-gray-600 rounded px-2.5 py-1.5 text-xs text-gray-100 focus:outline-none focus:border-cyan-500 placeholder-gray-500">
+    <datalist id="tag-suggestions-{{ obj_type }}-{{ obj_id }}">
+      {% for tag in available_tags %}<option value="{{ tag.name }}">{% endfor %}
+    </datalist>
+    <button type="submit"
+            class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded transition-colors">
+      Add
+    </button>
+  </form>
+</div>

@@ -1,0 +1,132 @@
+{% extends 'armory_main/base_tw.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+  #content { padding: 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+  #dm-sidebar { flex-shrink: 0; width: 208px; min-width: 120px; max-width: 480px; }
+  #dm-resize-handle {
+    flex-shrink: 0; width: 4px; cursor: col-resize;
+    background: transparent; transition: background 0.15s;
+    position: relative; z-index: 10;
+  }
+  #dm-resize-handle:hover, #dm-resize-handle.dragging { background: #3b82f6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-1 overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside id="dm-sidebar" class="bg-gray-900 border-r border-gray-700 overflow-y-auto py-3">
+    {% for cat in sidebar %}
+    <div class="mb-4 px-3">
+      <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 px-2">
+        {{ cat.label }}
+      </div>
+      {% for m in cat.models %}
+      <button
+        class="sidebar-btn w-full text-left px-3 py-1.5 rounded text-sm text-gray-400 hover:bg-gray-700 hover:text-gray-100 transition-colors mb-0.5"
+        data-model="{{ m.key }}"
+        hx-get="/data_manager/{{ m.key }}/list"
+        hx-target="#main-content"
+        hx-swap="innerHTML"
+      >{{ m.label }}</button>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </aside>
+
+  <!-- Drag handle -->
+  <div id="dm-resize-handle"></div>
+
+  <!-- Main content area -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div id="main-content" class="flex-1 overflow-auto p-6"
+         hx-get="/data_manager/{{ first_model }}/list"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+      <div class="flex items-center justify-center h-32 text-gray-500 text-sm">Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal portal -->
+<div id="modal-container"></div>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+(function () {
+  // Highlight the active sidebar item
+  function setActive(modelKey) {
+    document.querySelectorAll('.sidebar-btn').forEach(function (btn) {
+      const active = btn.dataset.model === modelKey;
+      btn.classList.toggle('bg-blue-700', active);
+      btn.classList.toggle('text-white', active);
+      btn.classList.toggle('text-gray-400', !active);
+    });
+  }
+
+  // Mark active on initial load
+  setActive('{{ first_model }}');
+
+  document.body.addEventListener('htmx:configRequest', function (evt) {
+    const btn = evt.detail.elt.closest
+      ? evt.detail.elt.closest('[data-model]')
+      : null;
+    if (btn) setActive(btn.dataset.model);
+  });
+
+  // Close modal
+  document.body.addEventListener('closeModal', function () {
+    document.getElementById('modal-container').innerHTML = '';
+  });
+
+  // Refresh the current list after a successful save/delete
+  document.body.addEventListener('refreshList', function () {
+    var container = document.getElementById('list-container');
+    if (container) {
+      htmx.trigger(container, 'doRefresh');
+    }
+  });
+
+  // Sidebar resize
+  (function () {
+    var handle  = document.getElementById('dm-resize-handle');
+    var sidebar = document.getElementById('dm-sidebar');
+    var STORAGE_KEY = 'dm-sidebar-width';
+
+    // Restore saved width
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) sidebar.style.width = saved + 'px';
+
+    var startX, startW;
+
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      startX = e.clientX;
+      startW = sidebar.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!handle.classList.contains('dragging')) return;
+      var newW = Math.min(480, Math.max(120, startW + (e.clientX - startX)));
+      sidebar.style.width = newW + 'px';
+    });
+
+    document.addEventListener('mouseup', function () {
+      if (!handle.classList.contains('dragging')) return;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      localStorage.setItem(STORAGE_KEY, parseInt(sidebar.style.width));
+    });
+  })();
+})();
+</script>
+{% endblock %}

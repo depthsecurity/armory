@@ -51,6 +51,9 @@ class BaseDomain(BaseModel):
     name = models.CharField(max_length=64)
     dns = PickledObjectField(default=dict)
     toolrun = GenericRelation(ToolRun, related_query_name="base_domains")
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['domain', 'any']}
+    )
 
     def __str__(self):
         return self.name
@@ -110,6 +113,9 @@ class Domain(BaseModel):
     toolrun = GenericRelation(ToolRun, related_query_name="domains")
     dynamic_ip = models.BooleanField(default=False)
     is_ptr = models.BooleanField(default=False)
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['domain', 'any']}
+    )
 
     def __str__(self):
         return self.name
@@ -191,6 +197,9 @@ class IPAddress(BaseModel):
     notes = models.TextField(default="")
     completed = models.BooleanField(default=False, null=True)
     toolrun = GenericRelation(ToolRun, related_query_name="ip_addresses")
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['ip', 'any']}
+    )
 
     def __str__(self):
         return self.ip_address
@@ -296,7 +305,9 @@ class Port(BaseModel):
     certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
     toolrun = GenericRelation(ToolRun, related_query_name="ports")
-    # toolrun = GenericRelation(ToolRun, related_query_name="ports")
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['ip', 'any']}
+    )
 
     def __str__(self):
         return "{} / {} / {}".format(self.proto, self.port_number, self.service_name)

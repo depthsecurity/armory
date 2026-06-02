@@ -11,18 +11,87 @@
         <span class="ml-auto font-mono opacity-60 truncate text-right">{{ finding.matched_at }}</span>
         {% endif %}
       </button>
-      <div id="nuclei-{{ finding.id }}" class="mt-1 rounded bg-gray-700/40 border border-gray-700 px-3 py-2 text-xs text-gray-300 flex flex-col gap-1">
-        {% if finding.description %}
-        <div><span class="text-gray-500 font-medium">Description: </span>{{ finding.description }}</div>
+      <div id="nuclei-{{ finding.id }}" class="hidden mt-1 rounded bg-gray-700/40 border border-gray-700 px-3 py-2 text-xs text-gray-300 flex flex-col gap-1.5">
+
+        <!-- Core info -->
+        {% if finding.template_id %}
+        <div><span class="text-gray-500 font-medium">Template: </span><span class="font-mono">{{ finding.template_id }}</span>{% if finding.type %} <span class="text-gray-600">({{ finding.type }})</span>{% endif %}</div>
         {% endif %}
         {% if finding.matched_at %}
         <div><span class="text-gray-500 font-medium">Matched At: </span><span class="font-mono">{{ finding.matched_at }}</span></div>
         {% endif %}
-        {% if finding.extracted_results %}
-        <div class="text-gray-500 font-medium">Extracted Results:</div>
-        <pre class="whitespace-pre-wrap break-words font-mono text-gray-300">{% for r in finding.extracted_results %}{{ r }}
-{% endfor %}</pre>
+        {% if finding.matcher_name %}
+        <div><span class="text-gray-500 font-medium">Matcher: </span>{{ finding.matcher_name }}</div>
         {% endif %}
+        {% if finding.description %}
+        <div><span class="text-gray-500 font-medium">Description: </span>{{ finding.description }}</div>
+        {% endif %}
+        {% if finding.remediation %}
+        <div><span class="text-gray-500 font-medium">Remediation: </span>{{ finding.remediation }}</div>
+        {% endif %}
+        {% if finding.tags %}
+        <div><span class="text-gray-500 font-medium">Tags: </span><span class="font-mono text-gray-400">{{ finding.tags }}</span></div>
+        {% endif %}
+
+        <!-- Classification -->
+        {% if finding.cvss_score or finding.cve_id or finding.cwe_id %}
+        <div class="flex flex-wrap gap-x-4 gap-y-0.5">
+          {% if finding.cvss_score %}
+          <div><span class="text-gray-500 font-medium">CVSS: </span>{{ finding.cvss_score }}</div>
+          {% endif %}
+          {% if finding.cve_id %}
+          <div><span class="text-gray-500 font-medium">CVE: </span><span class="font-mono">{{ finding.cve_id }}</span></div>
+          {% endif %}
+          {% if finding.cwe_id %}
+          <div><span class="text-gray-500 font-medium">CWE: </span><span class="font-mono">{{ finding.cwe_id }}</span></div>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% if finding.cvss_metrics %}
+        <div><span class="text-gray-500 font-medium">CVSS Vector: </span><span class="font-mono text-gray-400 break-all">{{ finding.cvss_metrics }}</span></div>
+        {% endif %}
+
+        <!-- References -->
+        {% if finding.references %}
+        <div>
+          <span class="text-gray-500 font-medium">References:</span>
+          <ul class="mt-0.5 ml-3 flex flex-col gap-0.5">
+            {% for ref in finding.references %}
+            <li><a href="{{ ref }}" target="_blank" rel="noopener" class="text-cyan-400 hover:text-cyan-300 font-mono break-all">{{ ref }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Extracted results -->
+        {% if finding.extracted_results %}
+        <div>
+          <div class="text-gray-500 font-medium mb-0.5">Extracted Results:</div>
+          <pre class="whitespace-pre-wrap break-words font-mono text-gray-300 bg-gray-800/60 rounded p-2">{% for r in finding.extracted_results %}{{ r }}
+{% endfor %}</pre>
+        </div>
+        {% endif %}
+
+        <!-- Request/Response -->
+        {% if finding.curl_command %}
+        <div>
+          <div class="text-gray-500 font-medium mb-0.5">cURL:</div>
+          <pre class="whitespace-pre-wrap break-all font-mono text-gray-300 bg-gray-800/60 rounded p-2">{{ finding.curl_command }}</pre>
+        </div>
+        {% endif %}
+        {% if finding.request %}
+        <div>
+          <div class="text-gray-500 font-medium mb-0.5">Request:</div>
+          <pre class="whitespace-pre-wrap break-words font-mono text-gray-300 bg-gray-800/60 rounded p-2 max-h-48 overflow-y-auto">{{ finding.request }}</pre>
+        </div>
+        {% endif %}
+        {% if finding.response %}
+        <div>
+          <div class="text-gray-500 font-medium mb-0.5">Response:</div>
+          <pre class="whitespace-pre-wrap break-words font-mono text-gray-300 bg-gray-800/60 rounded p-2 max-h-48 overflow-y-auto">{{ finding.response }}</pre>
+        </div>
+        {% endif %}
+
       </div>
     </div>
   {% empty %}

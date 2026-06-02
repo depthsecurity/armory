@@ -1,0 +1,179 @@
+{% load static %}
+<style>
+  /* Force dark inputs inside the modal regardless of page theme */
+  #dm-modal-overlay .armory-input {
+    background-color: rgb(17, 24, 39);   /* gray-900 */
+    color: rgb(243, 244, 246);           /* gray-100 */
+    border-color: rgb(75, 85, 99);       /* gray-600 */
+  }
+  #dm-modal-overlay .armory-input:focus {
+    border-color: rgb(59, 130, 246);     /* blue-500 */
+    outline: none;
+    box-shadow: 0 0 0 1px rgb(59, 130, 246);
+  }
+  #dm-modal-overlay .armory-input::placeholder {
+    color: rgb(107, 114, 128);           /* gray-500 */
+  }
+  #dm-modal-overlay .armory-input option {
+    background-color: rgb(17, 24, 39);
+  }
+</style>
+<!-- Modal overlay — clicking outside closes -->
+<div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+     id="dm-modal-overlay"
+     onclick="if(event.target===this){document.getElementById('modal-container').innerHTML=''}">
+
+  <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl w-full max-w-lg flex flex-col max-h-[88vh]"
+       onclick="event.stopPropagation()">
+
+    <!-- Modal header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700 flex-shrink-0">
+      <h3 class="text-base font-semibold text-white">
+        {% if action == 'edit' %}Edit{% else %}New{% endif %} {{ cfg.label }}
+      </h3>
+      <button onclick="document.getElementById('modal-container').innerHTML=''"
+              class="text-gray-500 hover:text-gray-300 transition-colors text-xl leading-none"
+              type="button">&times;</button>
+    </div>
+
+    <!-- Scrollable form body -->
+    <div class="overflow-y-auto flex-1 px-6 py-5">
+      <form id="dm-crud-form"
+            {% if action == 'edit' %}
+            hx-post="/data_manager/{{ model_key }}/{{ obj_id }}/edit"
+            {% else %}
+            hx-post="/data_manager/{{ model_key }}/create"
+            {% endif %}
+            hx-target="#modal-container"
+            hx-swap="innerHTML">
+        {% csrf_token %}
+
+        {% if form_error %}
+        <div class="bg-red-900/40 border border-red-700 text-red-300 rounded-lg px-4 py-3 mb-5 text-sm">
+          {{ form_error }}
+        </div>
+        {% endif %}
+
+        {% for field in form_fields %}
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-300 mb-1.5">
+            {{ field.label }}
+            {% if field.required %}<span class="text-red-400 ml-0.5">*</span>{% endif %}
+          </label>
+
+          {% if field.type == 'text' or field.type == 'email' %}
+            <input type="text"
+                   name="{{ field.name }}"
+                   value="{{ field.current_value }}"
+                   class="armory-input w-full {% if field.error %}border-red-500{% endif %}"
+                   {% if field.required %}required{% endif %}>
+
+          {% elif field.type == 'textarea' %}
+            <textarea name="{{ field.name }}"
+                      rows="4"
+                      class="armory-input w-full font-mono text-sm {% if field.error %}border-red-500{% endif %}"
+                      {% if field.required %}required{% endif %}>{{ field.current_value }}</textarea>
+
+          {% elif field.type == 'number' %}
+            <input type="number"
+                   name="{{ field.name }}"
+                   value="{{ field.current_value }}"
+                   class="armory-input w-full {% if field.error %}border-red-500{% endif %}"
+                   {% if field.required %}required{% endif %}>
+
+          {% elif field.type == 'float' %}
+            <input type="number"
+                   step="0.1"
+                   name="{{ field.name }}"
+                   value="{{ field.current_value }}"
+                   class="armory-input w-full {% if field.error %}border-red-500{% endif %}">
+
+          {% elif field.type == 'checkbox' %}
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <div class="relative">
+                <input type="checkbox"
+                       name="{{ field.name }}"
+                       {% if field.current_value %}checked{% endif %}
+                       class="sr-only peer">
+                <div class="w-10 h-5 bg-gray-700 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer
+                            peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5
+                            after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4
+                            after:transition-all peer-checked:bg-blue-600 border border-gray-600"></div>
+              </div>
+              <span class="text-sm text-gray-400 group-hover:text-gray-300">Enabled</span>
+            </label>
+
+          {% elif field.type == 'select' %}
+            <select name="{{ field.name }}"
+                    class="armory-input w-full {% if field.error %}border-red-500{% endif %}"
+                    {% if field.required %}required{% endif %}>
+              {% if not field.required %}
+                <option value="">— None —</option>
+              {% endif %}
+              {% for val, label in field.options %}
+              <option value="{{ val }}"
+                      {% if field.current_value|stringformat:"s" == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+
+          {% elif field.type == 'fk' %}
+            <select name="{{ field.name }}"
+                    class="armory-input w-full {% if field.error %}border-red-500{% endif %}"
+                    {% if field.required %}required{% endif %}>
+              {% if not field.required %}
+                <option value="">— None —</option>
+              {% endif %}
+              {% for pk, label in field.options %}
+              <option value="{{ pk }}"
+                      {% if field.current_value == pk %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+
+          {% elif field.type == 'm2m' %}
+            <select name="{{ field.name }}"
+                    multiple
+                    class="armory-input w-full {% if field.error %}border-red-500{% endif %}"
+                    style="height: 7rem;">
+              {% for pk, label in field.options %}
+              <option value="{{ pk }}"
+                      {% if pk in field.current_value %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+            <p class="text-xs text-gray-600 mt-1">Hold Ctrl / ⌘ to select multiple items.</p>
+
+          {% endif %}
+
+          {% if field.hint and not field.error %}
+            <p class="text-xs text-gray-600 mt-1">{{ field.hint }}</p>
+          {% endif %}
+          {% if field.error %}
+            <p class="text-xs text-red-400 mt-1">{{ field.error }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+      </form>
+    </div>
+
+    <!-- Modal footer -->
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-700 flex-shrink-0">
+      <button type="button"
+              onclick="document.getElementById('modal-container').innerHTML=''"
+              class="btn btn-ghost text-sm">
+        Cancel
+      </button>
+      <button type="submit"
+              form="dm-crud-form"
+              class="btn btn-primary text-sm">
+        {% if action == 'edit' %}Save Changes{% else %}Create {{ cfg.label }}{% endif %}
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
-from armory2.armory_main.models import Port, Domain, IPAddress, Vulnerability
+from armory2.armory_main.models import Port, Domain, IPAddress, Vulnerability, Tag
 from django.template.defaulttags import register
 import os
 from base64 import b64encode
@@ -78,14 +78,35 @@ def _process_nuclei(nuclei_meta):
     )
     findings = []
     for name, f in raw:
-        sev = f.get('info', {}).get('severity', 'info').lower()
+        info = f.get('info', {})
+        sev = info.get('severity', 'info').lower()
+        classification = info.get('classification', {}) or {}
+        refs = info.get('reference', []) or []
+        if isinstance(refs, str):
+            refs = [refs]
+        tags = info.get('tags', '') or ''
+        if isinstance(tags, list):
+            tags = ', '.join(tags)
         findings.append({
             'name': name,
             'severity': sev,
             'style': _NUCLEI_SEV_STYLES.get(sev, _NUCLEI_SEV_STYLES['info']),
-            'description': f.get('info', {}).get('description', ''),
+            'description': info.get('description', ''),
+            'remediation': info.get('remediation', ''),
+            'tags': tags,
+            'references': refs,
+            'cvss_score': classification.get('cvss-score', ''),
+            'cvss_metrics': classification.get('cvss-metrics', ''),
+            'cve_id': classification.get('cve-id', ''),
+            'cwe_id': classification.get('cwe-id', ''),
             'matched_at': f.get('matched-at', ''),
-            'extracted_results': f.get('extracted-results', []),
+            'template_id': f.get('template-id', ''),
+            'type': f.get('type', ''),
+            'matcher_name': f.get('matcher-name', ''),
+            'extracted_results': f.get('extracted-results', []) or [],
+            'curl_command': f.get('curl-command', ''),
+            'request': f.get('request', ''),
+            'response': f.get('response', ''),
             'id': str(uuid.uuid1()),
         })
     return findings
@@ -354,3 +375,55 @@ def get_ffuf(request, port_id):
                 bucket.append({'url': url_orig, 'input': input_val, 'length': r['length']})
 
     return render(request, 'host_summary/ffuf.html', {'ffuf_data': ffuf_data})
+
+
+def _tag_modal_context(obj_type, obj_id):
+    if obj_type == 'ip':
+        obj = get_object_or_404(IPAddress, pk=obj_id)
+        label = obj.ip_address
+    elif obj_type == 'port':
+        obj = get_object_or_404(Port, pk=obj_id)
+        label = f"{obj.port_number}/{obj.proto}"
+    else:
+        return None, None
+    current_tags = obj.tags.all()
+    available_tags = Tag.objects.filter(type__in=['ip', 'any']).exclude(pk__in=current_tags)
+    return obj, {
+        'obj_type': obj_type,
+        'obj_id': obj_id,
+        'label': label,
+        'current_tags': current_tags,
+        'available_tags': available_tags,
+    }
+
+
+def get_tag_modal(request, obj_type, obj_id):
+    _, ctx = _tag_modal_context(obj_type, obj_id)
+    if ctx is None:
+        return HttpResponse('Invalid type', status=400)
+    return render(request, 'host_summary/tag_modal.html', ctx)
+
+
+def add_tag(request, obj_type, obj_id):
+    tag_name = request.POST.get('tag_name', '').strip()
+    if tag_name:
+        tag, _ = Tag.objects.get_or_create(name=tag_name, defaults={'type': Tag.TYPE_ANY})
+        if obj_type == 'ip':
+            get_object_or_404(IPAddress, pk=obj_id).tags.add(tag)
+        elif obj_type == 'port':
+            get_object_or_404(Port, pk=obj_id).tags.add(tag)
+    _, ctx = _tag_modal_context(obj_type, obj_id)
+    if ctx is None:
+        return HttpResponse('Invalid type', status=400)
+    return render(request, 'host_summary/tag_modal.html', ctx)
+
+
+def remove_tag(request, obj_type, obj_id, tag_id):
+    if obj_type == 'ip':
+        get_object_or_404(IPAddress, pk=obj_id).tags.remove(tag_id)
+    elif obj_type == 'port':
+        get_object_or_404(Port, pk=obj_id).tags.remove(tag_id)
+    _, ctx = _tag_modal_context(obj_type, obj_id)
+    if ctx is None:
+        return HttpResponse('Invalid type', status=400)
+    return render(request, 'host_summary/tag_modal.html', ctx)
