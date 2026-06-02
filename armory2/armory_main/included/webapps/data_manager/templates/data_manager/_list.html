@@ -1,0 +1,141 @@
+<div id="list-container"
+     hx-get="/data_manager/{{ model_key }}/list{% if search %}?search={{ search }}{% endif %}"
+     hx-trigger="doRefresh"
+     hx-target="this"
+     hx-swap="outerHTML">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-5">
+    <h2 class="text-lg font-semibold text-white">{{ cfg.plural }}</h2>
+    <button class="btn btn-primary text-sm"
+            hx-get="/data_manager/{{ model_key }}/create"
+            hx-target="#modal-container"
+            hx-swap="innerHTML">
+      + New {{ cfg.label }}
+    </button>
+  </div>
+
+  <!-- Search -->
+  <div class="mb-4">
+    <input type="text"
+           name="search"
+           value="{{ search }}"
+           class="armory-input w-full max-w-sm"
+           placeholder="Search {{ cfg.plural|lower }}…"
+           hx-get="/data_manager/{{ model_key }}/list"
+           hx-trigger="keyup changed delay:300ms, search"
+           hx-target="#list-container"
+           hx-swap="outerHTML"
+           hx-include="[name=search]">
+  </div>
+
+  <!-- Record count -->
+  <div class="text-xs text-gray-500 mb-3">
+    {{ total }} record{{ total|pluralize }}{% if search %} matching &ldquo;{{ search }}&rdquo;{% endif %}
+  </div>
+
+  <!-- Table -->
+  {% if rows %}
+  <div class="overflow-x-auto rounded-lg border border-gray-700">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-800">
+        <tr>
+          {% for col in cfg.columns %}
+          <th class="text-left py-2.5 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider whitespace-nowrap">
+            {{ col.label }}
+          </th>
+          {% endfor %}
+          <th class="py-2.5 px-4 text-right text-gray-400 font-medium text-xs uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        {% for row in rows %}
+        <tr class="hover:bg-gray-800/40 transition-colors">
+          {% for cell in row.cells %}
+          <td class="py-2.5 px-4 text-gray-200 max-w-xs">
+            {% if cell.col.type == 'bool' %}
+              {% if cell.value %}
+                <span class="badge badge-success text-xs">Yes</span>
+              {% else %}
+                <span class="badge badge-secondary text-xs">No</span>
+              {% endif %}
+
+            {% elif cell.col.type == 'severity' %}
+              {% if cell.value == 0 %}
+                <span class="badge badge-secondary text-xs">Info</span>
+              {% elif cell.value == 1 %}
+                <span class="badge badge-info text-xs">Low</span>
+              {% elif cell.value == 2 %}
+                <span class="badge badge-warning text-xs">Medium</span>
+              {% elif cell.value == 3 %}
+                <span class="badge badge-danger text-xs">High</span>
+              {% elif cell.value == 4 %}
+                <span class="badge badge-danger text-xs font-bold">Critical</span>
+              {% endif %}
+
+            {% else %}
+              <span class="truncate block" title="{{ cell.value }}">{{ cell.value }}</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+          <td class="py-2.5 px-4 text-right whitespace-nowrap">
+            <button class="text-blue-400 hover:text-blue-300 text-xs font-medium mr-3 transition-colors"
+                    hx-get="/data_manager/{{ model_key }}/{{ row.id }}/edit"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML">
+              Edit
+            </button>
+            <button class="text-red-400 hover:text-red-300 text-xs font-medium transition-colors"
+                    hx-get="/data_manager/{{ model_key }}/{{ row.id }}/delete"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML">
+              Delete
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div class="flex items-center justify-between mt-4 text-sm">
+    <span class="text-gray-500 text-xs">Page {{ page }} of {{ total_pages }}</span>
+    <div class="flex gap-2">
+      {% if has_prev %}
+      <button class="btn btn-ghost text-xs py-1 px-3"
+              hx-get="/data_manager/{{ model_key }}/list?page={{ page|add:'-1' }}&search={{ search }}"
+              hx-target="#list-container"
+              hx-swap="outerHTML">
+        ← Prev
+      </button>
+      {% endif %}
+      {% if has_next %}
+      <button class="btn btn-ghost text-xs py-1 px-3"
+              hx-get="/data_manager/{{ model_key }}/list?page={{ page|add:'1' }}&search={{ search }}"
+              hx-target="#list-container"
+              hx-swap="outerHTML">
+        Next →
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="flex flex-col items-center justify-center py-16 text-gray-600">
+    <div class="text-4xl mb-3">○</div>
+    <div class="text-sm">
+      {% if search %}
+        No {{ cfg.plural|lower }} match &ldquo;{{ search }}&rdquo;.
+      {% else %}
+        No {{ cfg.plural|lower }} yet.
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>

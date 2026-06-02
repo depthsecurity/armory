@@ -29,6 +29,20 @@ SECRET_KEY = 'ef23eil#4mb&+2k2^+^u73l=fda2y2+rrmx^td4e)*at7w%+0g'
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+CSRF_TRUSTED_ORIGINS = []
+
+_web_bind = os.getenv('ARMORY_WEB_BIND')
+_web_port = os.getenv('ARMORY_WEB_PORT')
+if _web_bind:
+    if _web_bind == '0.0.0.0':
+        ALLOWED_HOSTS.append('*')
+    elif _web_bind not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_web_bind)
+    if _web_port:
+        for _scheme in ('http', 'https'):
+            _origin = f'{_scheme}://{_web_bind}:{_web_port}'
+            if _origin not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(_origin)
 
 
 # Application definition

@@ -158,6 +158,9 @@ class Module(ToolTemplate):
 
                 if domain:
                     domain_obj, created = Domain.objects.get_or_create(name=domain)
+                    if record.get("type") == "PTR" and not domain_obj.is_ptr:
+                        domain_obj.is_ptr = True
+                        domain_obj.save()
 
             if "/" in target:
                 bd, created = CIDR.objects.get_or_create(

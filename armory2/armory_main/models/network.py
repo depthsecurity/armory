@@ -29,6 +29,7 @@ from datetime import datetime, date, time
 import tldextract
 import re
 
+_PTR_IP_RE = re.compile(r'^\d{1,3}[.\-]\d{1,3}[.\-]\d{1,3}[.\-]\d{1,3}\.')
 
 class ToolRun(BaseModel):
     args = models.CharField(max_length=1024, default="")
@@ -50,6 +51,9 @@ class BaseDomain(BaseModel):
     name = models.CharField(max_length=64)
     dns = PickledObjectField(default=dict)
     toolrun = GenericRelation(ToolRun, related_query_name="base_domains")
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['domain', 'any']}
+    )
 
     def __str__(self):
         return self.name
@@ -65,6 +69,41 @@ class CIDR(BaseModel):
     def __str__(self):
         return "{}: {}".format(self.name, self.org_name)
 
+    @property
+    def domain_count(self):
+        # Total domains across every IP in this CIDR (matches the per-IP
+        # "N Domains" counts summed together).
+        from django.db.models import Count
+
+        return self.ipaddress_set.aggregate(n=Count("domain"))["n"]
+
+    def _scope_state(self, scope_attr):
+        from django.db.models import Count, Q
+        ips = self.ipaddress_set.all()
+        if not ips.exists():
+            return "none"
+        total_ips = ips.count()
+        scoped_ips = ips.filter(**{scope_attr: True}).count()
+        domain_total = ips.aggregate(n=Count("domain"))["n"]
+        domain_scoped = ips.aggregate(
+            n=Count("domain", filter=Q(**{f"domain__{scope_attr}": True}))
+        )["n"]
+        total = total_ips + domain_total
+        scoped = scoped_ips + domain_scoped
+        if scoped == 0:
+            return "none"
+        if scoped == total:
+            return "all"
+        return "some"
+
+    @property
+    def active_scope_state(self):
+        return self._scope_state("active_scope")
+
+    @property
+    def passive_scope_state(self):
+        return self._scope_state("passive_scope")
+
 
 class Domain(BaseModel):
     name = models.CharField(max_length=128, unique=True)
@@ -73,6 +112,10 @@ class Domain(BaseModel):
     whois = models.TextField()
     toolrun = GenericRelation(ToolRun, related_query_name="domains")
     dynamic_ip = models.BooleanField(default=False)
+    is_ptr = models.BooleanField(default=False)
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['domain', 'any']}
+    )
 
     def __str__(self):
         return self.name
@@ -142,6 +185,8 @@ class Domain(BaseModel):
             )
 
             return self
+        else:
+            super().save(*args, **kwargs)
 
 class IPAddress(BaseModel):
     ip_address = models.CharField(max_length=39, unique=True)
@@ -152,6 +197,9 @@ class IPAddress(BaseModel):
     notes = models.TextField(default="")
     completed = models.BooleanField(default=False, null=True)
     toolrun = GenericRelation(ToolRun, related_query_name="ip_addresses")
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['ip', 'any']}
+    )
 
     def __str__(self):
         return self.ip_address
@@ -173,6 +221,26 @@ class IPAddress(BaseModel):
         self.toolrun.get_or_create(
             tool=tool, args=args, port_obj=port_obj, virtualhost=vhost
         )
+
+    def _scope_state(self, scope_attr):
+        domains = self.domain_set.all()
+        if not domains.exists():
+            return "all" if getattr(self, scope_attr) else "none"
+        total = domains.count()
+        scoped = domains.filter(**{scope_attr: True}).count()
+        if scoped == 0:
+            return "none"
+        if scoped == total:
+            return "all"
+        return "some"
+
+    @property
+    def active_scope_state(self):
+        return self._scope_state("active_scope")
+
+    @property
+    def passive_scope_state(self):
+        return self._scope_state("passive_scope")
 
     def get_virtualhosts(self):
         return sorted(
@@ -237,7 +305,9 @@ class Port(BaseModel):
     certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
     toolrun = GenericRelation(ToolRun, related_query_name="ports")
-    # toolrun = GenericRelation(ToolRun, related_query_name="ports")
+    tags = models.ManyToManyField(
+        'Tag', blank=True, limit_choices_to={'type__in': ['ip', 'any']}
+    )
 
     def __str__(self):
         return "{} / {} / {}".format(self.proto, self.port_number, self.service_name)
@@ -285,6 +355,12 @@ def post_save_domain(sender, instance, created, *args, **kwargs):
         return
     if created:
         domain_name = instance.name
+        if (domain_name.endswith('.in-addr.arpa') or domain_name.endswith('.ip6.arpa')
+                or _PTR_IP_RE.match(domain_name)):
+            if not instance.is_ptr:
+                instance.is_ptr = True
+                instance.save()
+            return
         ips = get_ips(domain_name)
 
         for i in ips:

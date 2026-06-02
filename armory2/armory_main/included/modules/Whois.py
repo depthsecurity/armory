@@ -1,18 +1,93 @@
 #!/usr/bin/python
 
-import pdb
+from datetime import datetime, date
+
+import whoisit
+from netaddr import IPNetwork
+
 from armory2.armory_main.models import BaseDomain, CIDR
-from armory2.armory_main.included.ModuleTemplate import ToolTemplate
-from armory2.armory_main.included.utilities.color_display import display
-from armory2.armory_main.included.utilities.readFile import read_file
-import os
+from armory2.armory_main.included.ModuleTemplate import ModuleTemplate
+from armory2.armory_main.included.utilities.color_display import display, display_error
 
 
-class Module(ToolTemplate):
+def _dt(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return value
+
+
+def _kv(lines, label, value):
+    if value not in (None, "", []):
+        lines.append("{}: {}".format(label, value))
+
+
+def _format_entities(entities):
+    lines = []
+    for role, members in (entities or {}).items():
+        label = role.replace("_", " ").title()
+        for member in members:
+            _kv(lines, "{} Name".format(label), member.get("name"))
+            _kv(lines, "{} Handle".format(label), member.get("handle"))
+            _kv(lines, "{} Email".format(label), member.get("email"))
+            _kv(lines, "{} Phone".format(label), member.get("tel"))
+            address = member.get("address") or {}
+            _kv(lines, "{} Street".format(label), address.get("street_address"))
+            _kv(lines, "{} City".format(label), address.get("locality"))
+            _kv(lines, "{} Region".format(label), address.get("region"))
+            _kv(lines, "{} Postal Code".format(label), address.get("postal_code"))
+            _kv(lines, "{} Country".format(label), address.get("country"))
+    return lines
+
+
+def format_domain(res):
+    lines = []
+    _kv(lines, "Domain Name", res.get("name"))
+    _kv(lines, "Registry Domain ID", res.get("handle"))
+    _kv(lines, "Updated Date", _dt(res.get("last_changed_date")))
+    _kv(lines, "Creation Date", _dt(res.get("registration_date")))
+    _kv(lines, "Registry Expiry Date", _dt(res.get("expiration_date")))
+    _kv(lines, "Registrar WHOIS Server", res.get("whois_server"))
+    _kv(lines, "Registrar URL", res.get("url"))
+    lines.append("DNSSEC: {}".format("signedDelegation" if res.get("dnssec") else "unsigned"))
+    for status in res.get("status") or []:
+        _kv(lines, "Domain Status", status)
+    for ns in res.get("nameservers") or []:
+        _kv(lines, "Name Server", ns)
+    lines.extend(_format_entities(res.get("entities")))
+    return "\n".join(lines)
+
+
+def format_ip(res):
+    lines = []
+    _kv(lines, "NetRange", res.get("handle"))
+    network = res.get("network")
+    _kv(lines, "CIDR", str(network) if network else None)
+    _kv(lines, "NetName", res.get("name"))
+    _kv(lines, "Parent", res.get("parent_handle"))
+    _kv(lines, "NetType", res.get("assignment_type"))
+    _kv(lines, "Country", res.get("country"))
+    _kv(lines, "RegDate", _dt(res.get("registration_date")))
+    _kv(lines, "Updated", _dt(res.get("last_changed_date")))
+    _kv(lines, "Ref", res.get("url"))
+    _kv(lines, "Whois Server", res.get("whois_server"))
+    for desc in res.get("description") or []:
+        _kv(lines, "Description", desc)
+    lines.extend(_format_entities(res.get("entities")))
+    return "\n".join(lines)
+
+
+def _org_name(res):
+    if res.get("description"):
+        return res["description"][0]
+    try:
+        return res["entities"]["registrant"][0]["name"]
+    except (KeyError, IndexError):
+        return "Not resolved"
+
+
+class Module(ModuleTemplate):
     name = "Whois"
-    binary_name = "whois"
-    docker_name = "whois"
-    docker_repo = "https://github.com/tool-dockers/docker-whois.git"
+
     def set_options(self):
         super(Module, self).set_options()
 
@@ -38,83 +113,74 @@ class Module(ToolTemplate):
             action="store_true",
         )
 
+    def run(self, args):
+        whoisit.bootstrap()
+
+        domains, cidrs = self.get_targets(args)
+
+        for domain in domains:
+            self.process_domain(domain)
+
+        for query_ip, cidr in cidrs:
+            self.process_cidr(query_ip, cidr)
+
     def get_targets(self, args):
-        targets = []
+        domains = []
+        cidrs = []
 
         if args.domain:
-            targets.append({"domain": args.domain, "cidr": ""})
+            domains.append(args.domain)
 
         elif args.cidr:
-            targets.append({"domain": "", "cidr": args.cidr.split("/")[0]})
+            cidrs.append((args.cidr.split("/")[0], None))
 
         elif args.import_database:
-            if args.all_data:
-                scope_type = ""
-            else:
-                scope_type = "passive"
+            scope_type = "" if args.all_data else "passive"
             if args.rescan:
-                domains = BaseDomain.get_set(scope_type=scope_type)
-                cidrs = CIDR.get_set(scope_type=scope_type)
+                db_domains = BaseDomain.get_set(scope_type=scope_type)
+                db_cidrs = CIDR.get_set(scope_type=scope_type)
             else:
-                domains = BaseDomain.get_set(scope_type=scope_type, tool=self.name)
-                cidrs = CIDR.get_set(tool=self.name)
+                db_domains = BaseDomain.get_set(scope_type=scope_type, tool=self.name)
+                db_cidrs = CIDR.get_set(tool=self.name)
 
-            for domain in domains:
-                targets.append({"domain": domain.name, "cidr": "", "cidr_name": ""})
-            for cidr in cidrs:
-                targets.append(
-                    {
-                        "domain": "",
-                        "cidr": cidr.name.split("/")[0],
-                        "cidr_name": cidr.name,
-                    }
-                )
+            for domain in db_domains:
+                domains.append(domain.name)
+            for cidr in db_cidrs:
+                cidrs.append((cidr.name.split("/")[0], cidr))
 
-        if args.output_path[0] == "/":
-            output_path = os.path.join(
-                self.base_config["ARMORY_BASE_PATH"], args.output_path[1:]
+        return domains, cidrs
+
+    def process_domain(self, name):
+        try:
+            res = whoisit.domain(name)
+        except Exception as e:
+            display_error("Error resolving RDAP for {}: {}".format(name, e))
+            return
+
+        domain, _ = BaseDomain.objects.get_or_create(name=name)
+        domain.meta["whois"] = format_domain(res)
+        domain.save()
+        display(domain.meta["whois"])
+        domain.add_tool_run(self.name)
+
+    def process_cidr(self, query_ip, cidr):
+        try:
+            res = whoisit.ip(query_ip)
+        except Exception as e:
+            display_error("Error resolving RDAP for {}: {}".format(query_ip, e))
+            return
+
+        if cidr is None:
+            network = str(res["network"])
+            cidr, _ = CIDR.objects.get_or_create(
+                name=network,
+                defaults={
+                    "org_name": _org_name(res),
+                    "size": IPNetwork(network).size,
+                },
             )
-        else:
-            output_path = os.path.join(
-                self.base_config["ARMORY_BASE_PATH"], args.output_path
-            )
 
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-
-        for t in targets:
-            t["output"] = os.path.join(output_path, t["domain"] + t["cidr"])
-
-        return targets
-
-    def build_cmd(self, args):
-        if not args.tool_args:
-            args.tool_args = ""
-        cmd = (
-            'bash -c "'
-            + self.binary  # noqa: W503
-            + " {domain}{cidr} "  # noqa: W503
-            + args.tool_args  # noqa: W503
-            + '> {output}" '  # noqa: W503
-        )
-
-        return cmd
-
-    def process_output(self, cmds):
-        display("Importing data to database")
-
-        for cmd in cmds:
-            if cmd["cidr"]:
-
-                cidr, _ = CIDR.objects.get_or_create(name__icontains=cmd["cidr_name"])
-                cidr.meta["whois"] = read_file(cmd["output"])
-                cidr.save()
-                display(cidr.meta["whois"])
-                cidr.add_tool_run(self.name)
-
-            elif cmd["domain"]:
-                domain, _ = BaseDomain.objects.get_or_create(name=cmd["domain"])
-                domain.meta["whois"] = read_file(cmd["output"])
-                domain.save()
-                display(domain.meta["whois"])
-                domain.add_tool_run(self.name)
+        cidr.meta["whois"] = format_ip(res)
+        cidr.save()
+        display(cidr.meta["whois"])
+        cidr.add_tool_run(self.name)

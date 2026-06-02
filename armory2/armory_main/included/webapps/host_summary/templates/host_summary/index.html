@@ -1,291 +1,220 @@
-{% extends 'armory_main/base.html' %}
+{% extends 'armory_main/base_tw.html' %}
+
+{% block extra_head %}
+<style>
+  /* Remove base template padding and make content a full-height flex column */
+  #content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .htmx-indicator { display: none; }
+  .htmx-request .htmx-indicator { display: flex; }
+  .htmx-request.htmx-indicator { display: flex; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #111827; }
+  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div id="sidebar_results">
-</div>
+  <!-- Filter bar -->
+  <div class="bg-gray-800 border-b border-gray-700 px-4 py-3 shrink-0 z-10">
+    <form id="search-form"
+          hx-post="host_data"
+          hx-target="#host-results"
+          hx-indicator="#loading-bar">
+      {% csrf_token %}
 
-<div class="container">
-  <div class="row">
-    <div class="col-md-12">
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-3">
-              <button class="btn btn-info" data-toggle="collapse" data-target="#options_form">Search Options</button>
-            </div>
-            <div class="col-md-3">
-              <button class="btn btn-info" data-toggle="collapse" data-target="#data_options_form">Data Options</button>
-            </div>
-            <div class="col-md-3">
-              <button class="btn btn-info" data-toggle="collapse" data-target="#page_options_form">Page Options</button>
-            </div>
-            <div class="col-md-3">
-              <button class="submitbutton btn btn-info">Search</button>
-            </div>
+      <div class="flex flex-wrap gap-3 items-end">
+        <!-- Search -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-gray-500 uppercase tracking-wider">Search</label>
+          <input type="text" name="search"
+                 class="bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 w-56 focus:outline-none focus:border-cyan-500 placeholder-gray-500"
+                 placeholder="IP, domain, service…">
+        </div>
+
+        <!-- Scope -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-gray-500 uppercase tracking-wider">Scope</label>
+          <select name="scope"
+                  class="bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-cyan-500">
+            <option value="active">Active</option>
+            <option value="passive">Passive</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+
+        <!-- Per page -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-gray-500 uppercase tracking-wider">Per Page</label>
+          <input type="number" name="entries" value="50"
+                 class="bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 w-20 focus:outline-none focus:border-cyan-500">
+        </div>
+
+        <input type="hidden" name="page" id="page-input" value="1">
+
+        <!-- Divider -->
+        <div class="w-px h-8 bg-gray-700 self-end mb-0.5"></div>
+
+        <!-- Toggles -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-gray-500 uppercase tracking-wider">Display</label>
+          <div class="flex flex-wrap gap-x-4 gap-y-1">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+              <input type="checkbox" name="display_all" checked class="accent-cyan-500"> All Data
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+              <input type="checkbox" name="display_nessus" class="accent-cyan-500"> Nessus
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+              <input type="checkbox" name="display_gowitness" class="accent-cyan-500"> Gowitness
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+              <input type="checkbox" name="display_ffuf" class="accent-cyan-500"> FFuF
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+              <input type="checkbox" name="display_zero" class="accent-cyan-500"> Port 0
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+              <input type="checkbox" name="display_completed" class="accent-cyan-500"> Completed
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+              <input type="checkbox" name="display_notes" class="accent-cyan-500"> Notes
+            </label>
           </div>
+        </div>
+
+        <!-- Search button -->
+        <button type="submit"
+                class="ml-auto self-end px-5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded transition-colors">
+          Search
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading bar -->
+  <div id="loading-bar"
+       class="htmx-indicator shrink-0 items-center gap-2 px-4 py-1.5 bg-cyan-900/40 border-b border-cyan-700/40 text-cyan-400 text-xs">
+    <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    Loading…
+  </div>
+
+  <!-- Sidebar + results -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-44 bg-gray-800/60 border-r border-gray-700 flex flex-col shrink-0 overflow-hidden">
+      <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-700 shrink-0">
+        IP Addresses
+      </div>
+      <nav id="sidebar-ip-list" class="flex-1 overflow-y-auto py-1">
+        <p class="px-3 py-3 text-xs text-gray-600 italic">Run a search…</p>
+      </nav>
+    </aside>
+
+    <!-- Results -->
+    <div class="flex-1 overflow-y-auto">
+      <div id="host-results" class="min-h-full">
+        <div class="flex items-center justify-center h-48 text-gray-600 text-sm">
+          Set your filters above and click Search
         </div>
       </div>
     </div>
+
   </div>
-</div>
-<div class="container">
-  
-  <div class="row">
-    <div class="col-md-12">
-      <form action="#" id="search_form">
-        <div id="options_form" class="collapse show" >
-          <div class="card">
-            <div class="card-body">
-              
-                {% csrf_token %}
-                <div class="row">
-                  <div class="col-md-3">
-                    Search
-                  </div>
-                  <div class="col-md-9">
-                    <input type="text" id="search_terms" name="search">
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-md-3">
-                    Scope Type
-                  </div>
-                  <div class="col-md-3">
-                    <select name="scope" id="search_scope">
-                      <option value="active">Active</option>
-                      <option value="passive">Passive</option>
-                      <option value="all">All</option>
-                    </select>
-                  </div>
-                  <div class="col-md-3">
-                    Display All Notes
-                  </div>
-                  <div class="col-md-3">
-                    <input type="checkbox" name="display_notes">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div id="data_options_form" class="collapse show">
-            <div class="card">
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-3">
-                    Display Port 0
-                  </div>
-                  <div class="col-md-3">
-                    <input type="checkbox" name="display_zero">
-                  </div>
-                  <div class="col-md-3">
-                    Display All Data
-                  </div>
-                  <div class="col-md-3">
-                    <input type="checkbox" checked name="display_all">
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-md-3">
-                    Display Nessus
-                  </div>
-                  <div class="col-md-3">
-                    <input type="checkbox" name="display_nessus">
-                  </div>
-                  <div class="col-md-3">
-                    Display Gowitness
-                  </div>
-                  <div class="col-md-3">
-                    <input type="checkbox" name="display_gowitness">
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-md-3">
-                    Display FFuF
-                  </div>
-                  <div class="col-md-3">
-                    <input type="checkbox" name="display_ffuf">
-                  </div>
-                  <div class="col-md-3">
-                    Display Completed
-                  </div>
-                  <div class="col-md-3">
-                    <input type="checkbox" name="display_completed">
-                  </div>
-                </div>
-              </div>
-            </div> 
-          </div>
-          <div id="page_options_form" class="collapse show">
-            <div class="card">
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-3">
-                    Items Per Page
-                  </div>
-                  <div class="col-md-3">
-                    <input type="input" id="entries" name="entries" value="50" />
-                  </div>
-                  <div class="col-md-3">
-                    Page Number
-                  </div>
-                  <div class="col-md-3">
-                    <input type="input" id="page" name="page" value="1" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          
+{% endblock %}
 
-          
-          
-
-        </div>
-      </form>
+{% block extra_body %}
+{# Tag management modal #}
+<div id="tag-modal"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+     onclick="if(event.target===this)closeTagModal()">
+  <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-xl w-96 max-h-[80vh] flex flex-col">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700 shrink-0">
+      <h3 class="text-sm font-semibold text-gray-200">Manage Tags</h3>
+      <button onclick="closeTagModal()" class="text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors">×</button>
     </div>
+    <div id="tag-modal-body" class="p-4 overflow-y-auto"></div>
   </div>
 </div>
 
-<div id="host_results">
+<script>
+  document.body.addEventListener('htmx:configRequest', (e) => {
+    const tok = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (tok) e.detail.headers['X-CSRFToken'] = tok.value;
+  });
 
+  function openTagModal(type, id) {
+    document.getElementById('tag-modal').classList.remove('hidden');
+    htmx.ajax('GET', '/host_summary/tags/' + type + '/' + id, {
+      target: '#tag-modal-body', swap: 'innerHTML'
+    });
+  }
+  function closeTagModal() {
+    document.getElementById('tag-modal').classList.add('hidden');
+    document.getElementById('tag-modal-body').innerHTML = '';
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeTagModal();
+  });
 
- 
-</div>
-</div>
-  <footer class="text-muted">
-    <div class="container">
-      <p class="float-right">
-        <a href="#">Back to top</a>
-      </p>
-    </div>
-  </footer>
-    <script>
+  document.body.addEventListener('htmx:afterSwap', (e) => {
+    htmx.process(e.detail.target);
+  });
 
-        function load_data(id, data) {
-            var ip = id.split('-')[2];
-            var port = id.split('-')[3];
-            d = $( '#' + data + '-' + ip + '-' + port);
-            if (d.is(':empty') ) {
-                d.load("data/" + data + "-" + ip.replace(/_/g, '.') + '-'+ port +'.html');
-                
-            } else {
-                d.html("");
-                
-            }
-            return false;
-        }
-        $(document).on('change', '.notesave', function(e){
-          var pkid = e.target.id.split('-')[2];
-          $.post('save_notes/' + pkid, { data: e.target.value}, function(result) {});
-        })
+  function toggleTool(url, targetId) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    if (target.innerHTML.trim()) {
+      target.innerHTML = '';
+    } else {
+      htmx.ajax('GET', url, { target: '#' + targetId, swap: 'innerHTML' });
+    }
+  }
 
-        $(document).on('click', '.submitbutton', function(e) {
-          var form = $('#search_form');
-          var data = form.serialize();
-          
-          $.ajax({
-            method:"post",
-            url:"host_data",
-            data: data,
-            dataType: "json",
-            beforeSend:function() {
-              $('#host_results').html("<h1>Loading data, please wait...</h1>");
-            },
-            success:function(json){
-              $('#host_results').html(json.hostdata);
-              $('#sidebar_results').html(json.sidebardata);
-            }
-          })
+  function toggleSection(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden');
+  }
 
-          return false;
+  function goToPage(pageNum) {
+    document.getElementById('page-input').value = pageNum;
+    htmx.trigger(document.getElementById('search-form'), 'submit');
+  }
 
-        });
+  function editService(portId) {
+    document.getElementById('svc-display-' + portId).classList.add('hidden');
+    document.getElementById('svc-edit-' + portId).classList.add('hidden');
+    document.getElementById('svc-input-' + portId).classList.remove('hidden');
+    document.getElementById('svc-save-' + portId).classList.remove('hidden');
+    document.getElementById('svc-cancel-' + portId).classList.remove('hidden');
+    document.getElementById('svc-input-' + portId).focus();
+  }
 
-        $(document).on('click', '.pagenav', function(e) {
-          e.preventDefault();
-          id = e.target.id;
-          page_field = $('#page');
+  function cancelService(portId) {
+    document.getElementById('svc-display-' + portId).classList.remove('hidden');
+    document.getElementById('svc-edit-' + portId).classList.remove('hidden');
+    document.getElementById('svc-input-' + portId).classList.add('hidden');
+    document.getElementById('svc-save-' + portId).classList.add('hidden');
+    document.getElementById('svc-cancel-' + portId).classList.add('hidden');
+  }
 
-          page_field[0].value = id;
- 
-          var form = $('#search_form');
-          var data = form.serialize();
-          
-          $.ajax({
-            method:"post",
-            url:"host_data",
-            data: data,
-            dataType: "json",
-            beforeSend:function() {
-              $('#host_results').html("<h1>Loading data, please wait...</h1>");
-            },
-            success:function(json){
-              $('#host_results').html(json.hostdata);
-              $('#sidebar_results').html(json.sidebardata);
-            }
-          })
-
-          return false;
-        });
-        $(document).on('click','.loadunload',function(e){
-          e.preventDefault();
-          id = e.target.id;
-          dest = e.target.href
-          
-          var n = id.split('-')[1];
-          var i = id.split('-')[2];
-
-          d = $( '#' + n + '-' + i );
-          if (d.is(':empty') ) {
-                d.load(dest);
-                
-          } else {
-                d.html("");
-                
-          }
-          return false; 
-
-        });
-
-
-
-        $(document).on('click','.httptoggle',function(e){
-          e.preventDefault();
-          id = e.target.id;
-          var ip = id.split('-')[2];
-          var port = id.split('-')[3];
-          d = $( '#http-' + ip + '-' + port);
-          d.toggle();
-          return false;
-
-        });
-
-        $(document).on('click', '.completed', function(e) {
-          e.preventDefault();
-          id = e.target.id;
-          var ip_id = id.split('-')[1];
-
-          $.ajax({
-            method:"get",
-            url:"toggle_completed/"+ip_id,
-            
-
-            success:function(res){
-              if ( e.target.classList.contains('btn-info')) {
-                e.target.classList.remove('btn-info');
-                e.target.classList.add('btn-success');
-                e.target.innerHTML = 'Unmark Done';
-              } else {
-                e.target.classList.remove('btn-success');
-                e.target.classList.add('btn-info');
-                e.target.innerHTML = 'Mark Done';
-              }; 
-            }
-          })
-        });
-
-        $("#menu-toggle").click(function(e) {
-          e.preventDefault();
-          $("#wrapper").toggleClass("active");
-        });
-    </script>
+  function saveService(portId) {
+    const val = document.getElementById('svc-input-' + portId).value.trim();
+    htmx.ajax('POST', '/host_summary/save_service_name/' + portId, {
+      values: { service_name: val },
+      target: '#svc-wrapper-' + portId,
+      swap: 'innerHTML',
+    });
+  }
+</script>
 {% endblock %}

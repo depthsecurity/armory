@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Armory shared styling foundation.
+ *
+ * These component classes are the reusable vocabulary for all Armory webapps.
+ * Stick to them (instead of long utility-class strings) so that templates stay
+ * readable and so new webapps render correctly without rebuilding this file.
+ *
+ * Theme: light by default, dark when `dark` is present on <html>.
+ * Rebuild after editing:  cd tailwind && npm run build
+ */
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800 transition-colors duration-200;
+    @apply dark:bg-slate-950 dark:text-slate-200;
+  }
+
+  a {
+    @apply text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-slate-900 dark:text-slate-100;
+  }
+
+  hr {
+    @apply border-slate-200 dark:border-slate-800;
+  }
+
+  code, pre {
+    @apply font-mono;
+  }
+}
+
+@layer components {
+  /* ---- Layout ---------------------------------------------------------- */
+  .armory-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* ---- Top navigation -------------------------------------------------- */
+  .armory-navbar {
+    @apply sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur;
+    @apply dark:border-slate-800 dark:bg-slate-900/80;
+  }
+
+  .nav-link {
+    @apply rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors;
+    @apply hover:bg-slate-100 hover:text-slate-900;
+    @apply dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
+  }
+
+  .nav-link-active {
+    @apply bg-brand-50 text-brand-700 hover:bg-brand-100 hover:text-brand-800;
+    @apply dark:bg-brand-900/40 dark:text-brand-200 dark:hover:bg-brand-900/60 dark:hover:text-brand-100;
+  }
+
+  /* ---- Cards ----------------------------------------------------------- */
+  .armory-card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm transition;
+    @apply hover:shadow-md hover:border-slate-300;
+    @apply dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700;
+  }
+
+  .armory-card-body {
+    @apply p-5;
+  }
+
+  .armory-card-title {
+    @apply text-base font-semibold text-slate-900 dark:text-slate-100;
+  }
+
+  .armory-card-text {
+    @apply mt-1 text-sm text-slate-600 dark:text-slate-400;
+  }
+
+  /* ---- Section heading ------------------------------------------------- */
+  .armory-section-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400;
+  }
+
+  /* ---- Badges ---------------------------------------------------------- */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-primary {
+    @apply bg-brand-100 text-brand-800 dark:bg-brand-900/50 dark:text-brand-200;
+  }
+  .badge-info {
+    @apply bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-200;
+  }
+  .badge-dark {
+    @apply bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100;
+  }
+  .badge-secondary {
+    @apply bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300;
+  }
+  .badge-success {
+    @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200;
+  }
+  .badge-warning {
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200;
+  }
+  .badge-danger {
+    @apply bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200;
+  }
+  .badge-outline-success {
+    @apply ring-1 ring-emerald-500 text-emerald-700 dark:ring-emerald-400 dark:text-emerald-300;
+  }
+  .badge-outline-info {
+    @apply ring-1 ring-sky-500 text-sky-700 dark:ring-sky-400 dark:text-sky-300;
+  }
+
+  /* ---- Buttons --------------------------------------------------------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+    @apply dark:focus:ring-offset-slate-900;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+    @apply dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700;
+  }
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+    @apply dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
+  }
+
+  /* ---- Form inputs ----------------------------------------------------- */
+  .armory-input {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm;
+    @apply placeholder:text-slate-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500;
+    @apply dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500;
+  }
+
+  /* ---- Theme toggle slider -------------------------------------------- */
+  .theme-switch {
+    @apply relative inline-flex h-7 w-14 cursor-pointer items-center rounded-full bg-slate-200 transition-colors;
+    @apply dark:bg-slate-700;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900;
+  }
+  /* Static sun/moon markers on the ends of the track. */
+  .theme-switch svg {
+    @apply pointer-events-none absolute h-3.5 w-3.5;
+  }
+  .theme-switch .icon-sun {
+    @apply left-1.5 text-amber-500;
+  }
+  .theme-switch .icon-moon {
+    @apply right-1.5 text-slate-400 dark:text-slate-200;
+  }
+  /* The sliding knob: left in light mode, right in dark mode. */
+  .theme-switch-knob {
+    @apply absolute left-0.5 inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform;
+    @apply dark:bg-slate-900;
+  }
+  .dark .theme-switch-knob {
+    @apply translate-x-7;
+  }
+}

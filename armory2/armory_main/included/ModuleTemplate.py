@@ -39,11 +39,11 @@ def get_docker_run(obj):
     binary = f"docker run -it --rm {obj.args.docker_options[1:-1]} {docker_extra} -v \"{base_path}:{base_path}\" {obj.docker_name} "
 
     if hasattr(obj, 'docker_run_binary'):
-        binary += f" {self.docker_run_binary}"
+        binary += f" {obj.docker_run_binary}"
 
     return binary
 
-def get_binary(obj):
+def get_binary(obj, args):
     use_docker = False
 
     if obj.docker_name and obj.use_docker:
@@ -52,10 +52,10 @@ def get_binary(obj):
         return binary
 
 
-    if not obj.args.binary:
+    if not args.binary:
         binary = which.run(obj.binary_name)
     else:
-        binary = which.run(obj.args.binary)
+        binary = which.run(args.binary)
 
     if binary:
         resolved_path = str(Path(binary).expanduser().resolve())
@@ -72,7 +72,7 @@ def get_binary(obj):
         binary = get_docker_run(obj)
         return binary
 
-    if obj.args.no_binary:
+    if args.no_binary:
         return None
     raise Exception(
         "%s binary not found. Please explicitly provide path with --binary"
@@ -207,7 +207,7 @@ class ToolTemplate(ModuleTemplate):
         elif self.args.profile4:
             self.args.tool_args += " " + self.args.profile4_data
 
-        self.binary = get_binary(self)
+        self.binary = get_binary(self, args)
         
         if self.args.timeout and self.args.timeout != "0":
             timeout = int(self.args.timeout)
@@ -366,7 +366,7 @@ class ToolTemplateNoOutput(ToolTemplate):
         elif args.profile4:
             args.tool_args += " " + args.profile4_data
 
-        self.binary = get_binary(self)
+        self.binary = get_binary(self, args)
 
         
         if args.timeout and args.timeout != "0":

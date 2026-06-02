@@ -1,18 +1,28 @@
-          {% for domain in domains %}
-            <div class="row">
-              <div class="col-md-1"></div>
-              <div class="col-md-5 d-flex align-items-center flex-wrap">
-                <p class="mb-0 mr-2">{{ domain.name }}</p>
-                <a href="https://{{ domain.name }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-info" title="Open https://{{ domain.name }} in a new tab" aria-label="Open https://{{ domain.name }} in a new tab">↗</a>
-              </div>
-              
+<div class="space-y-1">
+  {% for domain in domains %}
+  <div class="grid grid-cols-12 items-center gap-3 rounded-md bg-white px-3 py-1.5 dark:bg-slate-900">
 
-              <div class="col-md-1" align="center">
-                <input type="checkbox" class = "changescope" id="domain-active-{{ domain.id }}" {% if domain.active_scope %} checked {% endif %} >
-              </div>
-              <div class="col-md-1" align="center">
-                <input type="checkbox" class = "changescope" id="domain-passive-{{ domain.id }}" {% if domain.passive_scope %} checked {% endif %} >
-              </div>
+    <div class="col-span-1"></div>
 
-            </div>
-          {% endfor %}
+    <div class="col-span-5 flex min-w-0 flex-wrap items-center gap-2">
+      <span class="truncate text-sm text-slate-700 dark:text-slate-300">{{ domain.name }}</span>
+      {% if domain.active_scope %}<span class="badge badge-success">Active</span>{% endif %}
+      {% if domain.passive_scope %}<span class="badge badge-info">Passive</span>{% endif %}
+      <a href="https://{{ domain.name }}" target="_blank" rel="noopener noreferrer"
+         class="btn btn-ghost px-2 py-0.5 text-xs"
+         title="Open https://{{ domain.name }} in a new tab"
+         aria-label="Open https://{{ domain.name }} in a new tab">↗</a>
+    </div>
+
+    <div class="col-span-1 text-center">
+      <input type="checkbox" class="changescope h-4 w-4 cursor-pointer accent-brand-600"
+             id="domain-active-{{ domain.id }}" {% if domain.active_scope %}checked{% endif %}>
+    </div>
+    <div class="col-span-1 text-center">
+      <input type="checkbox" class="changescope h-4 w-4 cursor-pointer accent-brand-600"
+             id="domain-passive-{{ domain.id }}" {% if domain.passive_scope %}checked{% endif %}>
+    </div>
+
+  </div>
+  {% endfor %}
+</div>

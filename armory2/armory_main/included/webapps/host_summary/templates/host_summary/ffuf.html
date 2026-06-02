@@ -1,70 +1,49 @@
-<div class="card">
-  <div class="card-header">
-    <h4>FFuF Findings</h4>
-  </div>
-
-  <div class="row">
-    {% for host, host_data in ffuf_data.items %}
-
-    <div class="col-md-6">
-
-      {% for url, data in host_data.items %}
-
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-4">
-              <p>URL</p>
-            </div>
-            <div class="col-md-8">
-              <p>{{ url }} </p>
-            </div>
+<div class="px-3 py-3">
+  <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">FFuF Results</div>
+  <div class="grid grid-cols-2 gap-3">
+  {% for host, host_data in ffuf_data.items %}
+  <div class="rounded border border-gray-700 bg-gray-800/60">
+    <div class="px-3 py-2 border-b border-gray-700 text-xs font-mono font-semibold text-cyan-300">{{ host }}</div>
+    <div class="p-3 flex flex-col gap-3">
+    {% for url, status_data in host_data.items %}
+      <div>
+        <div class="text-xs text-gray-500 mb-1.5 font-mono break-all">{{ url }}</div>
+        {% for status_code, results in status_data.items %}
+        <div class="mb-2">
+          <div class="text-xs font-semibold mb-1
+            {% if status_code >= 200 and status_code < 300 %}text-green-400
+            {% elif status_code >= 300 and status_code < 400 %}text-yellow-400
+            {% elif status_code >= 400 %}text-red-400
+            {% else %}text-gray-400{% endif %}">
+            HTTP {{ status_code }}
           </div>
-          <div class="row">
-            <div class="col-md-4">Hostname</div>
-            <div class="col-md-8">{{ host }}</div>
-          </div>
-
-          {% for header in data.headers %}
-          <div class="row">
-            <div class="col-md-4">{{ header }}</div>
-            <div class="col-md-8">{{ data.wordlist }}</div>
-          </div>
-          {% endfor %}
-          {% for status_code, status_info in data.items %}
-
-          <div class="row">
-            <div class="col-md-8">
-              Status Code - {{ status_code }}
-            </div>
-            <div class="col-md-4">
-              Size
-            </div>
-          </div>
-
-          {% for result in status_info|unique_ffuf %}
-          <div class="row">
-            <div class="col-md-8">
-              <a href="{{ result.url }}">{{ result.input }}</a>
-            </div>
-            <div class="col-md-4">
-              {{ result.length }}
-            </div>
-          </div>
-
-          {% endfor %}
-
-
-          {% endfor %}
+          <table class="w-full text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-gray-700/60">
+                <th class="text-left pb-1 text-gray-500 font-medium">Path</th>
+                <th class="text-right pb-1 text-gray-500 font-medium w-16">Size</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700/30">
+            {% for result in results|unique_ffuf %}
+            <tr class="hover:bg-gray-700/20">
+              <td class="py-0.5 pr-2">
+                <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer"
+                   class="text-cyan-400 hover:text-cyan-300 font-mono hover:underline break-all">{{ result.input }}</a>
+              </td>
+              <td class="py-0.5 text-right font-mono text-gray-400">{{ result.length }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
         </div>
+        {% endfor %}
       </div>
-
-
-
-      {% endfor %}
-    </div>
-
-    <br />
     {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <p class="col-span-2 text-xs text-gray-600 px-1 italic">No FFuF data.</p>
+  {% endfor %}
   </div>
 </div>

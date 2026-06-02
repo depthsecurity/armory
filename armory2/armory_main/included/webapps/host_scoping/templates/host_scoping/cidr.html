@@ -1,40 +1,66 @@
- <div class="row">
-    <div class="col-md-12">
-      <div class="card">
-        <div class="card-body">
-            <div class="row">
-              <div class="col-md-5">
-                <p data-toggle="tooltip" data-html="true" title="<pre>{{ cidr.meta.whois }}</pre>">{{ cidr.name }}</p>
-              </div>
-              <div class="col-md-1" align="center">
+<div class="armory-card">
+  <div class="armory-card-body">
+    <div class="grid grid-cols-12 items-center gap-3">
 
-                {% if cidr.ipaddress_set.all %}
-                <button type="button" class="btn btn-info loadips" href="{% url 'scoping.get_ips' cidr.id %}"  id="button-ips-{{ cidr.id }}" >
-                  IPs
-                </button>
-                {% endif %}
-              </div>  
-              <div class="col-md-1" align="center">
-                <input type="checkbox" class = "changescope" id="cidr-active-{{ cidr.id }}" {% if cidr.active_scope %} checked {% endif %} >
-              </div>
-              <div class="col-md-1" align="center">
-                <input type="checkbox" class = "changescope" id="cidr-passive-{{ cidr.id }}" {% if cidr.passive_scope %} checked {% endif %} >
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-clear-active-{{ cidr.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-set-active-{{ cidr.id }}" title="Sets all active scoping for this item and all child items">Set</button>
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-clear-passive-{{ cidr.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-set-passive-{{ cidr.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
-              </div>
-            </div>
-            <div id="ips-{{ cidr.id }}-list"></div>
-        </div>
+      <div class="col-span-4 flex min-w-0 flex-wrap items-center gap-2">
+        <p class="truncate font-medium text-slate-900 dark:text-slate-100">{{ cidr.name }}</p>
+        {% with act_state=cidr.active_scope_state pas_state=cidr.passive_scope_state %}
+          {% if act_state == 'all' %}<span class="badge badge-success" title="All Active">Active</span>
+          {% elif act_state == 'some' %}<span class="badge badge-outline-success" title="Partially Active">Active</span>{% endif %}
+          {% if pas_state == 'all' %}<span class="badge badge-info" title="All Passive">Passive</span>
+          {% elif pas_state == 'some' %}<span class="badge badge-outline-info" title="Partially Passive">Passive</span>{% endif %}
+        {% endwith %}
+
+        {# WHOIS: hover the badge for the owner, click it for the full record. #}
+        <span class="group/whois relative inline-flex shrink-0">
+          <button type="button"
+                  class="whois-trigger inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] font-semibold leading-none text-slate-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 dark:border-slate-600 dark:text-slate-400 dark:hover:border-brand-500 dark:hover:bg-slate-700 dark:hover:text-brand-300"
+                  data-cidr="{{ cidr.name }}" data-whois-id="whois-data-{{ cidr.id }}"
+                  aria-label="WHOIS for {{ cidr.name }}">i</button>
+          <span class="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 hidden max-w-xs -translate-x-1/2 whitespace-normal break-words rounded-md bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg group-hover/whois:block dark:bg-slate-700">
+            {{ cidr.org_name|default:"Unknown owner" }}
+          </span>
+        </span>
       </div>
+
+      <div class="col-span-2 text-center">
+        {% if cidr.ipaddress_set.all %}
+        <button type="button" class="btn btn-secondary whitespace-nowrap px-2 py-1 text-xs loadips"
+                id="button-ips-{{ cidr.id }}">{{ cidr.ipaddress_set.count }} IPs ({{ cidr.domain_count }} Domains)</button>
+        {% endif %}
+      </div>
+
+      <div class="col-span-1 text-center">
+        <input type="checkbox" class="changescope h-4 w-4 cursor-pointer accent-brand-600"
+               id="cidr-active-{{ cidr.id }}" {% if cidr.active_scope %}checked{% endif %}>
+      </div>
+      <div class="col-span-1 text-center">
+        <input type="checkbox" class="changescope h-4 w-4 cursor-pointer accent-brand-600"
+               id="cidr-passive-{{ cidr.id }}" {% if cidr.passive_scope %}checked{% endif %}>
+      </div>
+
+      <div class="col-span-1 text-center">
+        <button class="btn btn-secondary px-2 py-1 text-xs clearscope" id="cidr-clear-active-{{ cidr.id }}"
+                title="Clears all active scoping for this item and all child items">Clear</button>
+      </div>
+      <div class="col-span-1 text-center">
+        <button class="btn btn-secondary px-2 py-1 text-xs clearscope" id="cidr-set-active-{{ cidr.id }}"
+                title="Sets all active scoping for this item and all child items">Set</button>
+      </div>
+      <div class="col-span-1 text-center">
+        <button class="btn btn-secondary px-2 py-1 text-xs clearscope" id="cidr-clear-passive-{{ cidr.id }}"
+                title="Clears all passive scoping for this item and all child items">Clear</button>
+      </div>
+      <div class="col-span-1 text-center">
+        <button class="btn btn-secondary px-2 py-1 text-xs clearscope" id="cidr-set-passive-{{ cidr.id }}"
+                title="Sets all passive scoping for this item and all child items">Set</button>
+      </div>
+
     </div>
+
+    {# Raw WHOIS payload for the modal; auto-escaped, read via .textContent in JS. #}
+    <pre id="whois-data-{{ cidr.id }}" class="hidden">{{ cidr.meta.whois }}</pre>
+
+    <div id="ips-{{ cidr.id }}-list" class="mt-3 space-y-3 empty:mt-0"></div>
   </div>
+</div>

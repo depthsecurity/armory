@@ -1,21 +1,13 @@
-<div class="card">
-  <div class="card-header">
-    <h4>XSStrike Results</h4>
-  </div>
-  <div class="card-body">
-    {% for name, output in data.items %}
-    <div class="row ">
-      <div class="col-md-12">
-        <h3>{{ name }}</h3>
-        
-        
-      </div>
-      <div class="col-md-12 text-wrap" id="detail-{{ output.id }}">
-        <pre>{{ output.text|escape }}</pre>
-        
-      </div>
-
+<div class="px-3 py-3">
+  <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">XSStrike Results</div>
+  <div class="flex flex-col gap-3">
+  {% for name, output in data.items %}
+    <div class="rounded border border-yellow-800/50 bg-yellow-900/10">
+      <div class="px-3 py-2 border-b border-yellow-800/40 text-xs font-semibold text-yellow-300">{{ name }}</div>
+      <pre class="px-3 py-2 text-gray-300 whitespace-pre-wrap break-words font-mono text-xs">{{ output.text|escape }}</pre>
     </div>
-    {% endfor %}
+  {% empty %}
+  <p class="text-xs text-gray-600 px-1 italic">No XSStrike data.</p>
+  {% endfor %}
   </div>
 </div>

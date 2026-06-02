@@ -12,7 +12,9 @@ class User(BaseModel):
     domain = models.ForeignKey(BaseDomain, on_delete=models.CASCADE)
     job_title = models.CharField(max_length=256)
     location = models.CharField(max_length=128)
-
+    tags = models.ManyToManyField(
+        'armory_main.Tag', blank=True, limit_choices_to={'type__in': ['cred', 'any']}
+    )
 
 
 class Cred(BaseModel):
@@ -20,3 +22,6 @@ class Cred(BaseModel):
     passhash = models.CharField(max_length=128, null=True)
     source = models.CharField(max_length=128)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    tags = models.ManyToManyField(
+        'armory_main.Tag', blank=True, limit_choices_to={'type__in': ['cred', 'any']}
+    )

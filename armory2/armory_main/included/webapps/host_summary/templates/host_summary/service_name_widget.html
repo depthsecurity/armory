@@ -1,0 +1,23 @@
+{% if 'http' in port.service_name %}
+<button onclick="toggleSection('http-{{ port.id }}')"
+        id="svc-display-{{ port.id }}"
+        class="text-cyan-400 hover:text-cyan-300 text-xs font-mono text-left transition-colors">{{ port.service_name }}</button>
+{% else %}
+<span id="svc-display-{{ port.id }}"
+      class="text-gray-300 text-xs font-mono">{{ port.service_name }}</span>
+{% endif %}
+<input id="svc-input-{{ port.id }}"
+       type="text"
+       value="{{ port.service_name }}"
+       class="hidden text-xs bg-gray-700 border border-gray-600 rounded px-1.5 py-0.5 text-gray-200 focus:outline-none focus:border-cyan-500 w-32"
+       onkeydown="if(event.key==='Enter'){saveService({{ port.id }})}; if(event.key==='Escape'){cancelService({{ port.id }})}">
+<button onclick="editService({{ port.id }})"
+        id="svc-edit-{{ port.id }}"
+        title="Edit service name"
+        class="opacity-0 group-hover/row:opacity-100 text-gray-600 hover:text-gray-300 text-xs px-1 transition-all">✎</button>
+<button onclick="saveService({{ port.id }})"
+        id="svc-save-{{ port.id }}"
+        class="hidden text-xs px-1.5 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white transition-colors">Save</button>
+<button onclick="cancelService({{ port.id }})"
+        id="svc-cancel-{{ port.id }}"
+        class="hidden text-xs px-1.5 py-0.5 rounded bg-gray-600 hover:bg-gray-500 text-gray-300 transition-colors">✕</button>

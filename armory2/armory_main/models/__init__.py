@@ -7,6 +7,7 @@ from django.conf import settings
 import importlib.util
 import pdb
 from .base_model import BaseModel
+from .tag import Tag
 from .network import BaseDomain, CIDR, Domain, IPAddress, Port, ToolRun, VirtualHost
 from .user import User, Cred
 from .vuln import Vulnerability, CVE, Url, VulnOutput

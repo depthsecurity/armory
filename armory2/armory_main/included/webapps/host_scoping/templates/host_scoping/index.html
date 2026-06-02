@@ -1,240 +1,148 @@
-{% extends 'armory_main/base.html' %}
+{% extends 'armory_main/base_tw.html' %}
 
 {% block content %}
-<div id="sidebar_results">
-</div>
-<style>
-    .tooltip-inner {
-    max-width: 1000px;
-    /* If max-width does not work, try using width instead */
-    /*width: 600px; */
-    text-align: left;
-    color: #fff !important;
+<div class="armory-container space-y-4">
 
-}
-    pre {
-        text-align: left;
-        color: #fff !important;
-    
-}
-.tooltip.show {
-    opacity: 1;
-    color: #fff !important;
-}
-</style>
-
-
-<div id="host_results">
-<div class="container">
-  <div class="row">
-    <div class="col-md-12">
-      
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-            </div>
-            <div class="col-md-1" align="center">
-              Active
-            </div>
-            <div class="col-md-1" align="center">
-              Passive
-            </div>
-            <div class="col-md-2" align="center">
-              Active
-            </div>
-            <div class="col-md-2" align="center">
-              Passive
-            </div>
-          </div>
-        </div>
+  {# Column header — aligns with the 12-col grid used by every row below. #}
+  <div class="armory-card z-20" style="position: sticky; top: 0;">
+    <div class="armory-card-body">
+      <div class="grid grid-cols-12 items-center gap-3">
+        <div class="col-span-6"></div>
+        <div class="col-span-1 text-center armory-section-title">Active</div>
+        <div class="col-span-1 text-center armory-section-title">Passive</div>
+        <div class="col-span-2 text-center armory-section-title">Active</div>
+        <div class="col-span-2 text-center armory-section-title">Passive</div>
       </div>
     </div>
   </div>
 
-          {% for cidr in cidrs %}
-  <div id="cidr-{{ cidr.id }}-item">
-  <div class="row">
-    <div class="col-md-12">
-      <div class="card">
-        <div class="card-body">
-            <div class="row">
-              <div class="col-md-5">
-                <p data-toggle="tooltip" data-html="true" title="<pre>{{ cidr.meta.whois }}</pre>">{{ cidr.name }}</p>
-              </div>
-              <div class="col-md-1" align="center">
-
-                {% if cidr.ipaddress_set.all %}
-                <button type="button" class="btn btn-info loadips" href="{% url 'scoping.get_ips' cidr.id %}"  id="button-ips-{{ cidr.id }}">
-                  IPs
-                </button>
-                {% endif %}
-              </div>  
-              <div class="col-md-1" align="center">
-                <input type="checkbox" class = "changescope" id="cidr-active-{{ cidr.id }}" {% if cidr.active_scope %} checked {% endif %} >
-              </div>
-              <div class="col-md-1" align="center">
-                <input type="checkbox" class = "changescope" id="cidr-passive-{{ cidr.id }}" {% if cidr.passive_scope %} checked {% endif %} >
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-clear-active-{{ cidr.id }}" title="Clears all active scoping for this item and all child items">Clear</button>
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-set-active-{{ cidr.id }}" title="Sets all active scoping for this item and all child items">Set</button>
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-clear-passive-{{ cidr.id }}" title="Clears all passive scoping for this item and all child items">Clear</button>
-              </div>
-              <div class="col-md-1" align="center">
-                <button class="btn btn-info clearscope" id="cidr-set-passive-{{ cidr.id }}" title="Sets all passive scoping for this item and all child items">Set</button>
-              </div>
-            </div>
-            <div id="ips-{{ cidr.id }}-list"></div>
-        </div>
+  {% for cidr_id in cidr_ids %}
+  <div id="cidr-{{ cidr_id }}-item"
+       hx-get="get_cidr/{{ cidr_id }}"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <div class="armory-card animate-pulse">
+      <div class="armory-card-body">
+        <div class="h-5 w-56 rounded bg-slate-200 dark:bg-slate-700"></div>
       </div>
     </div>
   </div>
-  </div>
-          {% endfor %}
-
-
-
-
+  {% endfor %}
 
 </div>
- 
-</div>
 
-<div id="scoping_results">
-
-</div>
-  <footer class="text-muted">
-    <div class="container">
-      <p class="float-right">
-        <a href="#">Back to top</a>
-      </p>
+{# Shared WHOIS modal — lives outside the swappable rows so it persists. #}
+<div id="whois-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+     role="dialog" aria-modal="true" aria-labelledby="whois-modal-title">
+  <div class="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl dark:bg-slate-900">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-slate-800">
+      <h3 id="whois-modal-title" class="text-base font-semibold"></h3>
+      <button type="button" id="whois-modal-close" class="btn btn-ghost px-2 py-1" aria-label="Close">✕</button>
     </div>
-  </footer>
-    <script>
-        $(function () {
-            $('[data-toggle="tooltip"]').tooltip()
-        })
-        $(document).on('change', '.changescope', function(e){
-          var pkid = e.target.id.split('-')[2];
-          var t = e.target.id.split('-')[0];
-          var s = e.target.id.split('-')[1];
+    <div class="overflow-auto p-5">
+      <pre id="whois-modal-body" class="whitespace-pre-wrap break-words font-mono text-xs text-slate-700 dark:text-slate-300"></pre>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
-          $.get('change_scope/' + t + '/' + s + '/' + pkid, { }, function(result) {});
-        })
+{% block extra_body %}
+<script>
+  (function () {
+    // base_tw.html does not load jQuery, so these interactions are plain
+    // fetch()/DOM calls. Element ids/classes match the markup the views render
+    // so the delegated handlers keep working after fragment swaps.
 
-        $(document).on('click', '.clearscope', function(e){
-          var pkid = e.target.id.split('-')[3];
-          var t = e.target.id.split('-')[0];
-          var s = e.target.id.split('-')[2];
-          var act = e.target.id.split('-')[1];
+    function getText(url) {
+      return fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+        .then(function (r) { return r.text(); });
+    }
 
-          if ( confirm('Are you sure you want to ' + act + ' ' + s + ' scoping on all of the child objects?' )) {
-            $.get('clear_scope/' + act + '/' + t + '/' + s + '/' + pkid, { }, function(result) {
-              if ( t == 'cidr') {
-                $( '#cidr-' + pkid + '-item' ).html(result);
-              } else {
-                $( '#ip-' + pkid + '-item').html(result);
-              }
-            });  
-            
-              
-            
-          };
-          
-        })
-        
+    // Toggle a single active/passive checkbox.  id: "{type}-{scope}-{pk}"
+    document.addEventListener("change", function (e) {
+      var el = e.target;
+      if (!el.classList || !el.classList.contains("changescope")) return;
+      var p = el.id.split("-");
+      fetch("change_scope/" + p[0] + "/" + p[1] + "/" + p[2]);
+    });
 
-        $(document).on('click','.loadips',function(e){
-          
-          var id = e.target.id;
-          
-          var i = id.split('-')[2];
-          var dest = "get_ips/" + i;
+    var modal = document.getElementById("whois-modal");
+    function closeWhois() {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
 
-          d = $( '#ips-' + i + '-list');
-          
-          if (d.is(':empty') ) {
-            $.get(dest, { }, function(result) {
-              d.html(result);
-            });  
-                  
-          } else {
-                d.html("");
-                
-          }
-                
-          
-          return false; 
+    document.addEventListener("click", function (e) {
+      // Open the WHOIS modal for a CIDR.
+      var whois = e.target.closest(".whois-trigger");
+      if (whois) {
+        e.preventDefault();
+        var dataEl = document.getElementById(whois.getAttribute("data-whois-id"));
+        var text = dataEl ? dataEl.textContent.trim() : "";
+        document.getElementById("whois-modal-title").textContent =
+          "WHOIS — " + whois.getAttribute("data-cidr");
+        document.getElementById("whois-modal-body").textContent =
+          text || "No WHOIS information available for this CIDR.";
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        return;
+      }
 
-        });
+      // Close the modal via the ✕ button or by clicking the backdrop.
+      if (e.target.closest("#whois-modal-close") || e.target === modal) {
+        closeWhois();
+        return;
+      }
 
-        $(document).on('click','.loaddomains',function(e){
-          
-          var id = e.target.id;
-          
-          var i = id.split('-')[2];
-          var dest = "get_domains/" + i;
+      // Bulk set/clear scope on an item and its children.
+      // id: "{type}-{set|clear}-{scope}-{pk}"
+      var clear = e.target.closest(".clearscope");
+      if (clear) {
+        var c = clear.id.split("-");
+        var type = c[0], act = c[1], scope = c[2], pk = c[3];
+        getText("clear_scope/" + act + "/" + type + "/" + scope + "/" + pk)
+          .then(function (html) {
+            var target = type === "cidr"
+              ? document.getElementById("cidr-" + pk + "-item")
+              : document.getElementById("ip-" + pk + "-item");
+            if (target) target.innerHTML = html;
+          });
+        return;
+      }
 
-          d = $( '#domains-' + i + '-list');
-          
-          if (d.is(':empty') ) {
-            $.get(dest, { }, function(result) {
-              d.html(result);
-            });  
-                  
-          } else {
-                d.html("");
-                
-          }
-                
-          
-          return false; 
+      // Lazy-load / collapse the IPs under a CIDR.  id: "button-ips-{pk}"
+      var loadips = e.target.closest(".loadips");
+      if (loadips) {
+        e.preventDefault();
+        var i = loadips.id.split("-")[2];
+        var box = document.getElementById("ips-" + i + "-list");
+        if (box.innerHTML.trim() === "") {
+          getText("get_ips/" + i).then(function (h) { box.innerHTML = h; });
+        } else {
+          box.innerHTML = "";
+        }
+        return;
+      }
 
-        });
+      // Lazy-load / collapse the domains under an IP.  id: "button-domains-{pk}"
+      var loaddomains = e.target.closest(".loaddomains");
+      if (loaddomains) {
+        e.preventDefault();
+        var j = loaddomains.id.split("-")[2];
+        var dbox = document.getElementById("domains-" + j + "-list");
+        if (dbox.innerHTML.trim() === "") {
+          getText("get_domains/" + j).then(function (h) { dbox.innerHTML = h; });
+        } else {
+          dbox.innerHTML = "";
+        }
+        return;
+      }
+    });
 
-        $(document).on('click','.httptoggle',function(e){
-          e.preventDefault();
-          id = e.target.id;
-          var ip = id.split('-')[2];
-          var port = id.split('-')[3];
-          d = $( '#http-' + ip + '-' + port);
-          d.toggle();
-          return false;
-
-        });
-
-        $(document).on('click', '.completed', function(e) {
-          e.preventDefault();
-          id = e.target.id;
-          var ip_id = id.split('-')[1];
-
-          $.ajax({
-            method:"get",
-            url:"toggle_completed/"+ip_id,
-            
-
-            success:function(res){
-              if ( e.target.classList.contains('btn-info')) {
-                e.target.classList.remove('btn-info');
-                e.target.classList.add('btn-success');
-                e.target.innerHTML = 'Unmark Done';
-              } else {
-                e.target.classList.remove('btn-success');
-                e.target.classList.add('btn-info');
-                e.target.innerHTML = 'Mark Done';
-              }; 
-            }
-          })
-        });
-
-        $("#menu-toggle").click(function(e) {
-          e.preventDefault();
-          $("#wrapper").toggleClass("active");
-        });
-    </script>
+    // Dismiss the WHOIS modal with the Escape key.
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) closeWhois();
+    });
+  })();
+</script>
 {% endblock %}

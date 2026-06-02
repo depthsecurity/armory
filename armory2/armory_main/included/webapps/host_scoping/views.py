@@ -5,7 +5,6 @@ from django.shortcuts import render, get_object_or_404
 from django.template.defaulttags import register
 from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
-import pdb
 import os
 from base64 import b64encode
 import json
@@ -17,10 +16,13 @@ import json
 #     return dictionary.get(key)
 
 def index(request):
+    cidr_ids = list(CIDR.objects.order_by('name').values_list('id', flat=True))
+    return render(request, 'host_scoping/index.html', {'cidr_ids': cidr_ids, 'title': 'Armory Web - Host Scoping'})
 
-    cidrs = CIDR.objects.all().order_by('name')
 
-    return render(request, 'host_scoping/index.html', {'cidrs': cidrs, 'title': 'Armory Web - Host Scoping'})
+def get_cidr(request, pkid):
+    obj = get_object_or_404(CIDR, pk=pkid)
+    return render(request, 'host_scoping/cidr.html', {'cidr': obj})
 
 def change_scope(request, item_type, scope_type, pkid):
 
