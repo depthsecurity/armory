@@ -200,9 +200,10 @@ class Module(ToolTemplate):
                             #     vuln.remediation = data['info']['remediation']
                             #     vuln.save()
                             name = data['info']['name']
-                            if not port_object.meta['nuclei'].get(name):
-                                
-                                port_object.meta["nuclei"][name] = data
+                            key = "{}_{}".format(name, data.get('matcher-name', ''))
+                            if not port_object.meta['nuclei'].get(key):
+
+                                port_object.meta["nuclei"][key] = data
                                 port_object.save()
 
 
