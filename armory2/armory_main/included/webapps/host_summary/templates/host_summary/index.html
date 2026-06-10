@@ -14,15 +14,18 @@
   .htmx-request .htmx-indicator { display: flex; }
   .htmx-request.htmx-indicator { display: flex; }
   ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: #111827; }
-  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  .dark ::-webkit-scrollbar-track { background: #111827; }
+  .dark ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 </style>
 {% endblock %}
 
 {% block content %}
   <!-- Filter bar -->
-  <div class="bg-gray-800 border-b border-gray-700 px-4 py-3 shrink-0 z-10">
+  <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 shrink-0 z-10">
     <form id="search-form"
           hx-post="host_data"
           hx-target="#host-results"
@@ -32,17 +35,17 @@
       <div class="flex flex-wrap gap-3 items-end">
         <!-- Search -->
         <div class="flex flex-col gap-1">
-          <label class="text-xs text-gray-500 uppercase tracking-wider">Search</label>
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Search</label>
           <input type="text" name="search"
-                 class="bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 w-56 focus:outline-none focus:border-cyan-500 placeholder-gray-500"
+                 class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 w-56 focus:outline-none focus:border-cyan-500 placeholder-slate-400 dark:placeholder-slate-500"
                  placeholder="IP, domain, service…">
         </div>
 
         <!-- Scope -->
         <div class="flex flex-col gap-1">
-          <label class="text-xs text-gray-500 uppercase tracking-wider">Scope</label>
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Scope</label>
           <select name="scope"
-                  class="bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-cyan-500">
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
             <option value="active">Active</option>
             <option value="passive">Passive</option>
             <option value="all">All</option>
@@ -51,39 +54,49 @@
 
         <!-- Per page -->
         <div class="flex flex-col gap-1">
-          <label class="text-xs text-gray-500 uppercase tracking-wider">Per Page</label>
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Per Page</label>
           <input type="number" name="entries" value="50"
-                 class="bg-gray-700 border border-gray-600 rounded px-3 py-1.5 text-sm text-gray-100 w-20 focus:outline-none focus:border-cyan-500">
+                 class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 w-20 focus:outline-none focus:border-cyan-500">
         </div>
 
         <input type="hidden" name="page" id="page-input" value="1">
 
+        <!-- Group By -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Group By</label>
+          <select name="group_by"
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <option value="ip">IP Address</option>
+            <option value="domain">Domain</option>
+          </select>
+        </div>
+
         <!-- Divider -->
-        <div class="w-px h-8 bg-gray-700 self-end mb-0.5"></div>
+        <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 self-end mb-0.5"></div>
 
         <!-- Toggles -->
         <div class="flex flex-col gap-1">
-          <label class="text-xs text-gray-500 uppercase tracking-wider">Display</label>
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Display</label>
           <div class="flex flex-wrap gap-x-4 gap-y-1">
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
               <input type="checkbox" name="display_all" checked class="accent-cyan-500"> All Data
             </label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
               <input type="checkbox" name="display_nessus" class="accent-cyan-500"> Nessus
             </label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
               <input type="checkbox" name="display_gowitness" class="accent-cyan-500"> Gowitness
             </label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
               <input type="checkbox" name="display_ffuf" class="accent-cyan-500"> FFuF
             </label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
               <input type="checkbox" name="display_zero" class="accent-cyan-500"> Port 0
             </label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
               <input type="checkbox" name="display_completed" class="accent-cyan-500"> Completed
             </label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-gray-300 hover:text-gray-100">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
               <input type="checkbox" name="display_notes" class="accent-cyan-500"> Notes
             </label>
           </div>
@@ -100,7 +113,7 @@
 
   <!-- Loading bar -->
   <div id="loading-bar"
-       class="htmx-indicator shrink-0 items-center gap-2 px-4 py-1.5 bg-cyan-900/40 border-b border-cyan-700/40 text-cyan-400 text-xs">
+       class="htmx-indicator shrink-0 items-center gap-2 px-4 py-1.5 bg-cyan-50 dark:bg-cyan-900/40 border-b border-cyan-200 dark:border-cyan-700/40 text-cyan-700 dark:text-cyan-400 text-xs">
     <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -112,19 +125,19 @@
   <div class="flex flex-1 overflow-hidden">
 
     <!-- Sidebar -->
-    <aside class="w-44 bg-gray-800/60 border-r border-gray-700 flex flex-col shrink-0 overflow-hidden">
-      <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-700 shrink-0">
+    <aside class="w-44 bg-slate-100/60 dark:bg-slate-800/60 border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 overflow-hidden">
+      <div class="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700 shrink-0">
         IP Addresses
       </div>
       <nav id="sidebar-ip-list" class="flex-1 overflow-y-auto py-1">
-        <p class="px-3 py-3 text-xs text-gray-600 italic">Run a search…</p>
+        <p class="px-3 py-3 text-xs text-slate-400 dark:text-slate-600 italic">Run a search…</p>
       </nav>
     </aside>
 
     <!-- Results -->
     <div class="flex-1 overflow-y-auto">
       <div id="host-results" class="min-h-full">
-        <div class="flex items-center justify-center h-48 text-gray-600 text-sm">
+        <div class="flex items-center justify-center h-48 text-slate-400 dark:text-slate-600 text-sm">
           Set your filters above and click Search
         </div>
       </div>
@@ -138,10 +151,10 @@
 <div id="tag-modal"
      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60"
      onclick="if(event.target===this)closeTagModal()">
-  <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-xl w-96 max-h-[80vh] flex flex-col">
-    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700 shrink-0">
-      <h3 class="text-sm font-semibold text-gray-200">Manage Tags</h3>
-      <button onclick="closeTagModal()" class="text-gray-500 hover:text-gray-200 text-xl leading-none transition-colors">×</button>
+  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl w-96 max-h-[80vh] flex flex-col">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 shrink-0">
+      <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">Manage Tags</h3>
+      <button onclick="closeTagModal()" class="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xl leading-none transition-colors">×</button>
     </div>
     <div id="tag-modal-body" class="p-4 overflow-y-auto"></div>
   </div>

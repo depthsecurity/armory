@@ -290,9 +290,27 @@ class VirtualHost(BaseModel):
     name = models.CharField(max_length=256)
     port = models.ForeignKey("Port", on_delete=models.CASCADE, blank=True, null=True)
     active = models.BooleanField(default=True)
+    domain = models.ForeignKey(
+        Domain, on_delete=models.SET_NULL, blank=True, null=True, related_name="virtualhosts"
+    )
 
     def __str__(self):
         return f"{self.ip_address}[{self.name}]"
+
+    def save(self, *args, **kwargs):
+        if not self.domain_id and self.name and not validate_ip(self.name):
+            domain = Domain.objects.filter(name=self.name).first()
+            if not domain:
+                d = Domain(
+                    name=self.name,
+                    active_scope=self.active_scope,
+                    passive_scope=self.passive_scope,
+                    whois="",
+                )
+                d.save()
+                domain = Domain.objects.filter(name=self.name).first()
+            self.domain = domain
+        super().save(*args, **kwargs)
 
 
 class Port(BaseModel):

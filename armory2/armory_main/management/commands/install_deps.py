@@ -5,8 +5,6 @@ import tempfile
 import subprocess
 from django.core.management.base import BaseCommand, CommandError
 from armory2.armory_cmd import list_modules, list_reports, load_module
-import pdb
-import re
 
 class Command(BaseCommand):
     help = "Load all modules and reports, check their requirements, and consolidate into one list"
@@ -191,22 +189,41 @@ class Command(BaseCommand):
         self.stdout.write(f"Successfully installed {library}")
 
 
+    def _in_pipx_env(self):
+        """Return True if the current Python is inside a pipx-managed venv."""
+        pipx_home = os.environ.get('PIPX_HOME', os.path.expanduser('~/.local/share/pipx'))
+        venvs_path = os.path.join(pipx_home, 'venvs') + os.sep
+        return sys.executable.startswith(venvs_path)
+
+    def _pipx_app_name(self):
+        """Derive the pipx app name from the executable path."""
+        pipx_home = os.environ.get('PIPX_HOME', os.path.expanduser('~/.local/share/pipx'))
+        venvs_path = os.path.join(pipx_home, 'venvs') + os.sep
+        rel = sys.executable[len(venvs_path):]
+        return rel.split(os.sep)[0]
+
+    def _in_uv_tool_env(self):
+        """Return True if the current Python is inside a uv tool-managed venv."""
+        uv_tools_path = os.path.expanduser('~/.local/share/uv/tools') + os.sep
+        return sys.executable.startswith(uv_tools_path)
+
     def build_install_command(self, requirements, single=False):
-        try:
-            import pip
+        if self._in_pipx_env():
+            app_name = self._pipx_app_name()
+            self.stdout.write(f"Detected pipx environment (app: {app_name}), using pipx inject")
             if single:
-                cmd = [sys.executable, '-m', 'pip', 'install', requirements]
+                return ['pipx', 'inject', app_name, requirements]
             else:
-                cmd = [sys.executable, '-m', 'pip', 'install', '-r', requirements]
-            
-        except Exception as e:
-        
-            # check if uv is installed
+                return ['pipx', 'inject', app_name, '-r', requirements]
+
+        if self._in_uv_tool_env():
+            self.stdout.write("Detected uv tool environment, using uv tool install --with")
             if single:
-                cmd = ['uv', 'tool', 'install', '--with', requirements, 'depth-armory']
+                return ['uv', 'tool', 'install', '--with', requirements, 'depth-armory']
             else:
-                cmd = ['uv', 'tool', 'install', '--with-requirements', requirements, 'depth-armory']
-            
+                return ['uv', 'tool', 'install', '--with-requirements', requirements, 'depth-armory']
 
-
-        return cmd
+        if single:
+            return [sys.executable, '-m', 'pip', 'install', requirements]
+        else:
+            return [sys.executable, '-m', 'pip', 'install', '-r', requirements]
