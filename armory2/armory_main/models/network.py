@@ -258,7 +258,8 @@ class IPAddress(BaseModel):
 
     @classmethod
     def get_sorted(
-        cls, scope_type=None, search=None, display_zero=False, page_num=1, entries=50
+        cls, scope_type=None, search=None, display_zero=False, page_num=1, entries=50,
+        tag_filter=None, vuln_source=None,
     ):
         if scope_type == "active":
             qry = cls.objects.filter(active_scope=True)
@@ -275,10 +276,14 @@ class IPAddress(BaseModel):
                 Q(ip_address__icontains=search) | Q(domain__name__icontains=search)
             )
 
-        res = []
+        if tag_filter:
+            qry = qry.filter(tags__name=tag_filter).distinct()
+
+        if vuln_source:
+            qry = qry.filter(port__vulnerability__source__iexact=vuln_source).distinct()
+
         total = qry.count()
 
-        # pdb.set_trace()
         return (
             qry.order_by("ip_address")[(page_num - 1) * entries : page_num * entries],
             total,

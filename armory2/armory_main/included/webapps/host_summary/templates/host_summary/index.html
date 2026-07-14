@@ -71,6 +71,30 @@
           </select>
         </div>
 
+        <!-- Tag filter -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Tag</label>
+          <select name="tag_filter"
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <option value="">Any</option>
+            {% for tag in tags %}
+            <option value="{{ tag.name }}">{{ tag.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Vuln source filter -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Vuln Source</label>
+          <select name="vuln_source"
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <option value="">Any</option>
+            {% for source in vuln_sources %}
+            <option value="{{ source }}">{{ source|capfirst }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
         <!-- Divider -->
         <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 self-end mb-0.5"></div>
 

@@ -85,6 +85,8 @@ class Module(ToolTemplateNoOutput):
                 "target": url,
                 "output": os.path.join(output_path, f"{safe}.json"),
                 "domain_name": hostname,
+                "scheme": scheme,
+                "port_number": port_num,
             })
 
         if args.host:
@@ -158,6 +160,8 @@ class Module(ToolTemplateNoOutput):
             output_file = cmd["output"]
             target = cmd["target"]
             domain_name = cmd["domain_name"]
+            port_number = cmd.get("port_number")
+            scheme = cmd.get("scheme")
 
             if not os.path.exists(output_file):
                 display_warning(f"No output file for {target}: {output_file}")
@@ -181,6 +185,16 @@ class Module(ToolTemplateNoOutput):
 
             domain.meta["cms_detector"] = data
 
+            matching_ports = []
+            if port_number and scheme:
+                matching_ports = list(
+                    Port.objects.filter(
+                        ip_address__in=domain.ip_addresses.all(),
+                        port_number=port_number,
+                        service_name=scheme,
+                    )
+                )
+
             if data.get("detected") and data.get("matches"):
                 for match in data["matches"]:
                     cms_name = match.get("name", "").lower().replace(" ", "_")
@@ -191,6 +205,8 @@ class Module(ToolTemplateNoOutput):
                         defaults={"type": Tag.TYPE_DOMAIN},
                     )
                     domain.tags.add(tag)
+                    for port in matching_ports:
+                        port.tags.add(tag)
                     display_new(f"[CMS_Detector] {domain_name}: detected {cms_name}")
             else:
                 display_warning(f"[CMS_Detector] {domain_name}: no CMS detected")

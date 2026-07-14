@@ -160,7 +160,15 @@ def escape_ansi(line):
 
 
 def index(request):
-    return render(request, 'host_summary/index.html', {'title': 'Host Summary'})
+    tags = Tag.objects.all().order_by('name')
+    vuln_sources = list(
+        Vulnerability.objects.values_list('source', flat=True).distinct().order_by('source')
+    )
+    return render(request, 'host_summary/index.html', {
+        'title': 'Host Summary',
+        'tags': tags,
+        'vuln_sources': vuln_sources,
+    })
 
 
 def _build_port_data(ip, display_zero, nessus, gowitness, ffuf):
@@ -276,6 +284,8 @@ def _make_page_data(page, total, entries):
 def get_hosts(request):
     scope_type = request.POST.get('scope', 'active')
     search = request.POST.get('search')
+    tag_filter = request.POST.get('tag_filter') or None
+    vuln_source = request.POST.get('vuln_source') or None
     page = int(request.POST.get('page', '1'))
     entries = int(request.POST.get('entries', '50'))
     group_by = request.POST.get('group_by', 'ip')
@@ -293,11 +303,13 @@ def get_hosts(request):
         return _get_hosts_by_domain(
             request, scope_type, search, page, entries,
             display_notes, display_zero, display_complete, ffuf, gowitness, nessus,
+            tag_filter=tag_filter, vuln_source=vuln_source,
         )
 
     ips, total = IPAddress.get_sorted(
         scope_type=scope_type, search=search,
-        display_zero=display_zero, page_num=page, entries=entries
+        display_zero=display_zero, page_num=page, entries=entries,
+        tag_filter=tag_filter, vuln_source=vuln_source,
     )
 
     page_data = _make_page_data(page, total, entries)
@@ -329,7 +341,7 @@ def get_hosts(request):
 
 def _get_hosts_by_domain(request, scope_type, search, page, entries,
                           display_notes, display_zero, display_complete,
-                          ffuf, gowitness, nessus):
+                          ffuf, gowitness, nessus, tag_filter=None, vuln_source=None):
     qry = Domain.objects.filter(is_ptr=False)
 
     if scope_type == 'active':
@@ -345,6 +357,14 @@ def _get_hosts_by_domain(request, scope_type, search, page, entries,
     if search:
         qry = qry.filter(
             Q(name__icontains=search) | Q(ip_addresses__ip_address__icontains=search)
+        ).distinct()
+
+    if tag_filter:
+        qry = qry.filter(tags__name=tag_filter).distinct()
+
+    if vuln_source:
+        qry = qry.filter(
+            ip_addresses__port__vulnerability__source__iexact=vuln_source
         ).distinct()
 
     total = qry.count()
