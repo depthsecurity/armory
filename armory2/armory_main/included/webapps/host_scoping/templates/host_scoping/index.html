@@ -110,6 +110,17 @@
         return;
       }
 
+      // Toggle the cloud flag on an IP.  id: "ip-cloud-{pk}"
+      var cloud = e.target.closest(".cloudtoggle");
+      if (cloud) {
+        e.preventDefault();
+        var cpk = cloud.id.split("-")[2];
+        getText("toggle_cloud/" + cpk).then(function (html) {
+          cloud.outerHTML = html;
+        });
+        return;
+      }
+
       // Lazy-load / collapse the IPs under a CIDR.  id: "button-ips-{pk}"
       var loadips = e.target.closest(".loadips");
       if (loadips) {

@@ -124,6 +124,13 @@ def clear_scope(request, act, item_type, scope_type, pkid):
         return render(request, 'domain_scoping/domain.html', {'domain':obj})
 
 
+def toggle_cloud(request, pkid):
+    ip = get_object_or_404(IPAddress, pk=pkid)
+    ip.cloud = not ip.cloud
+    ip.save()
+    return render(request, 'domain_scoping/_cloud_toggle.html', {'ip': ip})
+
+
 def get_ips(request, pkid):
     obj = get_object_or_404(Domain, pk=pkid)
 

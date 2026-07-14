@@ -1,0 +1,27 @@
+{% comment %}
+One editable virtualhost-group row for an IP card. Context: vh (dict: name/active_scope/passive_scope), ip.
+Root element is .manage-row so edit/delete can swap it via hx-target="closest .manage-row".
+{% endcomment %}
+<div class="manage-row flex items-center gap-1.5 flex-wrap">
+  <span class="font-mono text-slate-700 dark:text-slate-300 break-all">{{ vh.name }}</span>
+  {% include 'host_summary/_scope_controls.html' with obj_type='vhost' ident=ip.id name=vh.name active_scope=vh.active_scope passive_scope=vh.passive_scope %}
+  <button type="button" title="Rename virtualhost"
+          onclick="editName(this, 'vhost', {{ ip.id }}, '{{ vh.name|escapejs }}', {{ ip.id }})"
+          class="text-slate-400 dark:text-slate-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors leading-none">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+    </svg>
+  </button>
+  <button type="button" title="Delete virtualhost"
+          hx-post="/host_summary/delete/vhost/{{ ip.id }}"
+          hx-vals='{"name": "{{ vh.name|escapejs }}"}'
+          hx-confirm="Delete virtualhost {{ vh.name }} on {{ ip.ip_address }}? This cannot be undone."
+          hx-target="closest .manage-row" hx-swap="outerHTML"
+          class="text-slate-400 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition-colors leading-none">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>
+  </button>
+</div>

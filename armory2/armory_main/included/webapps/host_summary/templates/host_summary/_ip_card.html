@@ -6,6 +6,8 @@
       <h2 class="font-mono font-semibold text-cyan-600 dark:text-cyan-300 text-sm tracking-wide shrink-0">
         <a href="#ip-{{ ip.id }}" class="hover:text-cyan-500 dark:hover:text-cyan-200">{{ ip.ip_address }}</a>
       </h2>
+      {% include 'host_summary/_scope_controls.html' with obj_type='ip' ident=ip.id name='' active_scope=ip.active_scope passive_scope=ip.passive_scope %}
+      {% include 'host_summary/_cloud_toggle.html' %}
       <button onclick="openTagModal('ip', {{ ip.id }})"
               class="text-slate-400 dark:text-slate-600 hover:text-cyan-600 dark:hover:text-cyan-400 text-sm font-bold leading-none transition-colors shrink-0"
               title="Manage tags">+</button>
@@ -90,27 +92,30 @@
       <span class="text-slate-500 w-20 shrink-0 font-medium pt-0.5">Domains</span>
       <div class="flex flex-col gap-1.5">
         {% for domain in ip.domain_set.all %}
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="font-mono text-slate-700 dark:text-slate-300">{{ domain.name }}</span>
-          <button onclick="openTagModal('domain', {{ domain.id }})"
-                  class="text-slate-400 dark:text-slate-600 hover:text-cyan-600 dark:hover:text-cyan-400 font-bold leading-none transition-colors"
-                  title="Manage tags">+</button>
-          <div id="domain-tags-{{ domain.id }}" class="flex flex-wrap gap-1">
-            {% for tag in domain.tags.all %}
-            <span class="px-1.5 py-0.5 rounded text-xs bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/50">{{ tag.name }}</span>
-            {% endfor %}
-          </div>
-        </div>
+        {% include 'host_summary/_domain_row.html' %}
         {% endfor %}
       </div>
     </div>
     {% endif %}
-    {% if ip.get_virtualhosts %}
+    {% with vhgroups=ip.get_virtualhost_groups %}
     <div class="flex gap-3 px-3 py-2 border-b border-slate-200/60 dark:border-slate-700/60 text-xs">
-      <span class="text-slate-500 w-20 shrink-0 font-medium">Virtualhosts</span>
-      <span class="text-slate-700 dark:text-slate-300 font-mono break-all">{{ ip.get_virtualhosts|join:", " }}</span>
+      <span class="text-slate-500 w-20 shrink-0 font-medium pt-0.5">Virtualhosts</span>
+      <div class="flex flex-col gap-1.5 flex-1 min-w-0">
+        <div id="vhost-list-{{ ip.id }}" class="flex flex-col gap-1.5 empty:hidden">
+          {% for vh in vhgroups %}
+          {% include 'host_summary/_vhost_row.html' %}
+          {% endfor %}
+        </div>
+        <button type="button" onclick="createVhost({{ ip.id }})"
+                class="self-start inline-flex items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          New virtualhost
+        </button>
+      </div>
     </div>
-    {% endif %}
+    {% endwith %}
 
     {# Ports table — port 0 is always shown in the header above, never here #}
     <table class="w-full">

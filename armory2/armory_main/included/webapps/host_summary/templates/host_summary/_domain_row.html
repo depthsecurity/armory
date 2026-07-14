@@ -1,0 +1,34 @@
+{% comment %}
+One editable domain row for an IP card. Context: domain, ip.
+Root element is .manage-row so edit/delete can swap it via hx-target="closest .manage-row".
+{% endcomment %}
+<div class="manage-row flex items-center gap-1.5 flex-wrap">
+  <span class="font-mono text-slate-700 dark:text-slate-300">{{ domain.name }}</span>
+  {% include 'host_summary/_scope_controls.html' with obj_type='domain' ident=domain.id name='' active_scope=domain.active_scope passive_scope=domain.passive_scope %}
+  <button type="button" title="Rename domain"
+          onclick="editName(this, 'domain', {{ domain.id }}, '{{ domain.name|escapejs }}', {{ ip.id }})"
+          class="text-slate-400 dark:text-slate-600 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors leading-none">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+    </svg>
+  </button>
+  <button type="button" title="Delete domain"
+          hx-post="/host_summary/delete/domain/{{ domain.id }}"
+          hx-confirm="Delete domain {{ domain.name }}? This removes it everywhere and cannot be undone."
+          hx-target="closest .manage-row" hx-swap="outerHTML"
+          class="text-slate-400 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition-colors leading-none">
+    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>
+  </button>
+  <button onclick="openTagModal('domain', {{ domain.id }})"
+          class="text-slate-400 dark:text-slate-600 hover:text-cyan-600 dark:hover:text-cyan-400 font-bold leading-none transition-colors"
+          title="Manage tags">+</button>
+  <div id="domain-tags-{{ domain.id }}" class="flex flex-wrap gap-1">
+    {% for tag in domain.tags.all %}
+    <span class="px-1.5 py-0.5 rounded text-xs bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700/50">{{ tag.name }}</span>
+    {% endfor %}
+  </div>
+</div>

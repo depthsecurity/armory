@@ -196,6 +196,7 @@ class IPAddress(BaseModel):
     version = models.IntegerField()
     notes = models.TextField(default="")
     completed = models.BooleanField(default=False, null=True)
+    cloud = models.BooleanField(default=False)
     toolrun = GenericRelation(ToolRun, related_query_name="ip_addresses")
     tags = models.ManyToManyField(
         'Tag', blank=True, limit_choices_to={'type__in': ['ip', 'any']}
@@ -255,6 +256,25 @@ class IPAddress(BaseModel):
                 )
             )
         )
+
+    def get_virtualhost_groups(self):
+        """Distinct active virtualhost names on this IP with aggregate scope state.
+
+        One hostname maps to many VirtualHost rows (one per port), so scope is
+        collapsed across the group: a name is considered in-scope if any of its
+        rows is. Returns a name-sorted list of dicts consumed by host_summary.
+        """
+        groups = {}
+        for vh in VirtualHost.objects.filter(ip_address=self, active=True):
+            g = groups.setdefault(
+                vh.name,
+                {"name": vh.name, "active_scope": False, "passive_scope": False},
+            )
+            if vh.active_scope:
+                g["active_scope"] = True
+            if vh.passive_scope:
+                g["passive_scope"] = True
+        return sorted(groups.values(), key=lambda x: x["name"])
 
     @classmethod
     def get_sorted(
@@ -459,7 +479,12 @@ def pre_save_ip(sender, instance, *args, **kwargs):
             size = IPNetwork(cidr_name).size
 
             cidr, created = CIDR.objects.get_or_create(
-                name=cidr_name, defaults={"org_name": org_name, "size": size}
+                name=cidr_name,
+                defaults={
+                    "org_name": org_name,
+                    "size": size,
+                    "cloud": bool(detect_cloud_provider(org_name, cidr_data)),
+                },
             )
             instance.cidr = cidr
             cidr.meta['rdap'] = cidr_data
@@ -468,6 +493,8 @@ def pre_save_ip(sender, instance, *args, **kwargs):
             except Exception as e:
                 pdb.set_trace()
             cidr.save()
+
+        instance.cloud = bool(getattr(instance.cidr, "cloud", False))
         display_new(
             "New IP added: {}  Active Scope: {}    Passive Scope: {}".format(
                 instance.ip_address, instance.active_scope, instance.passive_scope
@@ -488,9 +515,11 @@ def post_save_port(sender, instance, created, *args, **kwargs):
 def pre_save_cidr(sender, instance, *args, **kwargs):
     if not instance.id and not instance.org_name:
         cidr_name, org_name,cidr_data = get_cidr_info(instance.name.split("/")[0])
-        
+
         instance.org_name = org_name
         instance.size = IPNetwork(cidr_name).size
+        if detect_cloud_provider(org_name, cidr_data):
+            instance.cloud = True
 
     if not instance.id:
         display_new(
@@ -501,6 +530,43 @@ def pre_save_cidr(sender, instance, *args, **kwargs):
                 instance.passive_scope,
             )
         )
+
+
+# Keyword signatures used to detect major cloud providers from RDAP data.
+# Matched (case-insensitively) against the network name, org/description and
+# associated entity names/handles returned by whoisit.
+CLOUD_PROVIDER_KEYWORDS = {
+    "AWS": ("amazon", "aws"),
+    "Azure": ("microsoft", "azure", "msft"),
+    "Google Cloud": ("google",),
+}
+
+
+def detect_cloud_provider(org_name, rdap_data):
+    """Return the cloud provider name (AWS/Azure/Google Cloud) if the RDAP data
+    indicates the network belongs to a major cloud provider, else None."""
+    parts = []
+    if org_name:
+        parts.append(str(org_name))
+
+    if isinstance(rdap_data, dict):
+        if rdap_data.get("name"):
+            parts.append(str(rdap_data["name"]))
+        for desc in rdap_data.get("description") or []:
+            parts.append(str(desc))
+        entities = rdap_data.get("entities") or {}
+        for role_entities in entities.values():
+            for ent in role_entities or []:
+                if isinstance(ent, dict):
+                    for key in ("name", "handle"):
+                        if ent.get(key):
+                            parts.append(str(ent[key]))
+
+    haystack = " ".join(parts).lower()
+    for provider, keywords in CLOUD_PROVIDER_KEYWORDS.items():
+        if any(kw in haystack for kw in keywords):
+            return provider
+    return None
 
 
 def get_cidr_info(ip_address):

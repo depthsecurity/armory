@@ -1,8 +1,9 @@
 {% for ip in ips %}
 <div id="ip-{{ ip.id }}-item" class="grid grid-cols-12 items-center gap-3 rounded-lg bg-white px-3 py-2 text-xs dark:bg-slate-900/50">
   <div class="col-span-2"></div>
-  <div class="col-span-4">
+  <div class="col-span-4 flex min-w-0 items-center gap-2">
     <p class="truncate text-slate-700 dark:text-slate-400" title="{{ ip.cidr.meta.whois }}">{{ ip.ip_address }}</p>
+    {% include 'domain_scoping/_cloud_toggle.html' %}
   </div>
   <div class="col-span-1 text-center">
     <input type="checkbox" class="changescope h-4 w-4 cursor-pointer accent-brand-600"

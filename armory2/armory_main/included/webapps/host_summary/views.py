@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
-from armory2.armory_main.models import Port, Domain, IPAddress, Vulnerability, Tag
+from armory2.armory_main.models import Port, Domain, IPAddress, Vulnerability, Tag, VirtualHost
 from django.db.models import Q
 from django.template.defaulttags import register
 import os
@@ -450,6 +450,13 @@ def toggle_completed(request, ip_id):
     )
 
 
+def toggle_cloud(request, ip_id):
+    ip = get_object_or_404(IPAddress, pk=ip_id)
+    ip.cloud = not ip.cloud
+    ip.save()
+    return render(request, 'host_summary/_cloud_toggle.html', {'ip': ip})
+
+
 def save_notes(request, ip_id):
     ip = get_object_or_404(IPAddress, pk=ip_id)
     ip.notes = request.POST.get('data', '')
@@ -630,6 +637,190 @@ def add_tag(request, obj_type, obj_id):
     if ctx is None:
         return HttpResponse('Invalid type', status=400)
     return render(request, 'host_summary/tag_modal.html', ctx)
+
+
+def _vhost_group(ip, name):
+    """Active VirtualHost rows for one hostname on one IP (one row per port)."""
+    return VirtualHost.objects.filter(ip_address=ip, name=name, active=True)
+
+
+def _vhost_group_scope(vhosts):
+    """Collapse scope across a virtualhost group: in-scope if any row is."""
+    return (
+        any(v.active_scope for v in vhosts),
+        any(v.passive_scope for v in vhosts),
+    )
+
+
+def _vhost_group_dict(ip, name):
+    """Row-template dict for a virtualhost group (matches get_virtualhost_groups items)."""
+    active, passive = _vhost_group_scope(_vhost_group(ip, name))
+    return {'name': name, 'active_scope': active, 'passive_scope': passive}
+
+
+def _ensure_domain(name, active_scope, passive_scope):
+    """Return the Domain named `name`, creating it if absent.
+
+    A new Domain is created with the offlinedns marker so its post_save signal
+    skips DNS resolution — a rename must not trigger network lookups or pull in
+    unrelated IPs.
+    """
+    domain = Domain.objects.filter(name__iexact=name).first()
+    if domain:
+        return domain
+    d = Domain(
+        name=name, whois="", active_scope=active_scope,
+        passive_scope=passive_scope, meta={'offlinedns': True},
+    )
+    d.save()
+    return Domain.objects.filter(name=name).first()
+
+
+def _row_response(request, template, ctx, error=None):
+    resp = render(request, template, ctx)
+    if error:
+        resp['HX-Trigger'] = json.dumps({'hsError': error})
+    return resp
+
+
+def edit_obj(request, obj_type, ident):
+    if request.method != 'POST':
+        return HttpResponse('Method not allowed', status=405)
+    new_name = request.POST.get('new_name', '').strip()
+
+    if obj_type == 'domain':
+        domain = get_object_or_404(Domain, pk=ident)
+        ip = get_object_or_404(IPAddress, pk=request.POST.get('ip_id'))
+        if not new_name or new_name.lower() == domain.name.lower():
+            return _row_response(request, 'host_summary/_domain_row.html',
+                                 {'domain': domain, 'ip': ip})
+        if ip.domain_set.filter(name__iexact=new_name).exists():
+            return _row_response(request, 'host_summary/_domain_row.html',
+                                 {'domain': domain, 'ip': ip},
+                                 error=f'{new_name} is already on {ip.ip_address}.')
+        active_scope, passive_scope = domain.active_scope, domain.passive_scope
+        domain.delete()
+        new_domain = _ensure_domain(new_name, active_scope, passive_scope)
+        new_domain.ip_addresses.add(ip)
+        return _row_response(request, 'host_summary/_domain_row.html',
+                             {'domain': new_domain, 'ip': ip})
+
+    if obj_type == 'vhost':
+        ip = get_object_or_404(IPAddress, pk=ident)
+        old_name = request.POST.get('name', '')
+        group = list(VirtualHost.objects.filter(ip_address=ip, name=old_name))
+        if not group:
+            return HttpResponse('Not found', status=404)
+        if not new_name or new_name.lower() == old_name.lower():
+            return _row_response(request, 'host_summary/_vhost_row.html',
+                                 {'vh': _vhost_group_dict(ip, old_name), 'ip': ip})
+        if VirtualHost.objects.filter(ip_address=ip, name__iexact=new_name).exists():
+            return _row_response(request, 'host_summary/_vhost_row.html',
+                                 {'vh': _vhost_group_dict(ip, old_name), 'ip': ip},
+                                 error=f'{new_name} is already on {ip.ip_address}.')
+        active_scope, passive_scope = _vhost_group_scope(group)
+        # Pre-create the domain offline so VirtualHost.save() links to it without DNS.
+        _ensure_domain(new_name, active_scope, passive_scope)
+        for v in group:
+            VirtualHost.objects.create(
+                ip_address=ip, name=new_name, port=v.port, active=v.active,
+                active_scope=active_scope, passive_scope=passive_scope,
+            )
+        VirtualHost.objects.filter(ip_address=ip, name=old_name).delete()
+        return _row_response(request, 'host_summary/_vhost_row.html',
+                             {'vh': _vhost_group_dict(ip, new_name), 'ip': ip})
+
+    return HttpResponse('Invalid type', status=400)
+
+
+def toggle_scope(request, obj_type, ident, scope):
+    if request.method != 'POST':
+        return HttpResponse('Method not allowed', status=405)
+    if scope not in ('active', 'passive'):
+        return HttpResponse('Invalid scope', status=400)
+    field = 'active_scope' if scope == 'active' else 'passive_scope'
+
+    if obj_type == 'ip':
+        ip = get_object_or_404(IPAddress, pk=ident)
+        setattr(ip, field, not getattr(ip, field))
+        ip.save()
+        ctx = {
+            'obj_type': 'ip', 'ident': ip.id, 'name': '',
+            'active_scope': ip.active_scope, 'passive_scope': ip.passive_scope,
+        }
+    elif obj_type == 'domain':
+        domain = get_object_or_404(Domain, pk=ident)
+        setattr(domain, field, not getattr(domain, field))
+        domain.save()
+        ctx = {
+            'obj_type': 'domain', 'ident': domain.id, 'name': '',
+            'active_scope': domain.active_scope, 'passive_scope': domain.passive_scope,
+        }
+    elif obj_type == 'vhost':
+        ip = get_object_or_404(IPAddress, pk=ident)
+        name = request.POST.get('name', '')
+        vhosts = list(_vhost_group(ip, name))
+        if not vhosts:
+            return HttpResponse('Not found', status=404)
+        cur_active, cur_passive = _vhost_group_scope(vhosts)
+        new_val = not (cur_active if scope == 'active' else cur_passive)
+        for v in vhosts:
+            setattr(v, field, new_val)
+            v.save()
+        active_scope, passive_scope = _vhost_group_scope(_vhost_group(ip, name))
+        ctx = {
+            'obj_type': 'vhost', 'ident': ip.id, 'name': name,
+            'active_scope': active_scope, 'passive_scope': passive_scope,
+        }
+    else:
+        return HttpResponse('Invalid type', status=400)
+
+    return render(request, 'host_summary/_scope_controls.html', ctx)
+
+
+def delete_obj(request, obj_type, ident):
+    if request.method != 'POST':
+        return HttpResponse('Method not allowed', status=405)
+    if obj_type == 'domain':
+        get_object_or_404(Domain, pk=ident).delete()
+    elif obj_type == 'vhost':
+        ip = get_object_or_404(IPAddress, pk=ident)
+        VirtualHost.objects.filter(ip_address=ip, name=request.POST.get('name', '')).delete()
+    else:
+        return HttpResponse('Invalid type', status=400)
+    return HttpResponse('')
+
+
+def create_obj(request, obj_type, ident):
+    if request.method != 'POST':
+        return HttpResponse('Method not allowed', status=405)
+    if obj_type != 'vhost':
+        return HttpResponse('Invalid type', status=400)
+
+    ip = get_object_or_404(IPAddress, pk=ident)
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return HttpResponse('', status=204)
+    if VirtualHost.objects.filter(ip_address=ip, name__iexact=name).exists():
+        resp = HttpResponse('')
+        resp['HX-Trigger'] = json.dumps({'hsError': f'{name} is already on {ip.ip_address}.'})
+        return resp
+
+    # Inherit the IP's scope; pre-create the domain offline so the vhost links
+    # to it without triggering DNS. Mirror the http ports so the vhost shows up
+    # in the per-port HTTP links, matching how vhosts are normally created.
+    _ensure_domain(name, ip.active_scope, ip.passive_scope)
+    VirtualHost.objects.create(
+        ip_address=ip, name=name, port=None, active=True,
+        active_scope=ip.active_scope, passive_scope=ip.passive_scope,
+    )
+    for p in ip.port_set.filter(service_name__icontains='http'):
+        VirtualHost.objects.create(
+            ip_address=ip, name=name, port=p, active=True,
+            active_scope=ip.active_scope, passive_scope=ip.passive_scope,
+        )
+    return render(request, 'host_summary/_vhost_row.html',
+                  {'vh': _vhost_group_dict(ip, name), 'ip': ip})
 
 
 def remove_tag(request, obj_type, obj_id, tag_id):

@@ -24,9 +24,10 @@ def run(tool=None, args="", scope_type=None, random=True, domain=True):
 
     for p in ports:
 
-        results.append(
-            "%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number)
-        )
+        if not p.ip_address.cloud:
+            results.append(
+                "%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number)
+            )
 
         if domain:
             domain_list = [d for d in p.ip_address.domain_set.filter(is_ptr=False)]
@@ -51,6 +52,7 @@ def get_web_ips(tool=None, args="", scope_type=None, random=True):
 
         if (
             p.ip_address
+            and not p.ip_address.cloud
             and (
                 (scope_type == "active" and p.ip_address.active_scope)
                 or (scope_type == "passive" and p.ip_address.passive_scope)
@@ -93,6 +95,9 @@ def get_urls_with_virtualhosts(tool=None, args="", scope_type=None, random=True)
         )
 
     for p in ports:
+
+        if p.ip_address.cloud:
+            continue
 
         url = "%s://%s:%s" % (p.service_name, p.ip_address, p.port_number)
         results.append([url, ""])

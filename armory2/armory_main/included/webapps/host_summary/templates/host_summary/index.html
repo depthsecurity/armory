@@ -208,6 +208,37 @@
     htmx.process(e.detail.target);
   });
 
+  // Rename a domain / virtualhost. Server enforces the rules (duplicate on host
+  // → rejected; otherwise the original is removed and the new name added here).
+  function editName(btn, type, ident, oldName, ipId) {
+    const entered = prompt('Rename ' + oldName + ' to:', oldName);
+    if (entered === null) return;
+    const value = entered.trim();
+    if (!value || value === oldName) return;
+    htmx.ajax('POST', '/host_summary/edit/' + type + '/' + ident, {
+      source: btn,
+      target: btn.closest('.manage-row'),
+      swap: 'outerHTML',
+      values: { new_name: value, ip_id: ipId, name: oldName },
+    });
+  }
+  // Create an arbitrary new virtualhost on this IP. Server rejects duplicates.
+  function createVhost(ipId) {
+    const entered = prompt('New virtualhost name:');
+    if (entered === null) return;
+    const value = entered.trim();
+    if (!value) return;
+    htmx.ajax('POST', '/host_summary/create/vhost/' + ipId, {
+      target: '#vhost-list-' + ipId,
+      swap: 'beforeend',
+      values: { name: value },
+    });
+  }
+  // Server signals a rejected create/rename via an HX-Trigger header.
+  document.body.addEventListener('hsError', (e) => {
+    alert((e.detail && e.detail.value) || 'Unable to save.');
+  });
+
   function toggleTool(url, targetId) {
     const target = document.getElementById(targetId);
     if (!target) return;
