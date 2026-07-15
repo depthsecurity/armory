@@ -24,7 +24,7 @@ def run(tool=None, args="", scope_type=None, random=True, domain=True):
 
     for p in ports:
 
-        if not p.ip_address.cloud:
+        if not p.ip_address.cloud or not domain:
             results.append(
                 "%s://%s:%s" % (p.service_name, p.ip_address.ip_address, p.port_number)
             )

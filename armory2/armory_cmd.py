@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 
 # main.py
 # Django specific settings
@@ -39,6 +40,7 @@ from django.core.management import call_command
 #############
 
 # Your application specific imports
+from armory2 import __version__
 from armory2.armory_main.models import *
 from django.conf import settings
 from django.db.utils import OperationalError
@@ -125,6 +127,22 @@ def get_modules(module_path):
     return sorted(modules)
 
 
+# Tool names hidden from `-lm`/`-lr` listings and tab-completion by default:
+# base templates and bundled sample/example modules. These stay runnable if
+# invoked explicitly (e.g. `armory -m SampleModule`); they're just not
+# advertised. Extend per-install with ARMORY_HIDDEN_MODULES /
+# ARMORY_HIDDEN_REPORTS (lists of names) in ~/.armory/settings.py.
+HIDDEN_TOOL_NAMES = {"templates", "SampleModule", "SampleToolModule"}
+
+
+def _is_hidden_tool(name, extra=()):
+    return name in HIDDEN_TOOL_NAMES or name in extra or name.endswith("Template")
+
+
+def _visible(names, extra=()):
+    return sorted(n for n in set(names) if not _is_hidden_tool(n, extra))
+
+
 def load_module(module_path):
     if "/" not in module_path:
         import importlib
@@ -150,20 +168,23 @@ def load_module(module_path):
 def list_modules(silent=False):
     config = get_config_options()
     custom_path = config.get("ARMORY_CUSTOM_MODULES", None)
-    
+    hidden = set(config.get("ARMORY_HIDDEN_MODULES", []) or [])
+
     modules = {}
-    
+
     for m in get_modules(os.path.join(PATH, "armory_main/included/modules")):
         modules[m] = os.path.join(PATH, "armory_main/included/modules")
-    
+
     if custom_path:
         for c in custom_path:
             for m in get_modules(c):
                 modules[m] = c
-    
+
+    modules = {m: p for m, p in modules.items() if not _is_hidden_tool(m, hidden)}
+
     if not silent:
         print("Available modules:")
-        for m in sorted(list(set(modules.keys()))):
+        for m in _visible(modules.keys()):
             print("\t%s" % m)
 
     else:
@@ -172,10 +193,10 @@ def list_modules(silent=False):
 def list_reports(silent=False):
     config = get_config_options()
     custom_path = config.get("ARMORY_CUSTOM_REPORTS", None)
+    hidden = set(config.get("ARMORY_HIDDEN_REPORTS", []) or [])
 
     modules = {}
 
-            
     for m in get_modules(os.path.join(PATH, "armory_main/included/reports")):
         modules[m] = os.path.join(PATH, "armory_main/included/reports")
 
@@ -183,12 +204,13 @@ def list_reports(silent=False):
         for r in custom_path:
             for m in get_modules(r):
                 modules[m] = r
-    
+
+    modules = {m: p for m, p in modules.items() if not _is_hidden_tool(m, hidden)}
+
     if not silent:
-        
         print("Available reports:")
-        for m in sorted(list(set(modules.keys()))):
-            print("\t%s" % m)   
+        for m in _visible(modules.keys()):
+            print("\t%s" % m)
     else:
         return modules
 
@@ -206,7 +228,6 @@ def list_module_options(module, module_name):
 
     # Populate the options
     m.set_options()
-    argcomplete.autocomplete(m.options)
     m.options.parse_args(["-h"])
 
 
@@ -252,7 +273,6 @@ def list_report_options(module, module_name):
 
     # Populate the options
     m.set_options()
-    argcomplete.autocomplete(m.options)
     m.options.parse_args(["-h"])
 
 def get_report_options(module, module_name):
@@ -323,7 +343,6 @@ def run_module(Module, argv, module, use_docker=False):
                             argv.append("--" + k)
                             argv.append(module_config_data["ModuleSettings"][k])
 
-    argcomplete.autocomplete(m.options)
     args, unknown = m.options.parse_known_args(argv)
 
     m.base_config = config
@@ -360,7 +379,6 @@ def run_report(Report, argv, report):
     #                     argv.append("--" + k)
     #                     argv.append(module_config_data['ModuleSettings'][k])
 
-    argcomplete.autocomplete(m.options)
     args, unknown = m.options.parse_known_args(argv)
     m.base_config = config
 
@@ -409,13 +427,159 @@ _dM_     _dMM_MM_    _MM_  _MM_  _MM_ YMMMMM9 _MM_         M
     print(banner)
 
 
+# ---------------------------------------------------------------------------
+# Shell tab-completion support (argcomplete)
+#
+# Enable in your shell (zsh/bash) with:
+#     eval "$(register-python-argcomplete armory)"
+# See the completion docs / `contrib/armory-completion.sh` for details.
+# ---------------------------------------------------------------------------
+
+# The base command arguments, declared as data so the same set can be used to
+# build the top-level parser and to be merged into a module/report parser when
+# completing that tool's own options.
+BASE_ARGUMENTS = [
+    (["-m", "--module"], {"help": "Use module"}),
+    (["-lm", "--list_modules"], {"help": "List modules", "action": "store_true"}),
+    (["-M", "--list_module_options"], {"help": "List module options", "action": "store_true"}),
+    (["-r", "--report"], {"help": "Use report"}),
+    (["-lr", "--list_reports"], {"help": "List reports", "action": "store_true"}),
+    (["-R", "--list_report_options"], {"help": "List report options", "action": "store_true"}),
+    (["--generate_defaults"], {"help": "Generate default config files", "action": "store_true"}),
+    (["--quiet"], {"help": "Don't display banner", "action": "store_true"}),
+    (["-v", "--version"], {"help": "Display the current version", "action": "store_true"}),
+    (["--docker"], {"help": "Use Docker versions of modules if available", "action": "store_true"}),
+]
+
+
+def _module_completer(prefix, **kwargs):
+    """Complete module names for `armory -m <TAB>`."""
+    try:
+        return sorted(list_modules(silent=True).keys())
+    except Exception:
+        return []
+
+
+def _report_completer(prefix, **kwargs):
+    """Complete report names for `armory -r <TAB>`."""
+    try:
+        return sorted(list_reports(silent=True).keys())
+    except Exception:
+        return []
+
+
+def build_base_parser():
+    """Build the top-level argument parser, wiring up completers for -m/-r."""
+    parser = argparse.ArgumentParser()
+    for flags, kw in BASE_ARGUMENTS:
+        action = parser.add_argument(*flags, **kw)
+        if "--module" in flags:
+            action.completer = _module_completer
+        elif "--report" in flags:
+            action.completer = _report_completer
+    return parser
+
+
+def _selected_target(comp_line):
+    """
+    Inspect the completion command line and, if a module (-m) or report (-r)
+    has already been fully typed, return (name, kind) where kind is
+    'module' or 'report'. Returns (None, None) while the name itself is still
+    being typed so name completion keeps working.
+    """
+    import shlex
+
+    try:
+        tokens = shlex.split(comp_line)
+    except ValueError:
+        tokens = comp_line.split()
+
+    trailing_space = comp_line[-1:].isspace()
+
+    for kind, flags in (("module", ("-m", "--module")), ("report", ("-r", "--report"))):
+        for i, tok in enumerate(tokens):
+            if tok in flags and i + 1 < len(tokens):
+                name = tokens[i + 1]
+                # The name counts as "chosen" only once it is complete: either
+                # something follows it, or the cursor has moved past it (space).
+                if i + 2 < len(tokens) or trailing_space:
+                    return name, kind
+    return None, None
+
+
+def _build_completion_parser(name, kind):
+    """
+    Load the selected module/report, populate its options, and merge the base
+    arguments in so both the tool's own flags and the base flags complete.
+    Returns the parser, or None if the tool can't be resolved.
+    """
+    catalog = list_modules(silent=True) if kind == "module" else list_reports(silent=True)
+    match = next((n for n in catalog if n.lower() == name.lower()), None)
+    if not match:
+        return None
+
+    path = catalog[match]
+    core_path = os.path.join(PATH, "armory_main/included/modules" if kind == "module"
+                             else "armory_main/included/reports")
+    if path == core_path:
+        pkg = ".armory_main.included.%s.%s" % (
+            "modules" if kind == "module" else "reports", match)
+        loaded = load_module(pkg)
+    else:
+        loaded = load_module(os.path.join(path, match))
+
+    tool = loaded.Module() if kind == "module" else loaded.Report()
+    tool.set_options()
+    parser = tool.options
+
+    existing = set(parser._option_string_actions)
+    for flags, kw in BASE_ARGUMENTS:
+        if any(f in existing for f in flags):
+            continue
+        action = parser.add_argument(*flags, **kw)
+        if "--module" in flags:
+            action.completer = _module_completer
+        elif "--report" in flags:
+            action.completer = _report_completer
+    return parser
+
+
+def run_completion(base_parser):
+    """
+    Entry hook for argcomplete. A no-op unless the shell is requesting
+    completions (argcomplete signals this via the _ARGCOMPLETE env var), so it
+    never slows down normal runs or touches the database.
+    """
+    if not os.environ.get("_ARGCOMPLETE"):
+        return
+
+    parser = base_parser
+    name, kind = _selected_target(os.environ.get("COMP_LINE", ""))
+    if name:
+        try:
+            merged = _build_completion_parser(name, kind)
+            if merged is not None:
+                parser = merged
+        except Exception:
+            # Never let a broken/optional tool break completion of the rest.
+            parser = base_parser
+
+    argcomplete.autocomplete(parser)
+
+
 def main():
+    parser = build_base_parser()
+
+    # Handle shell completion first: this exits early when the shell is asking
+    # for completions, so it stays fast and never touches the database.
+    run_completion(parser)
+
     check_database()
 
     if NEW_CONFIG_FOLDER:
         generate_default_configs()
     cmd_args = sys.argv
-    
+
     if '-m' in cmd_args and '-M' not in cmd_args:
         mod_args = cmd_args[cmd_args.index('-m')+2:]
         cmd_args = cmd_args[:cmd_args.index('-m')+2]
@@ -423,35 +587,6 @@ def main():
     elif '-r' in cmd_args and '-R' not in cmd_args:
         mod_args = cmd_args[cmd_args.index('-r')+2:]
         cmd_args = cmd_args[:cmd_args.index('-r')+2]
-    
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--module", help="Use module")
-    parser.add_argument(
-        "-lm", "--list_modules", help="List modules", action="store_true"
-    )
-    parser.add_argument(
-        "-M", "--list_module_options", help="List module options", action="store_true"
-    )
-    parser.add_argument("-r", "--report", help="Use report")
-    parser.add_argument(
-        "-lr", "--list_reports", help="List reports", action="store_true"
-    )
-    parser.add_argument(
-        "-R", "--list_report_options", help="List report options", action="store_true"
-    )
-    parser.add_argument(
-        "--generate_defaults", help="Generate default config files", action="store_true"
-    )
-    parser.add_argument(
-        "--quiet", help="Don't display banner", action="store_true"
-    )
-    parser.add_argument(
-        "-v", "--version", help="Display the current version", action="store_true"
-    )
-    parser.add_argument(
-        "--docker", help="Use Docker versions of modules if available", action="store_true"
-    )
 
     base_args, _ = parser.parse_known_args(cmd_args)
     if base_args.generate_defaults:
