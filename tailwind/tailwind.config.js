@@ -62,6 +62,12 @@ module.exports = {
     "badge-success",
     "badge-warning",
     "badge-danger",
+    // Nuclei severity classes set via Python (not in templates, must be safelisted)
+    "nuclei-critical",
+    "nuclei-high",
+    "nuclei-medium",
+    "nuclei-low",
+    "nuclei-info",
   ],
 
   plugins: [],

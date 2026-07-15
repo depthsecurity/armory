@@ -18,6 +18,7 @@ urlpatterns = [
     path('', views.index, name="index"),
     path('change_scope/<str:item_type>/<str:scope_type>/<int:pkid>', views.change_scope, name="scoping.change_scope"),
     path('clear_scope/<str:act>/<str:item_type>/<str:scope_type>/<int:pkid>', views.clear_scope, name="scoping.clear_scope"),
+    path('toggle_cloud/<int:pkid>', views.toggle_cloud, name="domain_scoping.toggle_cloud"),
     path('get_ips/<int:pkid>', views.get_ips, name="scoping.get_ips"),
     path('get_domains/<int:pkid>', views.get_domains, name="domain_scoping.get_domains"),
     path('delete_domain/<int:pkid>', views.delete_domain, name="domain_scoping.delete_domain"),

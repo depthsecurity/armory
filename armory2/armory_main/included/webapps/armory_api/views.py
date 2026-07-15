@@ -78,6 +78,7 @@ def _serialize_ip_summary(ip):
         'completed': bool(ip.completed),
         'notes': ip.notes or '',
         'os': ip.os or '',
+        'cloud': bool(ip.cloud),
         'port_count': ip.port_set.count(),
         'domain_count': ip.domain_set.count(),
     }
@@ -106,6 +107,7 @@ def _serialize_ip_detail(ip):
         'completed': bool(ip.completed),
         'notes': ip.notes or '',
         'os': ip.os or '',
+        'cloud': bool(ip.cloud),
         'cidr': ip.cidr.name if ip.cidr_id else None,
         'domains': list(ip.domain_set.values_list('name', flat=True)),
         'virtualhosts': ip.get_virtualhosts(),

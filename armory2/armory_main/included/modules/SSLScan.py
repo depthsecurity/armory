@@ -4,8 +4,6 @@ from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 import os
 from armory2.armory_main.included.utilities.get_urls import add_tool_url
 
-import pdb
-
 class Module(ToolTemplate):
 
     name = "SSLScan"

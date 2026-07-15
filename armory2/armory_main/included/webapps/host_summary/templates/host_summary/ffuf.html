@@ -1,37 +1,37 @@
 <div class="px-3 py-3">
-  <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">FFuF Results</div>
+  <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-1">FFuF Results</div>
   <div class="grid grid-cols-2 gap-3">
   {% for host, host_data in ffuf_data.items %}
-  <div class="rounded border border-gray-700 bg-gray-800/60">
-    <div class="px-3 py-2 border-b border-gray-700 text-xs font-mono font-semibold text-cyan-300">{{ host }}</div>
+  <div class="rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+    <div class="px-3 py-2 border-b border-slate-200 dark:border-slate-700 text-xs font-mono font-semibold text-cyan-700 dark:text-cyan-300">{{ host }}</div>
     <div class="p-3 flex flex-col gap-3">
     {% for url, status_data in host_data.items %}
       <div>
-        <div class="text-xs text-gray-500 mb-1.5 font-mono break-all">{{ url }}</div>
+        <div class="text-xs text-slate-500 mb-1.5 font-mono break-all">{{ url }}</div>
         {% for status_code, results in status_data.items %}
         <div class="mb-2">
           <div class="text-xs font-semibold mb-1
-            {% if status_code >= 200 and status_code < 300 %}text-green-400
-            {% elif status_code >= 300 and status_code < 400 %}text-yellow-400
-            {% elif status_code >= 400 %}text-red-400
-            {% else %}text-gray-400{% endif %}">
+            {% if status_code >= 200 and status_code < 300 %}text-green-600 dark:text-green-400
+            {% elif status_code >= 300 and status_code < 400 %}text-yellow-600 dark:text-yellow-400
+            {% elif status_code >= 400 %}text-red-600 dark:text-red-400
+            {% else %}text-slate-500{% endif %}">
             HTTP {{ status_code }}
           </div>
           <table class="w-full text-xs border-collapse">
             <thead>
-              <tr class="border-b border-gray-700/60">
-                <th class="text-left pb-1 text-gray-500 font-medium">Path</th>
-                <th class="text-right pb-1 text-gray-500 font-medium w-16">Size</th>
+              <tr class="border-b border-slate-200/60 dark:border-slate-700/60">
+                <th class="text-left pb-1 text-slate-500 font-medium">Path</th>
+                <th class="text-right pb-1 text-slate-500 font-medium w-16">Size</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-700/30">
+            <tbody class="divide-y divide-slate-200/30 dark:divide-slate-700/30">
             {% for result in results|unique_ffuf %}
-            <tr class="hover:bg-gray-700/20">
+            <tr class="hover:bg-slate-100/60 dark:hover:bg-slate-700/20">
               <td class="py-0.5 pr-2">
                 <a href="{{ result.url }}" target="_blank" rel="noopener noreferrer"
-                   class="text-cyan-400 hover:text-cyan-300 font-mono hover:underline break-all">{{ result.input }}</a>
+                   class="text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-mono hover:underline break-all">{{ result.input }}</a>
               </td>
-              <td class="py-0.5 text-right font-mono text-gray-400">{{ result.length }}</td>
+              <td class="py-0.5 text-right font-mono text-slate-500 dark:text-slate-400">{{ result.length }}</td>
             </tr>
             {% endfor %}
             </tbody>
@@ -43,7 +43,7 @@
     </div>
   </div>
   {% empty %}
-  <p class="col-span-2 text-xs text-gray-600 px-1 italic">No FFuF data.</p>
+  <p class="col-span-2 text-xs text-slate-400 dark:text-slate-600 px-1 italic">No FFuF data.</p>
   {% endfor %}
   </div>
 </div>

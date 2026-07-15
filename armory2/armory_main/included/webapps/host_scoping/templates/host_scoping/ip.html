@@ -11,6 +11,7 @@
         {% if pas_state == 'all' %}<span class="badge badge-info" title="All Passive">Passive</span>
         {% elif pas_state == 'some' %}<span class="badge badge-outline-info" title="Partially Passive">Passive</span>{% endif %}
       {% endwith %}
+      {% include 'host_scoping/_cloud_toggle.html' %}
     </div>
 
     <div class="col-span-1 text-center">

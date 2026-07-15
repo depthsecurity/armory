@@ -1,0 +1,16 @@
+{% comment %}
+Cloud toggle icon. Context: ip.
+POSTs to flip IPAddress.cloud and swaps itself with the re-rendered result.
+A cloud IP is treated as shared infra: get_urls skips it as a bare-IP target
+while still emitting its domain/vhost targets.
+{% endcomment %}
+<button type="button"
+        title="{% if ip.cloud %}Cloud IP — excluded from bare-IP scanning. Click to disable.{% else %}Mark as cloud IP (exclude from bare-IP scanning).{% endif %}"
+        hx-post="/host_summary/toggle_cloud/{{ ip.id }}"
+        hx-target="this" hx-swap="outerHTML"
+        class="shrink-0 p-1 rounded leading-none transition-colors {% if ip.cloud %}text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300{% else %}text-slate-300 dark:text-slate-600 hover:text-sky-500 dark:hover:text-sky-400{% endif %}">
+  <svg class="w-4 h-4" fill="{% if ip.cloud %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
+  </svg>
+</button>

@@ -85,6 +85,14 @@ $(document).on('change', '.changescope', function(e){
   $.get('change_scope/' + t + '/' + s + '/' + pkid, { }, function(result) {});
 })
 
+$(document).on('click', '.cloudtoggle', function(e){
+  var el = $(e.currentTarget);
+  var pkid = e.currentTarget.id.split('-')[2];
+  $.get('toggle_cloud/' + pkid, { }, function(result) {
+    el.replaceWith(result);
+  });
+})
+
 $(document).on('click', '.clearscope', function(e){
   var pkid = e.target.id.split('-')[3];
   var t = e.target.id.split('-')[0];

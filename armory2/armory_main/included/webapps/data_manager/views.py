@@ -112,6 +112,7 @@ MODEL_CONFIGS = {
         'columns': [
             {'key': 'ip_address', 'label': 'IP Address'},
             {'key': 'os', 'label': 'OS'},
+            {'key': 'cloud', 'label': 'Cloud', 'type': 'bool'},
             {'key': 'completed', 'label': 'Done', 'type': 'bool'},
             {'key': 'active_scope', 'label': 'Active', 'type': 'bool'},
             {'key': 'passive_scope', 'label': 'Passive', 'type': 'bool'},
@@ -121,6 +122,7 @@ MODEL_CONFIGS = {
              'hint': 'CIDR and version are resolved automatically.'},
             {'name': 'os', 'type': 'text', 'label': 'Operating System'},
             {'name': 'notes', 'type': 'textarea', 'label': 'Notes'},
+            {'name': 'cloud', 'type': 'checkbox', 'label': 'Cloud Provider'},
             {'name': 'completed', 'type': 'checkbox', 'label': 'Mark Completed'},
             {'name': 'active_scope', 'type': 'checkbox', 'label': 'Active Scope'},
             {'name': 'passive_scope', 'type': 'checkbox', 'label': 'Passive Scope'},

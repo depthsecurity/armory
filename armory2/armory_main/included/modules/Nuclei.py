@@ -4,7 +4,8 @@ from armory2.armory_main.models import (
     IPAddress,
     Domain,
     Port,
-    Vulnerability
+    Vulnerability,
+    VirtualHost,
 )
 from armory2.armory_main.included.ModuleTemplate import ToolTemplate
 from armory2.armory_main.included.utilities import get_urls
@@ -16,7 +17,6 @@ from armory2.armory_main.included.utilities.color_display import (
 )
 import os
 import json
-import pdb
 
 class Module(ToolTemplate):
     """
@@ -52,6 +52,11 @@ class Module(ToolTemplate):
         self.options.add_argument(
             "--rescan",
             help="Rescan targets that have already been scanned",
+            action="store_true",
+        )
+        self.options.add_argument(
+            "--virtualhosts",
+            help="Scan virtual hosts (requires -i): generates per-IP target files with <ip> <domain> lines for each active-scoped virtualhost",
             action="store_true",
         )
         
@@ -123,7 +128,6 @@ class Module(ToolTemplate):
             res.append(
                 {
                     "target": t,
-                    
                     "output": os.path.join(
                         output_path,
                         t.rsplit('/', 1)[-1].split('-nuclei-target.txt')[0]
@@ -134,6 +138,44 @@ class Module(ToolTemplate):
                     ),
                 }
             )
+
+        if args.virtualhosts:
+            if not args.import_database:
+                display_warning("--virtualhosts requires -i/--import_database; skipping virtualhost targets")
+            else:
+                ip_vhosts = {}
+
+                for domain in Domain.objects.filter(active_scope=True).prefetch_related('ip_addresses'):
+                    for ip in domain.ip_addresses.filter(active_scope=True):
+                        ip_vhosts.setdefault(ip, set()).add(domain.name)
+
+                for vh in VirtualHost.objects.filter(
+                    active=True, ip_address__active_scope=True, domain__active_scope=True
+                ).select_related('ip_address', 'domain'):
+                    ip_vhosts.setdefault(vh.ip_address, set()).add(vh.name)
+
+                for ip, vhost_names in ip_vhosts.items():
+                    if not args.rescan:
+                        processed = set(
+                            ip.toolrun.filter(
+                                tool=self.name,
+                                args=args.tool_args,
+                                virtualhost__isnull=False,
+                            ).values_list('virtualhost__name', flat=True)
+                        )
+                        vhost_names -= processed
+
+                    if not vhost_names:
+                        continue
+
+                    fname = os.path.join(output_path, f"{ip.ip_address}-virtualhosts-nuclei-target.txt")
+                    with open(fname, "w") as f:
+                        for name in sorted(vhost_names):
+                            f.write(f"{ip.ip_address} {name}\n")
+
+                    ip_safe = ip.ip_address.replace(":", "_")
+                    out_fname = os.path.join(output_path, f"{ip_safe}_virtualhosts.jsonl")
+                    res.append({"target": fname, "output": out_fname})
 
         return res
 
@@ -147,28 +189,48 @@ class Module(ToolTemplate):
 
         return cmd
 
+    def _mark_vhost_toolruns(self, target_file):
+        """Mark a toolrun for each ip+vhost pair listed in a virtualhost target file."""
+        try:
+            with open(target_file, "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(" ", 1)
+                    if len(parts) != 2:
+                        continue
+                    ip_addr, vhost_name = parts
+                    try:
+                        ip = IPAddress.objects.get(ip_address=ip_addr)
+                        ip.add_tool_run(tool=self.name, args=self.args.tool_args, virtualhost=vhost_name)
+                    except IPAddress.DoesNotExist:
+                        display_warning(f"IP not found when marking vhost toolrun: {ip_addr}")
+        except Exception as e:
+            display_error(f"Error marking vhost toolruns from {target_file}: {e}")
+
     def process_output(self, cmds):
         for cmd in cmds:
             target = cmd["target"]
             output_file = cmd["output"]
 
-            
-            # Check if output file exists and read JSON results
+            is_vhost_scan = output_file.endswith("_virtualhosts.jsonl")
+
             if not os.path.exists(output_file):
                 display_warning(
                     "Output file not found for {}: {}".format(target, output_file)
                 )
+                if is_vhost_scan and os.path.exists(target):
+                    self._mark_vhost_toolruns(target)
                 continue
 
             try:
-                # Read JSONL file (one JSON object per line)
-                nuclei_results = []
                 with open(output_file, "r") as f:
                     for line in f:
                         dl = json.loads(line)
                         for data in dl:
                             ip_address = data['host'].split(':')[0]
-                            
+
                             port_number = data.get('port', 0)
 
                             port_objects = Port.objects.filter(ip_address__ip_address=ip_address, port_number=port_number)
@@ -177,8 +239,7 @@ class Module(ToolTemplate):
                                     ip_address = '.'.join(ip_address.split('.')[:4][::-1])
                                     print(ip_address)
                                 ip = IPAddress.objects.get(ip_address=ip_address)
-                                
-                                
+
                                 port_object = Port.objects.create(ip_address=ip, port_number=port_number)
                                 display_new(
                                     "Port object created for {}:{}".format(ip_address, port_number)
@@ -188,29 +249,23 @@ class Module(ToolTemplate):
 
                             port_object.add_tool_run(tool=self.name, args=self.args.tool_args)
 
-                            
                             if not port_object.meta.get('nuclei'):
                                 port_object.meta["nuclei"] = {}
 
-                            # vuln, created = Vulnerability.objects.get_or_create(name=data['info']['name'])
-                            # if created:
-                            #     vuln.description = data['info']['description']
-                            #     vuln.severity = data['info']['severity']
-                            #     vuln.exploitable = data['info']['exploitable']
-                            #     vuln.remediation = data['info']['remediation']
-                            #     vuln.save()
                             name = data['info']['name']
-                            if not port_object.meta['nuclei'].get(name):
-                                
-                                port_object.meta["nuclei"][name] = data
+                            key = "{}_{}".format(name, data.get('matcher-name', ''))
+                            if not port_object.meta['nuclei'].get(key):
+                                port_object.meta["nuclei"][key] = data
                                 port_object.save()
-
 
                                 display_new(
                                     "Added {} vulnerability to {}:{}".format(
                                         data['info']['name'], port_object.ip_address.ip_address, port_object.port_number
                                     )
                                 )
+
+                if is_vhost_scan and os.path.exists(target):
+                    self._mark_vhost_toolruns(target)
 
             except Exception as e:
                 display_error(

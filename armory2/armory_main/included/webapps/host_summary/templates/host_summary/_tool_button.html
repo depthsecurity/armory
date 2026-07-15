@@ -1,0 +1,72 @@
+{% if d|is_vuln_source %}
+{% with src=d|vuln_source_name src_lc=d|vuln_source_lower sev=d|vuln_source_sev %}
+{% if sev == 0 %}
+<button onclick="toggleTool('/host_summary/vulns/{{ src_lc }}/{{ port.id }}','tool-{{ port.id }}-{{ src }}')"
+        class="px-2 py-0.5 rounded text-xs bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-300 transition-colors">{{ src }}</button>
+{% elif sev == 1 %}
+<button onclick="toggleTool('/host_summary/vulns/{{ src_lc }}/{{ port.id }}','tool-{{ port.id }}-{{ src }}')"
+        class="px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700 text-blue-800 dark:text-blue-200 transition-colors">{{ src }}</button>
+{% elif sev == 2 %}
+<button onclick="toggleTool('/host_summary/vulns/{{ src_lc }}/{{ port.id }}','tool-{{ port.id }}-{{ src }}')"
+        class="px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-600 text-yellow-800 dark:text-yellow-100 transition-colors">{{ src }}</button>
+{% elif sev == 3 %}
+<button onclick="toggleTool('/host_summary/vulns/{{ src_lc }}/{{ port.id }}','tool-{{ port.id }}-{{ src }}')"
+        class="px-2 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-700 hover:bg-orange-200 dark:hover:bg-orange-600 text-orange-800 dark:text-orange-100 transition-colors">{{ src }}</button>
+{% else %}
+<button onclick="toggleTool('/host_summary/vulns/{{ src_lc }}/{{ port.id }}','tool-{{ port.id }}-{{ src }}')"
+        class="px-2 py-0.5 rounded text-xs bg-red-100 dark:bg-red-700 hover:bg-red-200 dark:hover:bg-red-600 text-red-800 dark:text-red-100 transition-colors ring-1 ring-red-300 dark:ring-red-500">{{ src }}</button>
+{% endif %}
+{% endwith %}
+
+{% elif d == "Gowitness" %}
+<button onclick="toggleTool('/host_summary/gowitness/{{ port.id }}','tool-{{ port.id }}-Gowitness')"
+        class="px-2 py-0.5 rounded text-xs bg-cyan-100 dark:bg-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-700 text-cyan-800 dark:text-cyan-200 transition-colors">Gowitness</button>
+
+{% elif d == "FFuF" %}
+<button onclick="toggleTool('/host_summary/ffuf/{{ port.id }}','tool-{{ port.id }}-FFuF')"
+        class="px-2 py-0.5 rounded text-xs bg-cyan-100 dark:bg-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-700 text-cyan-800 dark:text-cyan-200 transition-colors">FFuF</button>
+
+{% elif d == "FFuF-empty" %}
+<span class="px-2 py-0.5 rounded text-xs bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-600 cursor-default"
+      title="FFuF ran but found no results">FFuF</span>
+
+{% elif d == "Nuclei0" %}
+<button onclick="toggleSection('tool-{{ port.id }}-Nuclei')"
+        class="px-2 py-0.5 rounded text-xs bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-300 transition-colors">Nuclei</button>
+
+{% elif d == "Nuclei1" %}
+<button onclick="toggleSection('tool-{{ port.id }}-Nuclei')"
+        class="px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700 text-blue-800 dark:text-blue-200 transition-colors">Nuclei</button>
+
+{% elif d == "Nuclei2" %}
+<button onclick="toggleSection('tool-{{ port.id }}-Nuclei')"
+        class="px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-600 text-yellow-800 dark:text-yellow-100 transition-colors">Nuclei</button>
+
+{% elif d == "Nuclei3" %}
+<button onclick="toggleSection('tool-{{ port.id }}-Nuclei')"
+        class="px-2 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-700 hover:bg-orange-200 dark:hover:bg-orange-600 text-orange-800 dark:text-orange-100 transition-colors">Nuclei</button>
+
+{% elif d == "Nuclei4" %}
+<button onclick="toggleSection('tool-{{ port.id }}-Nuclei')"
+        class="px-2 py-0.5 rounded text-xs bg-red-100 dark:bg-red-700 hover:bg-red-200 dark:hover:bg-red-600 text-red-800 dark:text-red-100 transition-colors ring-1 ring-red-300 dark:ring-red-500">Nuclei</button>
+
+{% elif d == "Nmap" %}
+<button onclick="toggleSection('tool-{{ port.id }}-Nmap')"
+        class="px-2 py-0.5 rounded text-xs bg-cyan-100 dark:bg-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-700 text-cyan-800 dark:text-cyan-200 transition-colors">Nmap</button>
+
+{% elif d == "Nikto" %}
+<button onclick="toggleTool('/host_summary/nikto/{{ port.id }}','tool-{{ port.id }}-Nikto')"
+        class="px-2 py-0.5 rounded text-xs bg-cyan-100 dark:bg-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-700 text-cyan-800 dark:text-cyan-200 transition-colors">Nikto</button>
+
+{% elif d == "Xsscrapy" %}
+<button onclick="toggleTool('/host_summary/xsscrapy/{{ port.id }}','tool-{{ port.id }}-Xsscrapy')"
+        class="px-2 py-0.5 rounded text-xs bg-red-100 dark:bg-red-800 hover:bg-red-200 dark:hover:bg-red-700 text-red-800 dark:text-red-200 transition-colors">Xsscrapy</button>
+
+{% elif d == "Xsstrike" %}
+<button onclick="toggleTool('/host_summary/xsstrike/{{ port.id }}','tool-{{ port.id }}-Xsstrike')"
+        class="px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-700 text-yellow-800 dark:text-yellow-200 transition-colors">Xsstrike</button>
+
+{% else %}
+<button onclick="toggleTool('#','tool-{{ port.id }}-{{ d }}')"
+        class="px-2 py-0.5 rounded text-xs bg-cyan-100 dark:bg-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-700 text-cyan-800 dark:text-cyan-200 transition-colors">{{ d }}</button>
+{% endif %}

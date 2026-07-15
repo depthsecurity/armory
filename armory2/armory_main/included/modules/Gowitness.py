@@ -38,7 +38,7 @@ class Module(ToolTemplate):
     binary_name = "gowitness"
     docker_name = "gowitness"
     docker_repo = "https://github.com/sensepost/gowitness.git"
-    docker_run_binary = "gowitness"
+    # docker_run_binary = "gowitness"
     def set_options(self):
         super(Module, self).set_options()
 
