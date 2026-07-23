@@ -110,6 +110,7 @@ class Domain(BaseModel):
     ip_addresses = models.ManyToManyField("IPAddress")
     basedomain = models.ForeignKey(BaseDomain, on_delete=models.CASCADE)
     whois = models.TextField()
+    ai_notes = models.TextField(default="")
     toolrun = GenericRelation(ToolRun, related_query_name="domains")
     dynamic_ip = models.BooleanField(default=False)
     is_ptr = models.BooleanField(default=False)
@@ -195,6 +196,7 @@ class IPAddress(BaseModel):
     whois = models.TextField()
     version = models.IntegerField()
     notes = models.TextField(default="")
+    ai_notes = models.TextField(default="")
     completed = models.BooleanField(default=False, null=True)
     cloud = models.BooleanField(default=False)
     toolrun = GenericRelation(ToolRun, related_query_name="ip_addresses")
@@ -347,6 +349,7 @@ class Port(BaseModel):
     cert = models.TextField(unique=False, null=True)
     certs = PickledObjectField(default=dict)
     info = PickledObjectField(default=dict)
+    ai_notes = models.TextField(default="")
     toolrun = GenericRelation(ToolRun, related_query_name="ports")
     tags = models.ManyToManyField(
         'Tag', blank=True, limit_choices_to={'type__in': ['ip', 'any']}
