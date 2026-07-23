@@ -8,5 +8,5 @@
         }
     ],
     "description": "JSON REST API for Armory data — designed for MCP integration.",
-    "category": "Utilities"
+    "category": "API"
 }
