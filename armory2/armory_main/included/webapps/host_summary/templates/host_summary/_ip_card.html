@@ -25,6 +25,12 @@
             class="px-2.5 py-1 text-xs rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors shrink-0">
       Notes
     </button>
+    {% if ip.ai_notes %}
+    <button onclick="toggleSection('ai-notes-{{ ip.id }}')"
+            class="px-2.5 py-1 text-xs rounded bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-300 transition-colors shrink-0">
+      AI Notes
+    </button>
+    {% endif %}
     {# Completed button – HTMX replaces itself on click #}
     <button class="px-3 py-1 rounded text-xs font-medium transition-colors shrink-0 {% if ip.completed %}bg-green-600 hover:bg-green-500 dark:bg-green-700 dark:hover:bg-green-600 text-white{% else %}bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200{% endif %}"
             hx-get="/host_summary/toggle_completed/{{ ip.id }}"
@@ -63,6 +69,16 @@
       <span id="notes-status-{{ ip.id }}" class="text-xs text-slate-500 mt-1 block h-4"></span>
     </div>
   </div>
+
+  {% if ip.ai_notes %}
+  {# AI notes panel #}
+  <div id="ai-notes-{{ ip.id }}" class="mb-3 hidden">
+    <div class="bg-purple-50 dark:bg-purple-900/10 rounded border border-purple-200 dark:border-purple-800/50 p-3">
+      <div class="text-xs text-purple-500 dark:text-purple-400 font-semibold uppercase tracking-wider mb-1.5">AI Notes</div>
+      <div class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ ip.ai_notes }}</div>
+    </div>
+  </div>
+  {% endif %}
 
   {# Port 0 tool detail panels (expand below notes, above the ports table) #}
   {% for port in ip.port_set.all %}{% if port.port_number == 0 %}
@@ -139,6 +155,11 @@
             <button onclick="openTagModal('port', {{ port.id }})"
                     class="text-slate-400 dark:text-slate-600 hover:text-cyan-600 dark:hover:text-cyan-400 font-bold leading-none transition-colors"
                     title="Manage tags">+</button>
+            {% if port.ai_notes %}
+            <button onclick="toggleSection('port-ai-notes-{{ port.id }}')"
+                    class="px-1.5 py-0.5 text-xs rounded bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-300 transition-colors"
+                    title="Show AI notes">AI</button>
+            {% endif %}
           </div>
           <div id="port-tags-{{ port.id }}" class="flex flex-wrap gap-1 mt-1">
             {% for tag in port.tags.all %}
@@ -189,6 +210,16 @@
             </a>
             {% endfor %}
           </div>
+        </td>
+      </tr>
+      {% endif %}
+
+      {# AI notes panel #}
+      {% if port.ai_notes %}
+      <tr id="port-ai-notes-{{ port.id }}" class="hidden">
+        <td colspan="3" class="px-4 py-2 bg-purple-50 dark:bg-purple-900/10 border-t border-purple-200/60 dark:border-purple-800/40">
+          <div class="text-xs text-purple-500 dark:text-purple-400 font-semibold uppercase tracking-wider mb-1">AI Notes</div>
+          <div class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ port.ai_notes }}</div>
         </td>
       </tr>
       {% endif %}
