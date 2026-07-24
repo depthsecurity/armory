@@ -28,25 +28,25 @@ SEV_LABELS = {0: 'informational', 1: 'low', 2: 'medium', 3: 'high', 4: 'critical
 
 ENDPOINTS = {
     'GET    /armory_api/':              'API root — this document',
-    'GET    /armory_api/hosts':         'List IPs. Params: scope, search, page, per_page, completed',
-    'POST   /armory_api/hosts':         'Create IP. JSON: {ip_address, os?, notes?, ai_notes?, completed?, active_scope?, passive_scope?, whois?}',
+    'GET    /armory_api/hosts':         'List IPs. Params: scope, search, page, per_page, completed, recon_complete',
+    'POST   /armory_api/hosts':         'Create IP. JSON: {ip_address, os?, notes?, ai_notes?, completed?, recon_complete?, active_scope?, passive_scope?, whois?}',
     'GET    /armory_api/hosts/<id>':    'Full IP detail',
-    'PATCH  /armory_api/hosts/<id>':    'Update IP. Any of: ip_address, os, notes, ai_notes, completed, active_scope, passive_scope, whois',
+    'PATCH  /armory_api/hosts/<id>':    'Update IP. Any of: ip_address, os, notes, ai_notes, completed, recon_complete, active_scope, passive_scope, whois',
     'DELETE /armory_api/hosts/<id>':    'Delete IP (cascades to ports, virtualhosts, vuln links)',
-    'GET    /armory_api/ports':         'List ports. Params: search, ip, service, page, per_page',
-    'POST   /armory_api/ports':         'Create port. JSON: {port_number, proto, ip_id, status?, service_name?, cert?, ai_notes?, active_scope?, passive_scope?}',
+    'GET    /armory_api/ports':         'List ports. Params: search, ip, service, page, per_page, recon_complete',
+    'POST   /armory_api/ports':         'Create port. JSON: {port_number, proto, ip_id, status?, service_name?, cert?, ai_notes?, recon_complete?, active_scope?, passive_scope?}',
     'GET    /armory_api/ports/<id>':    'Port detail with vulns, nmap, and gowitness data',
-    'PATCH  /armory_api/ports/<id>':    'Update port. Any of: port_number, proto, ip_id, status, service_name, cert, ai_notes, active_scope, passive_scope',
+    'PATCH  /armory_api/ports/<id>':    'Update port. Any of: port_number, proto, ip_id, status, service_name, cert, ai_notes, recon_complete, active_scope, passive_scope',
     'DELETE /armory_api/ports/<id>':    'Delete port',
     'GET    /armory_api/vulns':         'List vulns. Params: severity_min, severity_max, search, ip, exploitable, page, per_page',
     'POST   /armory_api/vulns':         'Create vuln. JSON: {name, severity, description?, remediation?, exploitable?, source?, port_ids?}',
     'GET    /armory_api/vulns/<id>':    'Vuln detail with all affected ports',
     'PATCH  /armory_api/vulns/<id>':    'Update vuln. Any of: name, severity, description, remediation, exploitable, source, port_ids',
     'DELETE /armory_api/vulns/<id>':    'Delete vuln',
-    'GET    /armory_api/domains':       'List domains. Params: scope, search, page, per_page',
-    'POST   /armory_api/domains':       'Create domain. JSON: {name, whois?, ai_notes?, dynamic_ip?, active_scope?, passive_scope?, ip_ids?}',
+    'GET    /armory_api/domains':       'List domains. Params: scope, search, page, per_page, recon_complete',
+    'POST   /armory_api/domains':       'Create domain. JSON: {name, whois?, ai_notes?, recon_complete?, dynamic_ip?, active_scope?, passive_scope?, ip_ids?}',
     'GET    /armory_api/domains/<id>':  'Domain detail',
-    'PATCH  /armory_api/domains/<id>':  'Update domain. Any of: name, whois, ai_notes, dynamic_ip, active_scope, passive_scope, ip_ids',
+    'PATCH  /armory_api/domains/<id>':  'Update domain. Any of: name, whois, ai_notes, recon_complete, dynamic_ip, active_scope, passive_scope, ip_ids',
     'DELETE /armory_api/domains/<id>':  'Delete domain',
     'GET    /armory_api/cidrs':         'List CIDRs. Params: scope, search, page, per_page',
     'POST   /armory_api/cidrs':         'Create CIDR. JSON: {name, org_name?, size?, cloud?, active_scope?, passive_scope?}',
@@ -60,18 +60,18 @@ ENDPOINTS = {
 # Field type maps used for create/update body parsing.
 IP_FIELDS = {
     'ip_address': str, 'os': str, 'notes': str, 'ai_notes': str, 'whois': str,
-    'completed': bool, 'active_scope': bool, 'passive_scope': bool,
+    'completed': bool, 'recon_complete': bool, 'active_scope': bool, 'passive_scope': bool,
 }
 PORT_FIELDS = {
     'port_number': int, 'proto': str, 'status': str, 'service_name': str,
-    'cert': str, 'ai_notes': str, 'active_scope': bool, 'passive_scope': bool,
+    'cert': str, 'ai_notes': str, 'recon_complete': bool, 'active_scope': bool, 'passive_scope': bool,
 }
 VULN_FIELDS = {
     'name': str, 'description': str, 'remediation': str, 'source': str,
     'severity': int, 'exploitable': bool,
 }
 DOMAIN_FIELDS = {
-    'name': str, 'whois': str, 'ai_notes': str,
+    'name': str, 'whois': str, 'ai_notes': str, 'recon_complete': bool,
     'dynamic_ip': bool, 'active_scope': bool, 'passive_scope': bool,
 }
 CIDR_FIELDS = {
@@ -195,6 +195,7 @@ def _serialize_ip_summary(ip):
         'ip_address': ip.ip_address,
         'scope': _scope_label(ip),
         'completed': bool(ip.completed),
+        'recon_complete': ip.recon_complete,
         'notes': ip.notes or '',
         'ai_notes': ip.ai_notes or '',
         'os': ip.os or '',
@@ -225,6 +226,7 @@ def _serialize_ip_detail(ip):
             'service_name': p.service_name,
             'status': p.status,
             'ai_notes': p.ai_notes or '',
+            'recon_complete': p.recon_complete,
             'vulnerability_count': len(vuln_sevs),
             'highest_severity': max(vuln_sevs) if vuln_sevs else None,
             'highest_severity_label': SEV_LABELS.get(max(vuln_sevs)) if vuln_sevs else None,
@@ -238,6 +240,7 @@ def _serialize_ip_detail(ip):
         'active_scope': ip.active_scope,
         'passive_scope': ip.passive_scope,
         'completed': bool(ip.completed),
+        'recon_complete': ip.recon_complete,
         'notes': ip.notes or '',
         'ai_notes': ip.ai_notes or '',
         'os': ip.os or '',
@@ -258,6 +261,7 @@ def _serialize_port_summary(port):
         'service_name': port.service_name,
         'status': port.status,
         'ai_notes': port.ai_notes or '',
+        'recon_complete': port.recon_complete,
         'ip_address': port.ip_address.ip_address,
         'ip_id': port.ip_address_id,
     }
@@ -294,6 +298,7 @@ def _serialize_port_detail(port):
         'ip_id': ip.id,
         'cert': port.cert or '',
         'ai_notes': port.ai_notes or '',
+        'recon_complete': port.recon_complete,
         'active_scope': port.active_scope,
         'passive_scope': port.passive_scope,
         'tools': _port_tools(port),
@@ -349,6 +354,7 @@ def _serialize_domain_summary(d):
         'name': d.name,
         'scope': _scope_label(d),
         'ai_notes': d.ai_notes or '',
+        'recon_complete': d.recon_complete,
         'base_domain': d.basedomain.name if d.basedomain_id else None,
         'ip_addresses': list(d.ip_addresses.values_list('ip_address', flat=True)),
     }
@@ -364,6 +370,7 @@ def _serialize_domain_detail(d):
         'dynamic_ip': d.dynamic_ip,
         'whois': d.whois or '',
         'ai_notes': d.ai_notes or '',
+        'recon_complete': d.recon_complete,
         'base_domain': d.basedomain.name if d.basedomain_id else None,
         'base_domain_id': d.basedomain_id,
         'ip_addresses': [
@@ -450,6 +457,7 @@ def hosts(request):
         scope = request.GET.get('scope', 'active')
         search = request.GET.get('search', '').strip() or None
         completed = _bool_param(request, 'completed')
+        recon_complete = _bool_param(request, 'recon_complete')
         page, per_page = _paginate(request)
 
         ips, total = IPAddress.get_sorted(
@@ -459,6 +467,8 @@ def hosts(request):
         results = []
         for ip in ips:
             if completed is not None and bool(ip.completed) != completed:
+                continue
+            if recon_complete is not None and ip.recon_complete != recon_complete:
                 continue
             results.append(_serialize_ip_summary(ip))
         return JsonResponse({
@@ -536,6 +546,9 @@ def ports(request):
                 Q(service_name__icontains=search) |
                 Q(ip_address__ip_address__icontains=search)
             )
+        recon_complete = _bool_param(request, 'recon_complete')
+        if recon_complete is not None:
+            qs = qs.filter(recon_complete=recon_complete)
 
         qs = qs.order_by('ip_address__ip_address', 'port_number')
         return _paginated_response(qs, _serialize_port_summary, page, per_page)
@@ -720,6 +733,9 @@ def domains(request):
             qs = qs.filter(passive_scope=True)
         if search:
             qs = qs.filter(name__icontains=search)
+        recon_complete = _bool_param(request, 'recon_complete')
+        if recon_complete is not None:
+            qs = qs.filter(recon_complete=recon_complete)
 
         qs = qs.order_by('name')
         return _paginated_response(qs, _serialize_domain_summary, page, per_page)
@@ -883,16 +899,18 @@ def stats(request):
 
     return JsonResponse({
         'hosts': {
-            'total':     ip_qs.count(),
-            'active':    ip_qs.filter(active_scope=True).count(),
-            'passive':   ip_qs.filter(passive_scope=True).count(),
-            'completed': ip_qs.filter(completed=True).count(),
+            'total':          ip_qs.count(),
+            'active':         ip_qs.filter(active_scope=True).count(),
+            'passive':        ip_qs.filter(passive_scope=True).count(),
+            'completed':      ip_qs.filter(completed=True).count(),
+            'recon_complete': ip_qs.filter(recon_complete=True).count(),
         },
         'ports': {
             'total':          port_qs.count(),
             'http':           port_qs.filter(service_name='http').count(),
             'https':          port_qs.filter(service_name='https').count(),
             'unique_services': port_qs.values('service_name').distinct().count(),
+            'recon_complete': port_qs.filter(recon_complete=True).count(),
         },
         'vulnerabilities': {
             'total':       vuln_qs.count(),
@@ -900,9 +918,10 @@ def stats(request):
             **vuln_by_severity,
         },
         'domains': {
-            'total':   domain_qs.count(),
-            'active':  domain_qs.filter(active_scope=True).count(),
-            'passive': domain_qs.filter(passive_scope=True).count(),
+            'total':          domain_qs.count(),
+            'active':         domain_qs.filter(active_scope=True).count(),
+            'passive':        domain_qs.filter(passive_scope=True).count(),
+            'recon_complete': domain_qs.filter(recon_complete=True).count(),
         },
         'cidrs': {
             'total':  cidr_qs.count(),
