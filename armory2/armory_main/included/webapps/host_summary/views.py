@@ -171,6 +171,24 @@ def index(request):
     })
 
 
+def _resolve_tool_output(path):
+    """Map a stored tool-output path onto the current ARMORY_BASE_PATH.
+
+    Output paths are recorded as absolute at scan time, so a project that was
+    copied to another host (or whose base path was renamed) no longer resolves.
+    Re-base on the final component of the configured base path when the stored
+    path still contains it; otherwise return None so callers can skip the file.
+    """
+    if os.path.exists(path):
+        return path
+
+    base = os.path.expanduser(ARMORY_CONFIG['ARMORY_BASE_PATH'])
+    marker = os.path.basename(base.rstrip('/')) + os.sep
+    if marker in path:
+        return os.path.join(base, path.split(marker, 1)[1])
+    return None
+
+
 def _build_port_data(ip, display_zero, nessus, gowitness, ffuf):
     """Collect tool button data for all ports on one IP. Returns (has_ports, data, nmap, nuclei).
 
@@ -256,9 +274,8 @@ def _build_port_data(ip, display_zero, nessus, gowitness, ffuf):
             if 'FFuF' not in data[target_id] and 'FFuF-empty' not in data[target_id]:
                 ffuf_good = False
                 for f in p.meta['FFuF']:
-                    rel = f.split('armory2/')[1]
-                    abs_path = os.path.join(ARMORY_CONFIG['ARMORY_BASE_PATH'], rel)
-                    if os.path.exists(abs_path):
+                    abs_path = _resolve_tool_output(f)
+                    if abs_path and os.path.exists(abs_path):
                         res = json.load(open(abs_path))
                         if res['results']:
                             ffuf_good = True
@@ -582,9 +599,8 @@ def get_ffuf(request, port_id):
     ffuf_data = {}
 
     for f in port.meta['FFuF']:
-        rel = f.split('armory2/')[1]
-        abs_path = os.path.join(ARMORY_CONFIG['ARMORY_BASE_PATH'], rel)
-        if not os.path.exists(abs_path):
+        abs_path = _resolve_tool_output(f)
+        if not abs_path or not os.path.exists(abs_path):
             continue
         data = json.loads(open(abs_path).read())
 
