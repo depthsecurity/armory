@@ -1,0 +1,16 @@
+{% extends 'armory_main/base_tw.html' %}
+
+{% block content %}
+<div class="armory-container">
+  <div class="armory-card">
+    <div class="armory-card-body">
+      <h1 class="armory-card-title">{{ output.vulnerability.name }}</h1>
+      <p class="armory-card-text">
+        {{ output.port.ip_address.ip_address }} — {{ output.port.proto }}/{{ output.port.port_number }}
+        {% if output.port.service_name %}({{ output.port.service_name }}){% endif %}
+      </p>
+      <pre class="mt-3 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words">{{ output.data|default:"(empty)" }}</pre>
+    </div>
+  </div>
+</div>
+{% endblock %}

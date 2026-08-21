@@ -1,0 +1,12 @@
+{
+    "name": "findings",
+    "pretty_name": "Findings",
+    "authors":[
+        {
+            "name": "Dan Lawson",
+            "url": "https://github.com/fang0654"
+        }
+    ],
+    "description": "Browse every vulnerability and its per-host output, filtered by severity, source, exploitability, and host.",
+    "category": "Findings"
+}

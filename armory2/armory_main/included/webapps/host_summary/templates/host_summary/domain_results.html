@@ -70,7 +70,7 @@
             {% if group.label == 'Active' %}bg-green-50 dark:bg-green-900/10{% else %}bg-blue-50 dark:bg-blue-900/10{% endif %}">
   <span class="text-xs font-semibold uppercase tracking-wider
                {% if group.label == 'Active' %}text-green-700 dark:text-green-400{% else %}text-blue-700 dark:text-blue-400{% endif %}">
-    {{ group.label }} Scope
+    {{ group.heading }}
   </span>
   <span class="ml-2 text-xs text-slate-400 dark:text-slate-600">{{ group.entries|length }} domain{{ group.entries|length|pluralize }}</span>
 </div>

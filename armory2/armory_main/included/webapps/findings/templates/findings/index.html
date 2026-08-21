@@ -1,0 +1,275 @@
+{% extends 'armory_main/base_tw.html' %}
+
+{% block extra_head %}
+<style>
+  /* Remove base template padding and make content a full-height flex column */
+  #content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .htmx-indicator { display: none; }
+  .htmx-request .htmx-indicator { display: flex; }
+  .htmx-request.htmx-indicator { display: flex; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  .dark ::-webkit-scrollbar-track { background: #111827; }
+  .dark ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <!-- Filter bar -->
+  <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 shrink-0 z-10">
+    <form id="search-form"
+          hx-post="/findings/finding_data"
+          hx-target="#finding-results"
+          hx-trigger="submit, load"
+          hx-indicator="#loading-bar">
+      {% csrf_token %}
+
+      <div class="flex flex-wrap gap-3 items-end">
+        <!-- Search -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Search</label>
+          <input type="text" name="search"
+                 class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 w-56 focus:outline-none focus:border-cyan-500 placeholder-slate-400 dark:placeholder-slate-500"
+                 placeholder="Name, description, remediation…">
+        </div>
+
+        <!-- Host -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Host</label>
+          <input type="text" name="host"
+                 class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 w-44 focus:outline-none focus:border-cyan-500 placeholder-slate-400 dark:placeholder-slate-500"
+                 placeholder="IP or domain">
+        </div>
+
+        <!-- Source -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Source</label>
+          <select name="source"
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <option value="">Any</option>
+            {% for source in sources %}
+            <option value="{{ source }}">{{ source|capfirst }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Exploitable -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Exploitable</label>
+          <select name="exploitable"
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <option value="">Any</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <!-- Scope -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Scope</label>
+          <select name="scope"
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="passive">Passive</option>
+          </select>
+        </div>
+
+        <!-- Sort -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Sort</label>
+          <select name="sort"
+                  class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <option value="severity_desc">Severity ↓</option>
+            <option value="severity_asc">Severity ↑</option>
+            <option value="hosts_desc">Affected hosts ↓</option>
+            <option value="name">Name</option>
+            <option value="recent">Recently updated</option>
+          </select>
+        </div>
+
+        <!-- Per page -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Per Page</label>
+          <input type="number" name="entries" value="50"
+                 class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 w-20 focus:outline-none focus:border-cyan-500">
+        </div>
+
+        <input type="hidden" name="page" id="page-input" value="1">
+
+        <!-- Divider -->
+        <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 self-end mb-0.5"></div>
+
+        <!-- Severity checkboxes -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Severity</label>
+          <div class="flex flex-wrap gap-x-3 gap-y-1" id="severity-boxes">
+            {% for sev in severities %}
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100">
+              <input type="checkbox" name="severity" value="{{ sev.value }}" class="accent-cyan-500"> {{ sev.label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="w-px h-8 bg-slate-200 dark:bg-slate-700 self-end mb-0.5"></div>
+
+        <!-- Extras -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">Options</label>
+          <div class="flex flex-wrap gap-x-3 gap-y-1">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                   title="Also match the text of every VulnOutput row (slower)">
+              <input type="checkbox" name="search_output" class="accent-cyan-500"> Search output
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                   title="Include vulnerabilities with no ports attached">
+              <input type="checkbox" name="orphans" class="accent-cyan-500"> Unattached
+            </label>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="ml-auto self-end flex gap-2">
+          <button type="button" onclick="expandAll(true)"
+                  class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm rounded transition-colors">Expand</button>
+          <button type="button" onclick="expandAll(false)"
+                  class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm rounded transition-colors">Collapse</button>
+          <button type="submit"
+                  class="px-5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded transition-colors">
+            Search
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading bar -->
+  <div id="loading-bar"
+       class="htmx-indicator shrink-0 items-center gap-2 px-4 py-1.5 bg-cyan-50 dark:bg-cyan-900/40 border-b border-cyan-200 dark:border-cyan-700/40 text-cyan-700 dark:text-cyan-400 text-xs">
+    <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    Loading…
+  </div>
+
+  <!-- Sidebar + results -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-52 bg-slate-100/60 dark:bg-slate-800/60 border-r border-slate-200 dark:border-slate-700 flex flex-col shrink-0 overflow-hidden">
+      <div class="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700 shrink-0">
+        Breakdown
+      </div>
+      <nav id="findings-sidebar" class="flex-1 overflow-y-auto py-1">
+        <p class="px-3 py-3 text-xs text-slate-400 dark:text-slate-600 italic">
+          {{ total_vulns }} vulns / {{ total_outputs }} output rows
+        </p>
+      </nav>
+    </aside>
+
+    <!-- Results -->
+    <div class="flex-1 overflow-y-auto">
+      <div id="finding-results" class="min-h-full">
+        <div class="flex items-center justify-center h-48 text-slate-400 dark:text-slate-600 text-sm">
+          Loading findings…
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+  document.body.addEventListener('htmx:configRequest', (e) => {
+    const tok = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (tok) e.detail.headers['X-CSRFToken'] = tok.value;
+  });
+
+  function toggleSection(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden');
+  }
+
+  // Detail panes are fetched lazily on first expand; dataset.loaded keeps a
+  // second click (or Expand All) from re-fetching what is already there.
+  function toggleFinding(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    loadFinding(el);
+    el.classList.toggle('hidden');
+  }
+
+  function loadFinding(el) {
+    if (el.dataset.loaded) return;
+    el.dataset.loaded = '1';
+    htmx.ajax('GET', el.dataset.detailUrl, {target: '#' + el.id, swap: 'innerHTML'});
+  }
+
+  function expandAll(open) {
+    document.querySelectorAll('[data-finding-body]').forEach((el) => {
+      if (open) {
+        loadFinding(el);
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    });
+  }
+
+  function goToPage(pageNum) {
+    document.getElementById('page-input').value = pageNum;
+    htmx.trigger(document.getElementById('search-form'), 'submit');
+  }
+
+  // Sidebar counts double as filters: clicking one sets the form and re-runs.
+  function filterSeverity(sev) {
+    document.querySelectorAll('#severity-boxes input[name=severity]').forEach((cb) => {
+      cb.checked = (cb.value === String(sev));
+    });
+    goToPage(1);
+  }
+
+  function filterSource(source) {
+    const sel = document.querySelector('select[name=source]');
+    if (sel) sel.value = source;
+    goToPage(1);
+  }
+
+  function filterExploitable() {
+    const sel = document.querySelector('select[name=exploitable]');
+    if (sel) sel.value = 'yes';
+    goToPage(1);
+  }
+
+  function resetFilters() {
+    const form = document.getElementById('search-form');
+    form.querySelectorAll('input[type=text]').forEach((i) => i.value = '');
+    form.querySelectorAll('input[type=checkbox]').forEach((i) => i.checked = false);
+    form.querySelectorAll('select').forEach((s) => s.selectedIndex = 0);
+    goToPage(1);
+  }
+
+  function copyText(id, btn) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    navigator.clipboard.writeText(el.innerText).then(() => {
+      const old = btn.innerText;
+      btn.innerText = 'Copied';
+      setTimeout(() => { btn.innerText = old; }, 1200);
+    });
+  }
+</script>
+{% endblock %}

@@ -10,6 +10,10 @@ module.exports = {
   content: [
     "../armory2/armory_main/templates/**/*.html",
     "../armory2/armory_main/included/webapps/**/templates/**/*.html",
+    // Some webapps declare per-row Tailwind classes in Python (e.g. the
+    // severity palette in findings/views.py) so the list, detail pane and
+    // sidebar cannot drift apart. Scan views.py so those survive the purge.
+    "../armory2/armory_main/included/webapps/**/views.py",
   ],
 
   theme: {

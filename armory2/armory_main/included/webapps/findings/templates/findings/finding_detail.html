@@ -1,0 +1,128 @@
+<div class="px-4 pb-4 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-900/30">
+
+  <div class="grid gap-3 md:grid-cols-2 mt-3">
+    <div class="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60">
+      <div class="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+        Description
+      </div>
+      <pre class="px-3 py-2 text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words max-h-72 overflow-y-auto">{{ vuln.description|default:"—" }}</pre>
+    </div>
+
+    <div class="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60">
+      <div class="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+        Remediation
+      </div>
+      <pre class="px-3 py-2 text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words max-h-72 overflow-y-auto">{{ vuln.remediation|default:"—" }}</pre>
+    </div>
+  </div>
+
+  {% if cves %}
+  <div class="mt-3 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60">
+    <div class="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+      CVEs
+    </div>
+    <div class="divide-y divide-slate-200/60 dark:divide-slate-700/60">
+      {% for cve in cves %}
+      <div class="px-3 py-2 flex gap-3 items-start">
+        <span class="font-mono text-xs text-cyan-700 dark:text-cyan-400 shrink-0">{{ cve.name }}</span>
+        {% if cve.temporal_score %}
+        <span class="shrink-0 px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/70 text-xs font-mono text-slate-600 dark:text-slate-300">{{ cve.temporal_score }}</span>
+        {% endif %}
+        <span class="text-xs text-slate-600 dark:text-slate-400 break-words">{{ cve.description|truncatechars:400 }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if vuln.exploit_reference %}
+  <div class="mt-3 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60">
+    <div class="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+      Exploit References
+    </div>
+    <pre class="px-3 py-2 text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words max-h-60 overflow-y-auto font-mono">{{ vuln.exploit_reference }}</pre>
+  </div>
+  {% endif %}
+
+  {# ── Affected instances + their output ─────────────────────────────────── #}
+  <div class="mt-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+    Affected Instances ({{ instances|length }})
+  </div>
+
+  <div class="mt-1 flex flex-col gap-1.5">
+    {% for inst in instances %}
+    <div class="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+        <a href="/host_summary/#ip-{{ inst.port.ip_address.id }}"
+           class="font-mono text-sm text-cyan-700 dark:text-cyan-400 hover:underline">{{ inst.port.ip_address.ip_address }}</a>
+        <span class="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/70 text-xs font-mono text-slate-700 dark:text-slate-300">
+          {{ inst.port.proto }}/{{ inst.port.port_number }}
+        </span>
+        {% if inst.port.service_name %}
+        <span class="text-xs text-slate-500 dark:text-slate-400">{{ inst.port.service_name }}</span>
+        {% endif %}
+        {% for d in inst.domains %}
+        <span class="text-xs text-slate-500 dark:text-slate-400">{{ d.name }}</span>
+        {% endfor %}
+        {% for v in inst.vhosts %}
+        <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/50 text-xs text-slate-500 dark:text-slate-400">vhost: {{ v.name }}</span>
+        {% endfor %}
+
+        <span class="ml-auto flex items-center gap-2">
+          {% if inst.output %}
+          <button type="button" onclick="toggleSection('vo-{{ inst.output.id }}')"
+                  class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs transition-colors">
+            Output
+          </button>
+          <button type="button" onclick="copyText('vo-data-{{ inst.output.id }}', this)"
+                  class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs transition-colors">
+            Copy
+          </button>
+          <a href="/findings/output/{{ inst.output.id }}" target="_blank"
+             class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs transition-colors">
+            Raw
+          </a>
+          {% else %}
+          <span class="text-xs text-slate-400 dark:text-slate-600 italic">no output</span>
+          {% endif %}
+        </span>
+      </div>
+
+      {% if inst.output %}
+      <div id="vo-{{ inst.output.id }}" class="hidden border-t border-slate-200/60 dark:border-slate-700/60">
+        <pre id="vo-data-{{ inst.output.id }}"
+             class="px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">{{ inst.output.data|default:"(empty)" }}</pre>
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <p class="text-xs text-slate-400 dark:text-slate-600 italic">No ports attached to this finding.</p>
+    {% endfor %}
+  </div>
+
+  {% if orphan_outputs %}
+  <div class="mt-3 text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider">
+    Output rows on unlinked ports ({{ orphan_outputs|length }})
+  </div>
+  <div class="mt-1 flex flex-col gap-1.5">
+    {% for output in orphan_outputs %}
+    <div class="rounded border border-amber-300/60 dark:border-amber-700/50 bg-white dark:bg-slate-800/60">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+        <span class="font-mono text-sm text-slate-700 dark:text-slate-300">{{ output.port.ip_address.ip_address }}</span>
+        <span class="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/70 text-xs font-mono text-slate-700 dark:text-slate-300">
+          {{ output.port.proto }}/{{ output.port.port_number }}
+        </span>
+        <button type="button" onclick="toggleSection('vo-{{ output.id }}')"
+                class="ml-auto px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs transition-colors">
+          Output
+        </button>
+      </div>
+      <div id="vo-{{ output.id }}" class="hidden border-t border-slate-200/60 dark:border-slate-700/60">
+        <pre class="px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">{{ output.data|default:"(empty)" }}</pre>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
