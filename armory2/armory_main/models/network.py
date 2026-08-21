@@ -283,7 +283,7 @@ class IPAddress(BaseModel):
     @classmethod
     def get_sorted(
         cls, scope_type=None, search=None, display_zero=False, page_num=1, entries=50,
-        tag_filter=None, vuln_source=None,
+        tag_filter=None, vuln_source=None, completed=None,
     ):
         if scope_type == "active":
             qry = cls.objects.filter(active_scope=True)
@@ -292,8 +292,19 @@ class IPAddress(BaseModel):
         else:
             qry = cls.objects.all()
 
-        if not display_zero:
+        if display_zero:
+            # Port 0 rows count, but a host with no ports at all has nothing to
+            # render — exclude it here so `total` matches what callers display.
+            qry = qry.filter(port__isnull=False).distinct()
+        else:
             qry = qry.filter(port__port_number__gt=0).distinct()
+
+        # `completed` is nullable, so NULL has to count as not-completed the way
+        # `not ip.completed` did — filter(completed=False) would drop those rows.
+        if completed is True:
+            qry = qry.filter(completed=True)
+        elif completed is False:
+            qry = qry.exclude(completed=True)
 
         if search:
             qry = qry.filter(

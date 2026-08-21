@@ -28,7 +28,7 @@ SEV_LABELS = {0: 'informational', 1: 'low', 2: 'medium', 3: 'high', 4: 'critical
 
 ENDPOINTS = {
     'GET    /armory_api/':              'API root — this document',
-    'GET    /armory_api/hosts':         'List IPs. Params: scope, search, page, per_page, completed, recon_complete',
+    'GET    /armory_api/hosts':         'List IPs. Params: scope (active|passive|all, default all), search, page, per_page, completed, recon_complete, display_zero (default true — set false to hide hosts with no ports above port 0)',
     'POST   /armory_api/hosts':         'Create IP. JSON: {ip_address, os?, notes?, ai_notes?, completed?, recon_complete?, active_scope?, passive_scope?, whois?}',
     'GET    /armory_api/hosts/<id>':    'Full IP detail',
     'PATCH  /armory_api/hosts/<id>':    'Update IP. Any of: ip_address, os, notes, ai_notes, completed, recon_complete, active_scope, passive_scope, whois',
@@ -43,6 +43,11 @@ ENDPOINTS = {
     'GET    /armory_api/vulns/<id>':    'Vuln detail with all affected ports',
     'PATCH  /armory_api/vulns/<id>':    'Update vuln. Any of: name, severity, description, remediation, exploitable, source, port_ids',
     'DELETE /armory_api/vulns/<id>':    'Delete vuln',
+    'GET    /armory_api/vuln_outputs':      'List per-port vuln output rows. Params: vuln_id, port_id, ip, search, full, page, per_page',
+    'POST   /armory_api/vuln_outputs':      'Upsert output for a (vuln, port) pair. JSON: {vuln_id, port_id, data, append?}',
+    'GET    /armory_api/vuln_outputs/<id>': 'Single output row with full data',
+    'PATCH  /armory_api/vuln_outputs/<id>': 'Update one output row. JSON: {data, append?}',
+    'DELETE /armory_api/vuln_outputs/<id>': 'Delete one output row (leaves the vuln and port intact)',
     'GET    /armory_api/domains':       'List domains. Params: scope, search, page, per_page, recon_complete',
     'POST   /armory_api/domains':       'Create domain. JSON: {name, whois?, ai_notes?, recon_complete?, dynamic_ip?, active_scope?, passive_scope?, ip_ids?}',
     'GET    /armory_api/domains/<id>':  'Domain detail',
@@ -348,6 +353,39 @@ def _serialize_vuln_detail(v):
     }
 
 
+PREVIEW_CHARS = 300
+
+
+def _serialize_vuln_output(vo, full=True):
+    port = vo.port
+    ip = port.ip_address
+    data = vo.data or ''
+    out = {
+        'id': vo.id,
+        'vuln_id': vo.vulnerability_id,
+        'vuln_name': vo.vulnerability.name,
+        'severity': vo.vulnerability.severity,
+        'severity_label': SEV_LABELS.get(vo.vulnerability.severity, 'unknown'),
+        'port_id': port.id,
+        'port_number': port.port_number,
+        'proto': port.proto,
+        'service_name': port.service_name,
+        'ip_id': ip.id,
+        'ip_address': ip.ip_address,
+        'length': len(data),
+    }
+    if full:
+        out['data'] = data
+    else:
+        out['preview'] = data[:PREVIEW_CHARS]
+        out['truncated'] = len(data) > PREVIEW_CHARS
+    return out
+
+
+def _serialize_vuln_output_preview(vo):
+    return _serialize_vuln_output(vo, full=False)
+
+
 def _serialize_domain_summary(d):
     return {
         'id': d.id,
@@ -454,28 +492,49 @@ def api_root(request):
 @csrf_exempt
 def hosts(request):
     if request.method == 'GET':
-        scope = request.GET.get('scope', 'active')
-        search = request.GET.get('search', '').strip() or None
+        # Defaults return everything: all scopes, port-0-only and portless hosts
+        # included, no completion filtering. Every filter is opt-in so that
+        # /hosts and /ports always agree on which hosts exist.
+        scope = request.GET.get('scope', 'all')
+        search = request.GET.get('search', '').strip()
         completed = _bool_param(request, 'completed')
         recon_complete = _bool_param(request, 'recon_complete')
+        display_zero = _bool_param(request, 'display_zero')
         page, per_page = _paginate(request)
 
-        ips, total = IPAddress.get_sorted(
-            scope_type=scope, search=search, display_zero=False,
-            page_num=page, entries=per_page,
-        )
-        results = []
-        for ip in ips:
-            if completed is not None and bool(ip.completed) != completed:
-                continue
-            if recon_complete is not None and ip.recon_complete != recon_complete:
-                continue
-            results.append(_serialize_ip_summary(ip))
-        return JsonResponse({
-            'results': results, 'total': total, 'page': page,
-            'per_page': per_page,
-            'total_pages': max(1, (total + per_page - 1) // per_page),
-        })
+        qs = IPAddress.objects.all()
+        joined = False
+
+        if scope == 'active':
+            qs = qs.filter(active_scope=True)
+        elif scope == 'passive':
+            qs = qs.filter(passive_scope=True)
+
+        if display_zero is False:
+            # Opt-in parity with the host_summary UI: hide hosts whose only
+            # ports are the Nessus general/tcp + general/udp pseudo-ports.
+            qs = qs.filter(port__port_number__gt=0)
+            joined = True
+
+        if search:
+            qs = qs.filter(
+                Q(ip_address__icontains=search) | Q(domain__name__icontains=search)
+            )
+            joined = True
+
+        if completed is True:
+            qs = qs.filter(completed=True)
+        elif completed is False:
+            # completed is nullable; NULL counts as not completed, so
+            # filter(completed=False) would silently drop those hosts.
+            qs = qs.exclude(completed=True)
+        if recon_complete is not None:
+            qs = qs.filter(recon_complete=recon_complete)
+
+        if joined:
+            qs = qs.distinct()
+        qs = qs.order_by('ip_address')
+        return _paginated_response(qs, _serialize_ip_summary, page, per_page)
 
     if request.method == 'POST':
         body, err = _parse_body(request)
@@ -717,6 +776,120 @@ def vuln_detail(request, vuln_id):
     return _err('Method not allowed', 405)
 
 
+# ─── Vuln output (per-port proof / plugin output) ─────────────────────────────
+
+@csrf_exempt
+def vuln_outputs(request):
+    if request.method == 'GET':
+        page, per_page = _paginate(request)
+        full = _bool_param(request, 'full')
+        qs = VulnOutput.objects.select_related(
+            'vulnerability', 'port', 'port__ip_address'
+        ).all()
+
+        vuln_id = request.GET.get('vuln_id')
+        if vuln_id:
+            try:
+                qs = qs.filter(vulnerability_id=int(vuln_id))
+            except ValueError:
+                return _err('vuln_id must be an integer')
+
+        port_id = request.GET.get('port_id')
+        if port_id:
+            try:
+                qs = qs.filter(port_id=int(port_id))
+            except ValueError:
+                return _err('port_id must be an integer')
+
+        ip_filter = request.GET.get('ip', '').strip()
+        if ip_filter:
+            qs = qs.filter(port__ip_address__ip_address__icontains=ip_filter)
+
+        search = request.GET.get('search', '').strip()
+        if search:
+            qs = qs.filter(
+                Q(data__icontains=search) |
+                Q(vulnerability__name__icontains=search)
+            )
+
+        qs = qs.order_by('port__ip_address__ip_address', 'port__port_number', 'vulnerability__name')
+        serializer = _serialize_vuln_output if full else _serialize_vuln_output_preview
+        return _paginated_response(qs, serializer, page, per_page)
+
+    if request.method == 'POST':
+        body, err = _parse_body(request)
+        if err:
+            return err
+        for f in ('vuln_id', 'port_id'):
+            if f not in body:
+                return _err(f"'{f}' is required")
+        if 'data' not in body:
+            return _err("'data' is required")
+        try:
+            vuln_id = int(body['vuln_id'])
+            port_id = int(body['port_id'])
+        except (TypeError, ValueError):
+            return _err("'vuln_id' and 'port_id' must be integers")
+        if not isinstance(body['data'], str):
+            return _err("'data' must be a string")
+
+        v = Vulnerability.objects.filter(pk=vuln_id).first()
+        if not v:
+            return _err(f'No vulnerability with id {vuln_id}', 404)
+        port = Port.objects.filter(pk=port_id).first()
+        if not port:
+            return _err(f'No port with id {port_id}', 404)
+
+        vo = VulnOutput.objects.filter(vulnerability=v, port=port).first()
+        created = vo is None
+        if created:
+            vo = VulnOutput(vulnerability=v, port=port, data='')
+        if body.get('append'):
+            existing = vo.data or ''
+            vo.data = (existing + '\n' + body['data']) if existing else body['data']
+        else:
+            vo.data = body['data']
+        vo.save()
+
+        # Keep the vuln's affected-port set in sync — an output row for a port
+        # that is not in vulnerability.ports would never surface in vuln detail.
+        v.ports.add(port)
+
+        return JsonResponse(_serialize_vuln_output(vo), status=201 if created else 200)
+
+    return _err('Method not allowed', 405)
+
+
+@csrf_exempt
+def vuln_output_detail(request, output_id):
+    vo = get_object_or_404(VulnOutput, pk=output_id)
+
+    if request.method == 'GET':
+        return JsonResponse(_serialize_vuln_output(vo))
+
+    if request.method == 'PATCH':
+        body, err = _parse_body(request)
+        if err:
+            return err
+        if 'data' not in body:
+            return _err("'data' is required")
+        if not isinstance(body['data'], str):
+            return _err("'data' must be a string")
+        if body.get('append'):
+            existing = vo.data or ''
+            vo.data = (existing + '\n' + body['data']) if existing else body['data']
+        else:
+            vo.data = body['data']
+        vo.save()
+        return JsonResponse(_serialize_vuln_output(vo))
+
+    if request.method == 'DELETE':
+        vo.delete()
+        return JsonResponse({'deleted': True, 'id': output_id})
+
+    return _err('Method not allowed', 405)
+
+
 # ─── Domains ──────────────────────────────────────────────────────────────────
 
 @csrf_exempt
@@ -915,6 +1088,7 @@ def stats(request):
         'vulnerabilities': {
             'total':       vuln_qs.count(),
             'exploitable': vuln_qs.filter(exploitable=True).count(),
+            'output_rows': VulnOutput.objects.count(),
             **vuln_by_severity,
         },
         'domains': {
