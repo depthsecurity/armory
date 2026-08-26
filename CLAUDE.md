@@ -51,6 +51,7 @@ tests/                          # unittest suite
 | `armory-manage` | Raw Django management (`armory-manage <cmd>`) |
 | `armory-shell` | IPython shell with all models pre-imported |
 | `armory-docker` | Build Docker images for tool modules |
+| `armory-mcp` | Start the MCP server (stdio by default) |
 
 ```bash
 armory -lm                  # list available modules
@@ -200,6 +201,38 @@ See `tailwind/README.md` for details.
 
 ### Verify after adding
 Reload the Armory web UI; the new entry should appear under the chosen `category` in the Armory nav dropdown. After editing source, reinstall so the commands pick up changes (`pipx install . --force`, or `flit install --symlink` for an editable install).
+
+---
+
+## MCP server
+
+`armory2/armory_main/included/mcp/server.py` exposes the Armory database to MCP
+clients (Claude Code, Claude Desktop) as ~30 CRUD tools over hosts, ports,
+vulns, vuln outputs, domains, and CIDRs.
+
+It is a **client of the `armory_api` webapp**, not a direct ORM consumer — an
+`armory-web` instance must be running or every tool returns a connection error.
+Adding a tool means adding the API endpoint in
+`armory_main/included/webapps/armory_api/views.py` first, then a thin
+`@mcp.tool()` wrapper here.
+
+```bash
+armory-mcp                                   # stdio (what .mcp.json uses)
+armory-mcp --url http://127.0.0.1:8099       # point at a non-default web server
+armory-web --mcp                             # web on 8099 + MCP http on 8100
+armory-web --mcp --mcp-port 9000             # pick the MCP port
+```
+
+`--mcp` runs the server as a child process rather than mounting it into the
+Django ASGI app: daphne does not implement the ASGI lifespan protocol, which the
+streamable-http app needs to start its session manager. `armory-web` supervises
+both and tears them down together on SIGINT/SIGTERM.
+
+The code targets the **mcp 2.x `MCPServer` API** (`pyproject.toml` pins
+`mcp>=2.0`). If you port code from a v1 example, the differences are:
+`from mcp.server.fastmcp import FastMCP` → `from mcp.server.mcpserver import
+MCPServer`, and `mcp.settings.host/port` → `host=`/`port=` kwargs on
+`mcp.run()`. `@mcp.tool()` is unchanged.
 
 ---
 

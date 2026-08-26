@@ -37,6 +37,9 @@ dependencies = [
     "xlsxwriter (>=3.2.9,<4.0.0)",
     "channels>=4.0",
     "daphne>=4.0",
+    # server.py uses the 2.x MCPServer API (renamed from v1's FastMCP).
+    "mcp>=2.0",
+    "httpx",
 ]
 
 [project.scripts]
@@ -46,6 +49,7 @@ armory-shell = "armory2.shell:main"
 armory-web = "armory2.manage:web"
 armory-init = "armory2.manage:init"
 armory-docker = "armory2.manage:docker"
+armory-mcp = "armory2.armory_main.included.mcp.server:main"
 
 [tool.flit.module]
 name = "armory2"
