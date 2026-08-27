@@ -80,6 +80,15 @@ ARMORY_CUSTOM_WEBAPPS  = ["/path/to/armory_custom/webapps"]
 
 Database defaults to SQLite at `{ARMORY_BASE_PATH}/db.sqlite3`. The task queue (django-q2) requires Redis on `127.0.0.1:6379`.
 
+A `SECRET_KEY` in `~/.armory/settings.py` overrides the built-in Django default
+and is the shared secret for the `armory_api` auth header (see **MCP server**).
+The generated config creates one on first run and caches it in `~/.armory/api_key`;
+configs written before that have none and fall back to the built-in default key,
+which is public — set one.
+
+`ARMORY_WEB_USERNAME` / `ARMORY_WEB_PASSWORD` in the same file gate the web UI
+(see **Web UI authentication**).
+
 ---
 
 ## Modules
@@ -204,6 +213,44 @@ Reload the Armory web UI; the new entry should appear under the chosen `category
 
 ---
 
+## Web UI authentication
+
+`armory_main/middleware.py` holds `ArmoryWebAuthMiddleware`, which redirects any
+request without an authenticated session to `/login/`. Armory has no user table:
+the credentials are a single pair in `~/.armory/settings.py`, and a successful
+POST to the login view sets `request.session['armory_authenticated']`.
+
+```python
+ARMORY_WEB_USERNAME = 'analyst'
+ARMORY_WEB_PASSWORD = 'a-long-passphrase'   # or a make_password() hash
+```
+
+- **Leave either blank and auth is off** — every request passes through, which is
+  what existing configs (and the built-in default config) do.
+- `ARMORY_WEB_PASSWORD` may be plaintext or any Django password hash; a value
+  starting with a hasher prefix (`pbkdf2_sha256$`, `argon2`, …) is checked with
+  `check_password`, anything else with `hmac.compare_digest`.
+- Both settings also read from environment variables of the same name, for
+  containers.
+- Exempt paths: `/armory_api/` (it has its own key header — MCP clients cannot
+  log in), `/login/`, `/logout/`, and `STATIC_URL`.
+- Websockets get the same gate via `ArmoryWebAuthChannelsMiddleware`, wired
+  inside `AuthMiddlewareStack` in `armory2/asgi.py`; an unauthenticated
+  `ws/module_runner/` connect is rejected with a 403 handshake.
+
+Because it is middleware, every webapp — built-in or custom — is covered with no
+per-view opt-in. New pages need nothing; a page that must be public has to be
+added to `is_exempt()` in the middleware.
+
+Login page: `armory_main/templates/armory_main/login.html` (extends
+`base_tw.html` with `hide_nav`). The nav bar and dashboard header show a
+**Log out** link whenever `request.session.armory_authenticated` is set.
+
+Sessions are the stock Django DB-backed sessions under the cookie name
+`armory_session`.
+
+---
+
 ## MCP server
 
 `armory2/armory_main/included/mcp/server.py` exposes the Armory database to MCP
@@ -219,8 +266,30 @@ Adding a tool means adding the API endpoint in
 ```bash
 armory-mcp                                   # stdio (what .mcp.json uses)
 armory-mcp --url http://127.0.0.1:8099       # point at a non-default web server
+armory-mcp --api-key <key>                   # override the API key (see below)
 armory-web --mcp                             # web on 8099 + MCP http on 8100
 armory-web --mcp --mcp-port 9000             # pick the MCP port
+```
+
+### API authentication
+
+Every `/armory_api/` endpoint is wrapped in `@require_api_key` (defined in the
+API's `views.py`) and requires the key as an `X-Armory-Key` header or
+`Authorization: Bearer <key>`; missing key → 401, wrong key → 403. The key is
+`settings.SECRET_KEY`, compared with `hmac.compare_digest`. New endpoints must
+carry the decorator — put it directly under `@csrf_exempt`.
+
+`armory-mcp` resolves the key at import time from `--api-key`, then
+`$ARMORY_API_KEY`, then the Django `SECRET_KEY` (loading the settings with
+stdout redirected to stderr, since the user config prints and stdout is the
+stdio JSON-RPC stream). Local `armory-mcp` + `armory-web` therefore need no
+configuration; only a remote client that cannot read `~/.armory/settings.py`
+needs the flag or env var.
+
+Any other API client needs the header too:
+```bash
+curl -H "X-Armory-Key: $(python -c 'import os;os.environ.setdefault("DJANGO_SETTINGS_MODULE","armory2.armory2.settings");from django.conf import settings;print(settings.SECRET_KEY)')" \
+     http://127.0.0.1:8099/armory_api/stats
 ```
 
 `--mcp` runs the server as a child process rather than mounting it into the

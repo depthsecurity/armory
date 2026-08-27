@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
-from armory2.armory_main.views import main_view
+from armory2.armory_main.views import auth_view, main_view
 
 import pdb
 import glob
@@ -25,7 +25,10 @@ import os
 urlpatterns = [
     # path('/', admin.site.urls),
     # path('api/', include('armory2.armory_main.urls')),
-    path('', main_view.index, name="armory_main.index")
+    path('', main_view.index, name="armory_main.index"),
+    # Declared before the webapp loop below so no webapp can shadow the login.
+    path('login/', auth_view.login, name="armory_login"),
+    path('logout/', auth_view.logout, name="armory_logout"),
 ]
 # pdb.set_trace()
 

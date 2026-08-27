@@ -20,13 +20,22 @@ Configuration:
     --transport       stdio (default), streamable-http, or sse.
     --host / --port   Bind address for the http/sse transports.
                       Default: 127.0.0.1:8100
+    --api-key <KEY>   API key sent to the Armory API in the X-Armory-Key header.
+                      Defaults to the Django SECRET_KEY from ~/.armory/settings.py,
+                      which is what armory-web checks against, so a local server
+                      needs no extra configuration.
     ARMORY_API_URL    Environment variable fallback, used if --url is not given.
                       May include the /armory_api suffix.
+    ARMORY_API_KEY    Environment variable fallback, used if --api-key is not
+                      given. Handy when the Armory web server is on another host
+                      and its settings file is not readable here.
 """
 
 import argparse
+import contextlib
 import json
 import os
+import sys
 import httpx
 from mcp.server.mcpserver import MCPServer
 
@@ -64,6 +73,11 @@ def _build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_MCP_PORT,
         help=f"Port for http/sse transports (default: {DEFAULT_MCP_PORT})",
     )
+    parser.add_argument(
+        "--api-key",
+        default=None,
+        help="Armory API key (default: the SECRET_KEY from ~/.armory/settings.py)",
+    )
     return parser
 
 
@@ -87,7 +101,50 @@ def _resolve_base_url() -> str:
     return _normalize_api_url(DEFAULT_API_URL)
 
 
+def _django_secret_key() -> str:
+    """Read SECRET_KEY out of the Armory Django settings.
+
+    Loading the settings module executes the user's ~/.armory/settings.py, which
+    is free to print; on the stdio transport anything on stdout would corrupt the
+    JSON-RPC stream, so stdout is redirected to stderr for the duration.
+    """
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "armory2.armory2.settings")
+    try:
+        with contextlib.redirect_stdout(sys.stderr):
+            from django.conf import settings as django_settings
+
+            return str(django_settings.SECRET_KEY or "")
+    except Exception as e:  # missing config, unreadable settings, no django
+        print(
+            f"armory-mcp: could not read SECRET_KEY from the Armory settings: {e}",
+            file=sys.stderr,
+        )
+        return ""
+
+
+def _resolve_api_key() -> str:
+    args, _ = _build_parser().parse_known_args()
+
+    if args.api_key:
+        return args.api_key
+
+    env = os.environ.get("ARMORY_API_KEY")
+    if env:
+        return env
+
+    return _django_secret_key()
+
+
 BASE_URL = _resolve_base_url()
+API_KEY = _resolve_api_key()
+
+if not API_KEY:
+    print(
+        "armory-mcp: no API key resolved -- every request will be rejected. "
+        "Set SECRET_KEY in ~/.armory/settings.py, or pass --api-key / "
+        "$ARMORY_API_KEY.",
+        file=sys.stderr,
+    )
 
 mcp = MCPServer(
     "Armory",
@@ -112,11 +169,21 @@ def _http(method: str, path: str, params: dict = None, body: dict = None) -> dic
             f"{BASE_URL}{path}",
             params={k: v for k, v in (params or {}).items() if v is not None and v != ""},
             json=body,
+            headers={"X-Armory-Key": API_KEY},
             timeout=30,
         )
         r.raise_for_status()
         return r.json()
     except httpx.HTTPStatusError as e:
+        if e.response.status_code in (401, 403):
+            return {
+                "error": f"HTTP {e.response.status_code} — Armory API key rejected",
+                "detail": (
+                    "armory-mcp and armory-web must resolve the same SECRET_KEY. "
+                    "Set it in ~/.armory/settings.py, or pass --api-key / "
+                    "$ARMORY_API_KEY to armory-mcp."
+                ),
+            }
         return {"error": f"HTTP {e.response.status_code}", "detail": e.response.text[:300]}
     except httpx.RequestError as e:
         return {"error": f"Cannot reach Armory API at {BASE_URL}", "detail": str(e)}

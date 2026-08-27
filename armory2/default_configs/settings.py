@@ -44,3 +44,43 @@ DATABASES = {
 
 print(f"You are using the default config located at: {__file__}")
 print(f"Your project path is at: { base_path }")
+
+'''
+  Django SECRET_KEY. This doubles as the shared secret for the Armory REST API:
+  armory-mcp sends it in the X-Armory-Key header and armory-web verifies every
+  /armory_api/ request against it, so anything talking to the API needs it.
+
+  It is generated once and cached in an "api_key" file next to this config, so
+  every Armory process on this host resolves the same value across restarts.
+  Replace this block with a hardcoded SECRET_KEY if you'd rather manage the key
+  yourself (e.g. sharing one between hosts).
+'''
+
+_api_key_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'api_key')
+
+if os.path.exists(_api_key_file):
+    with open(_api_key_file) as _f:
+        SECRET_KEY = _f.read().strip()
+else:
+    import secrets
+
+    SECRET_KEY = secrets.token_urlsafe(48)
+    with open(_api_key_file, 'w') as _f:
+        _f.write(SECRET_KEY)
+    os.chmod(_api_key_file, 0o600)
+
+
+'''
+  Web UI authentication. Set BOTH of these to require a login for every
+  armory-web page; leave either blank and the UI stays open to anyone who can
+  reach the port. The /armory_api/ endpoints are exempt either way -- they
+  authenticate with the SECRET_KEY above, sent as an X-Armory-Key header.
+
+  ARMORY_WEB_PASSWORD may be a plaintext password or a Django password hash,
+  e.g. the output of:
+
+      armory-manage shell -c "from django.contrib.auth.hashers import make_password; print(make_password('mypassword'))"
+'''
+
+ARMORY_WEB_USERNAME = ''
+ARMORY_WEB_PASSWORD = ''

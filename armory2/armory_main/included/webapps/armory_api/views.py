@@ -7,11 +7,16 @@ ports, virtualhosts, and vulnerability links).
 
 Severity scale: 0=informational, 1=low, 2=medium, 3=high, 4=critical.
 
-No authentication is enforced; deploy behind a network boundary or add
-Django middleware if public exposure is needed.
+Every endpoint requires the Armory API key, sent either as an X-Armory-Key
+header or as `Authorization: Bearer <key>`. The key is the Django SECRET_KEY,
+which is set in ~/.armory/settings.py; armory-mcp reads the same value so the
+two agree without any extra configuration.
 """
 
+import hmac
 import json
+from functools import wraps
+from django.conf import settings as django_settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
@@ -25,6 +30,15 @@ from armory2.armory_main.models import (
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 SEV_LABELS = {0: 'informational', 1: 'low', 2: 'medium', 3: 'high', 4: 'critical'}
+
+API_KEY_HEADER = 'X-Armory-Key'
+API_KEY_META = 'HTTP_X_ARMORY_KEY'
+
+AUTH_DOC = (
+    f'All endpoints require the Armory API key (the Django SECRET_KEY from '
+    f'~/.armory/settings.py) in the {API_KEY_HEADER} header, or as '
+    f'"Authorization: Bearer <key>".'
+)
 
 ENDPOINTS = {
     'GET    /armory_api/':              'API root — this document',
@@ -83,6 +97,46 @@ CIDR_FIELDS = {
     'name': str, 'org_name': str, 'size': int,
     'cloud': bool, 'active_scope': bool, 'passive_scope': bool,
 }
+
+
+# ── Authentication ────────────────────────────────────────────────────────────
+
+def _presented_api_key(request):
+    """Pull the API key out of the request headers. Returns '' if absent."""
+    key = request.META.get(API_KEY_META, '')
+    if key:
+        return key.strip()
+    auth = request.META.get('HTTP_AUTHORIZATION', '')
+    if auth[:7].lower() == 'bearer ':
+        return auth[7:].strip()
+    return ''
+
+
+def require_api_key(view):
+    """Reject any request that does not carry the Armory API key.
+
+    The key is the Django SECRET_KEY, so armory-mcp and any other local client
+    can resolve it from the same ~/.armory/settings.py the web server loads.
+    """
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        expected = str(getattr(django_settings, 'SECRET_KEY', '') or '')
+        if not expected:
+            return _err('SECRET_KEY is not set on the server; API is unavailable', status=500)
+
+        presented = _presented_api_key(request)
+        if not presented:
+            return _err(
+                f'Authentication required: send the Armory API key in the '
+                f'{API_KEY_HEADER} header',
+                status=401,
+            )
+        if not hmac.compare_digest(presented, expected):
+            return _err('Invalid Armory API key', status=403)
+
+        return view(request, *args, **kwargs)
+
+    return wrapper
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -477,11 +531,13 @@ def _set_m2m(manager, ids, model, label):
 # ── Views ─────────────────────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def api_root(request):
     return JsonResponse({
         'name': 'Armory REST API',
         'version': '2.0',
         'description': 'Full CRUD JSON REST API for Armory security data.',
+        'authentication': AUTH_DOC,
         'severity_scale': SEV_LABELS,
         'endpoints': ENDPOINTS,
     })
@@ -490,6 +546,7 @@ def api_root(request):
 # ─── Hosts (IPAddress) ────────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def hosts(request):
     if request.method == 'GET':
         # Defaults return everything: all scopes, port-0-only and portless hosts
@@ -558,6 +615,7 @@ def hosts(request):
 
 
 @csrf_exempt
+@require_api_key
 def host_detail(request, ip_id):
     ip = get_object_or_404(IPAddress, pk=ip_id)
 
@@ -588,6 +646,7 @@ def host_detail(request, ip_id):
 # ─── Ports ────────────────────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def ports(request):
     if request.method == 'GET':
         page, per_page = _paginate(request)
@@ -644,6 +703,7 @@ def ports(request):
 
 
 @csrf_exempt
+@require_api_key
 def port_detail(request, port_id):
     port = get_object_or_404(Port, pk=port_id)
 
@@ -681,6 +741,7 @@ def port_detail(request, port_id):
 # ─── Vulnerabilities ──────────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def vulns(request):
     if request.method == 'GET':
         page, per_page = _paginate(request)
@@ -743,6 +804,7 @@ def vulns(request):
 
 
 @csrf_exempt
+@require_api_key
 def vuln_detail(request, vuln_id):
     v = get_object_or_404(Vulnerability, pk=vuln_id)
 
@@ -779,6 +841,7 @@ def vuln_detail(request, vuln_id):
 # ─── Vuln output (per-port proof / plugin output) ─────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def vuln_outputs(request):
     if request.method == 'GET':
         page, per_page = _paginate(request)
@@ -861,6 +924,7 @@ def vuln_outputs(request):
 
 
 @csrf_exempt
+@require_api_key
 def vuln_output_detail(request, output_id):
     vo = get_object_or_404(VulnOutput, pk=output_id)
 
@@ -893,6 +957,7 @@ def vuln_output_detail(request, output_id):
 # ─── Domains ──────────────────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def domains(request):
     if request.method == 'GET':
         page, per_page = _paginate(request)
@@ -948,6 +1013,7 @@ def domains(request):
 
 
 @csrf_exempt
+@require_api_key
 def domain_detail(request, domain_id):
     d = get_object_or_404(Domain, pk=domain_id)
 
@@ -986,6 +1052,7 @@ def domain_detail(request, domain_id):
 # ─── CIDRs ────────────────────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def cidrs(request):
     if request.method == 'GET':
         page, per_page = _paginate(request)
@@ -1025,6 +1092,7 @@ def cidrs(request):
 
 
 @csrf_exempt
+@require_api_key
 def cidr_detail(request, cidr_id):
     c = get_object_or_404(CIDR, pk=cidr_id)
 
@@ -1055,6 +1123,7 @@ def cidr_detail(request, cidr_id):
 # ─── Stats & Search ───────────────────────────────────────────────────────────
 
 @csrf_exempt
+@require_api_key
 def stats(request):
     if request.method != 'GET':
         return _err('Method not allowed', 405)
@@ -1105,6 +1174,7 @@ def stats(request):
 
 
 @csrf_exempt
+@require_api_key
 def search(request):
     if request.method != 'GET':
         return _err('Method not allowed', 405)

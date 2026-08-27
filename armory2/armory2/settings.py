@@ -23,6 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# Overridden by a SECRET_KEY in ~/.armory/settings.py (see the bottom of this
+# file); it is also the shared secret the armory_api auth header is checked
+# against.
 SECRET_KEY = 'ef23eil#4mb&+2k2^+^u73l=fda2y2+rrmx^td4e)*at7w%+0g'
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -68,7 +71,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Gates the whole web UI behind ARMORY_WEB_USERNAME/ARMORY_WEB_PASSWORD
+    # (no-op when they are unset). Must come after SessionMiddleware.
+    'armory2.armory_main.middleware.ArmoryWebAuthMiddleware',
 ]
+
+# Named so an Armory login does not collide with any other Django app running
+# on the same host.
+SESSION_COOKIE_NAME = 'armory_session'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 ROOT_URLCONF = 'armory2.armory2.urls'
 
@@ -186,6 +198,29 @@ else:
 DATABASES = module.DATABASES
 
 ARMORY_CONFIG = module.ARMORY_CONFIG
+
+# A SECRET_KEY defined in the user's config wins over the built-in default
+# above. It doubles as the shared secret for the armory_api REST API: armory-mcp
+# sends it in the X-Armory-Key header and armory-web verifies it, so every
+# Armory process on the host must resolve it to the same value. Installs whose
+# config predates this have no SECRET_KEY of their own and fall back to the
+# built-in default, which is public -- set one in ~/.armory/settings.py.
+ARMORY_API_KEY_IS_DEFAULT = not getattr(module, "SECRET_KEY", None)
+
+if not ARMORY_API_KEY_IS_DEFAULT:
+    SECRET_KEY = module.SECRET_KEY
+
+# Web UI credentials. Set both in ~/.armory/settings.py (or via the matching
+# environment variables) to require a login for every armory-web page; leave
+# either one blank and ArmoryWebAuthMiddleware lets every request through.
+# The /armory_api/ endpoints are always exempt -- they authenticate with the
+# X-Armory-Key header instead.
+ARMORY_WEB_USERNAME = str(
+    getattr(module, "ARMORY_WEB_USERNAME", "") or os.getenv("ARMORY_WEB_USERNAME", "")
+)
+ARMORY_WEB_PASSWORD = str(
+    getattr(module, "ARMORY_WEB_PASSWORD", "") or os.getenv("ARMORY_WEB_PASSWORD", "")
+)
 
 if not os.path.exists(ARMORY_CONFIG['ARMORY_BASE_PATH']):
     os.makedirs(ARMORY_CONFIG['ARMORY_BASE_PATH'])
