@@ -1,0 +1,42 @@
+{% extends 'armory_main/base_tw.html' %}
+
+{% block content %}
+<div class="armory-container">
+  <div class="mx-auto max-w-sm">
+
+    <div class="mb-6 flex flex-col items-center gap-2">
+      <span class="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-brand-600 text-2xl font-bold text-white">A</span>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white">Armory</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Sign in to continue</p>
+    </div>
+
+    <div class="armory-card">
+      <div class="armory-card-body">
+
+        {% if error %}
+        <div class="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+          {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="/login/">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+
+          <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" for="username">Username</label>
+          <input class="armory-input mb-4" type="text" id="username" name="username"
+                 value="{{ username }}" autocomplete="username" autofocus required>
+
+          <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200" for="password">Password</label>
+          <input class="armory-input mb-6" type="password" id="password" name="password"
+                 autocomplete="current-password" required>
+
+          <button class="btn btn-primary w-full" type="submit">Sign in</button>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
