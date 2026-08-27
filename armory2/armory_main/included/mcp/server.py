@@ -152,17 +152,22 @@ mcp = MCPServer(
     instructions=(
         "You have access to the Armory security platform database for the current "
         "penetration test engagement. Use these tools to explore discovered hosts, "
-        "ports, vulnerabilities, domains, and CIDRs. You can also create, update, "
+        "ports, virtual hosts, vulnerabilities, domains, CIDRs, discovered URLs, users, "
+        "credentials, CVEs, and tags. You can also create, update, "
         "and delete records — DELETE cascades through Django foreign keys, so "
         "deleting a host removes its ports and vulnerability links. Severity scale: "
-        "0=informational, 1=low, 2=medium, 3=high, 4=critical."
+        "0=informational, 1=low, 2=medium, 3=high, 4=critical. "
+        "run_command() proxies a shell command to the host running armory-web, so "
+        "engagement tooling can be driven from wherever Armory lives; long scans "
+        "should use background=True and then get_command() to collect output."
     ),
 )
 
 
 # ── HTTP helpers ──────────────────────────────────────────────────────────────
 
-def _http(method: str, path: str, params: dict = None, body: dict = None) -> dict | list:
+def _http(method: str, path: str, params: dict = None, body: dict = None,
+          timeout: int = 30) -> dict | list:
     try:
         r = httpx.request(
             method,
@@ -170,7 +175,7 @@ def _http(method: str, path: str, params: dict = None, body: dict = None) -> dic
             params={k: v for k, v in (params or {}).items() if v is not None and v != ""},
             json=body,
             headers={"X-Armory-Key": API_KEY},
-            timeout=30,
+            timeout=timeout,
         )
         r.raise_for_status()
         return r.json()
@@ -193,8 +198,8 @@ def _get(path: str, **params) -> dict | list:
     return _http("GET", path, params=params)
 
 
-def _post(path: str, body: dict) -> dict:
-    return _http("POST", path, body=body)
+def _post(path: str, body: dict, timeout: int = 30) -> dict:
+    return _http("POST", path, body=body, timeout=timeout)
 
 
 def _patch(path: str, body: dict) -> dict:
@@ -314,6 +319,7 @@ def create_host(
     recon_complete: bool = None,
     active_scope: bool = None,
     passive_scope: bool = None,
+    tags: list = None,
 ) -> str:
     """
     Create a new IP address record. The CIDR for the host is auto-resolved from
@@ -330,11 +336,13 @@ def create_host(
         recon_complete: True to mark recon as finished for this host.
         active_scope:   True if the host is in active scope.
         passive_scope:  True if the host is in passive scope.
+        tags:           Tag names to apply (created if new). REPLACES the
+                        record's tag list; use apply_tag() to add or remove one.
     """
     body = _build_body(
         ip_address=ip_address, os=os, notes=notes, ai_notes=ai_notes, whois=whois,
         completed=completed, recon_complete=recon_complete,
-        active_scope=active_scope, passive_scope=passive_scope,
+        active_scope=active_scope, passive_scope=passive_scope, tag_names=tags,
     )
     return _fmt(_post("/hosts", body))
 
@@ -351,6 +359,7 @@ def update_host(
     ip_address: str = None,
     active_scope: bool = None,
     passive_scope: bool = None,
+    tags: list = None,
 ) -> str:
     """
     Update any subset of fields on an existing IP address. At least one field
@@ -367,11 +376,14 @@ def update_host(
         ip_address:     Rename the IP (unique — fails on conflict).
         active_scope:   Update active-scope flag.
         passive_scope:  Update passive-scope flag.
+        tags:           Tag names to apply (created if new). REPLACES the
+                        record's tag list; use apply_tag() to add or remove one.
     """
     body = _build_body(
         notes=notes, ai_notes=ai_notes, completed=completed,
         recon_complete=recon_complete, os=os, whois=whois,
         ip_address=ip_address, active_scope=active_scope, passive_scope=passive_scope,
+        tag_names=tags,
     )
     if not body:
         return json.dumps({"error": "Provide at least one field to update."})
@@ -455,6 +467,7 @@ def create_port(
     recon_complete: bool = None,
     active_scope: bool = None,
     passive_scope: bool = None,
+    tags: list = None,
 ) -> str:
     """
     Create a new port on an existing host.
@@ -470,12 +483,14 @@ def create_port(
         recon_complete: True to mark recon as finished for this port.
         active_scope:   Active-scope flag.
         passive_scope:  Passive-scope flag.
+        tags:           Tag names to apply (created if new). REPLACES the
+                        record's tag list; use apply_tag() to add or remove one.
     """
     body = _build_body(
         port_number=port_number, proto=proto, ip_id=ip_id,
         status=status, service_name=service_name, cert=cert, ai_notes=ai_notes,
         recon_complete=recon_complete,
-        active_scope=active_scope, passive_scope=passive_scope,
+        active_scope=active_scope, passive_scope=passive_scope, tag_names=tags,
     )
     return _fmt(_post("/ports", body))
 
@@ -493,6 +508,7 @@ def update_port(
     recon_complete: bool = None,
     active_scope: bool = None,
     passive_scope: bool = None,
+    tags: list = None,
 ) -> str:
     """
     Update any subset of fields on an existing port. At least one field must
@@ -510,12 +526,14 @@ def update_port(
         recon_complete: True to mark recon finished, False to unmark.
         active_scope:   Active-scope flag.
         passive_scope:  Passive-scope flag.
+        tags:           Tag names to apply (created if new). REPLACES the
+                        record's tag list; use apply_tag() to add or remove one.
     """
     body = _build_body(
         port_number=port_number, proto=proto, ip_id=ip_id,
         status=status, service_name=service_name, cert=cert, ai_notes=ai_notes,
         recon_complete=recon_complete,
-        active_scope=active_scope, passive_scope=passive_scope,
+        active_scope=active_scope, passive_scope=passive_scope, tag_names=tags,
     )
     if not body:
         return json.dumps({"error": "Provide at least one field to update."})
@@ -596,6 +614,7 @@ def create_vuln(
     source: str = None,
     exploitable: bool = None,
     port_ids: list = None,
+    cves: list = None,
 ) -> str:
     """
     Create a new vulnerability. Name is unique — duplicates return 409.
@@ -608,11 +627,13 @@ def create_vuln(
         source:       Tool source label (default 'nessus').
         exploitable:  Mark exploitable.
         port_ids:     List of Port IDs to associate with this vuln.
+        cves:         CVE names to link, e.g. ['CVE-2024-3094'] — unknown CVEs are
+                      created. REPLACES the vuln's existing CVE links.
     """
     body = _build_body(
         name=name, severity=severity, description=description,
         remediation=remediation, source=source, exploitable=exploitable,
-        port_ids=port_ids,
+        port_ids=port_ids, cve_names=cves,
     )
     return _fmt(_post("/vulns", body))
 
@@ -627,6 +648,7 @@ def update_vuln(
     source: str = None,
     exploitable: bool = None,
     port_ids: list = None,
+    cves: list = None,
 ) -> str:
     """
     Update fields on an existing vulnerability. At least one field required.
@@ -641,11 +663,13 @@ def update_vuln(
         source:      Replace source label.
         exploitable: Toggle exploitable flag.
         port_ids:    Replace the list of affected Port IDs.
+        cves:        CVE names to link, e.g. ['CVE-2024-3094'] — unknown CVEs are
+                     created. REPLACES the vuln's existing CVE links.
     """
     body = _build_body(
         name=name, severity=severity, description=description,
         remediation=remediation, source=source, exploitable=exploitable,
-        port_ids=port_ids,
+        port_ids=port_ids, cve_names=cves,
     )
     if not body:
         return json.dumps({"error": "Provide at least one field to update."})
@@ -814,6 +838,7 @@ def create_domain(
     active_scope: bool = None,
     passive_scope: bool = None,
     ip_ids: list = None,
+    tags: list = None,
 ) -> str:
     """
     Create a new domain. The base domain is derived automatically from the
@@ -833,11 +858,14 @@ def create_domain(
         active_scope:   Active-scope flag.
         passive_scope:  Passive-scope flag.
         ip_ids:         Optional list of IPAddress IDs to attach.
+        tags:           Tag names to apply (created if new). REPLACES the
+                        record's tag list; use apply_tag() to add or remove one.
     """
     body = _build_body(
         name=name, whois=whois, ai_notes=ai_notes, recon_complete=recon_complete,
         dynamic_ip=dynamic_ip,
         active_scope=active_scope, passive_scope=passive_scope, ip_ids=ip_ids,
+        tag_names=tags,
     )
     return _fmt(_post("/domains", body))
 
@@ -853,6 +881,7 @@ def update_domain(
     active_scope: bool = None,
     passive_scope: bool = None,
     ip_ids: list = None,
+    tags: list = None,
 ) -> str:
     """
     Update fields on an existing domain. At least one field required.
@@ -872,11 +901,14 @@ def update_domain(
         active_scope:   Update active-scope flag.
         passive_scope:  Update passive-scope flag.
         ip_ids:         Replace the list of associated IPAddress IDs.
+        tags:           Tag names to apply (created if new). REPLACES the
+                        record's tag list; use apply_tag() to add or remove one.
     """
     body = _build_body(
         name=name, whois=whois, ai_notes=ai_notes, recon_complete=recon_complete,
         dynamic_ip=dynamic_ip,
         active_scope=active_scope, passive_scope=passive_scope, ip_ids=ip_ids,
+        tag_names=tags,
     )
     if not body:
         return json.dumps({"error": "Provide at least one field to update."})
@@ -998,6 +1030,835 @@ def delete_cidr(cidr_id: int) -> str:
         cidr_id: Integer ID of the CIDR record.
     """
     return _fmt(_delete(f"/cidrs/{cidr_id}"))
+
+
+# ── Virtual hosts ─────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_virtualhosts(
+    search: str = "",
+    name: str = "",
+    ip: str = "",
+    ip_id: int = None,
+    port_id: int = None,
+    domain: str = "",
+    active: str = "",
+    scope: str = "all",
+    page: int = 1,
+    per_page: int = 50,
+) -> str:
+    """
+    List virtual hosts — the hostnames Armory knows are served by a given IP,
+    usually one row per (IP, port, hostname). Use this to find every name that
+    answers on a host before testing it, since a web port often serves different
+    content per Host header.
+
+    Armory also keeps a host-wide row with no port for each name; those come back
+    with port_id null.
+
+    Args:
+        search:   Substring matched against both the vhost name and the IP.
+        name:     Substring filter on the vhost name only.
+        ip:       Substring filter on the IP address.
+        ip_id:    Only vhosts on this IPAddress id.
+        port_id:  Only vhosts bound to this Port id.
+        domain:   Substring filter on the linked Domain name.
+        active:   'true', 'false', or '' (default) for all.
+        scope:    'active', 'passive', or 'all'. Default: 'all'.
+        page:     Page number. Default: 1.
+        per_page: Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get(
+        "/virtualhosts",
+        search=search or None,
+        name=name or None,
+        ip=ip or None,
+        ip_id=ip_id,
+        port_id=port_id,
+        domain=domain or None,
+        active=active or None,
+        scope=scope,
+        page=page,
+        per_page=per_page,
+    ))
+
+
+@mcp.tool()
+def get_virtualhost(vh_id: int) -> str:
+    """
+    Retrieve full detail for a single virtual host: name, the IP and port it is
+    bound to (with service name and protocol), the linked Domain, active flag,
+    scope flags, and the tool that discovered it.
+
+    Args:
+        vh_id: Integer ID of the VirtualHost record.
+    """
+    return _fmt(_get(f"/virtualhosts/{vh_id}"))
+
+
+@mcp.tool()
+def create_virtualhost(
+    ip_id: int,
+    name: str,
+    port_id: int = None,
+    domain_id: int = None,
+    active: bool = None,
+    active_scope: bool = None,
+    passive_scope: bool = None,
+) -> str:
+    """
+    Record a hostname served by an IP — e.g. after finding it in a TLS
+    certificate, a redirect, or a vhost bruteforce.
+
+    This is get_or_create on (ip_id, port_id, name), which is the same key
+    Armory's own modules use, so re-recording a known vhost returns the existing
+    row with "created": false instead of duplicating it. Omit port_id for the
+    host-wide row that applies to every port.
+
+    If the name is not a bare IP, Armory links it to the matching Domain and
+    creates that Domain record when it does not exist yet.
+
+    Args:
+        ip_id:         Required. IPAddress id serving this hostname.
+        name:          Required. The hostname (e.g. 'admin.example.com').
+        port_id:       Port id this vhost was seen on. Omit for a host-wide row.
+        domain_id:     Force the Domain link. Omit to let Armory resolve it from the name.
+        active:        False to mark the vhost as no longer serving. Default true.
+        active_scope:  Active-scope flag.
+        passive_scope: Passive-scope flag.
+    """
+    body = _build_body(
+        ip_id=ip_id, name=name, port_id=port_id, domain_id=domain_id,
+        active=active, active_scope=active_scope, passive_scope=passive_scope,
+    )
+    return _fmt(_post("/virtualhosts", body))
+
+
+@mcp.tool()
+def update_virtualhost(
+    vh_id: int,
+    name: str = None,
+    ip_id: int = None,
+    port_id: int = None,
+    domain_id: int = None,
+    active: bool = None,
+    active_scope: bool = None,
+    passive_scope: bool = None,
+) -> str:
+    """
+    Update fields on an existing virtual host. At least one field required.
+
+    Moving a vhost to a different ip_id requires setting port_id to a port on
+    that IP (or clearing it), since a vhost cannot be bound to a port on another
+    host.
+
+    Args:
+        vh_id:         Required. Integer ID of the VirtualHost record.
+        name:          Rename the vhost.
+        ip_id:         Move it to a different IPAddress.
+        port_id:       Bind it to a different Port.
+        domain_id:     Re-link it to a different Domain.
+        active:        Mark it serving (true) or no longer serving (false).
+        active_scope:  Update active-scope flag.
+        passive_scope: Update passive-scope flag.
+    """
+    body = _build_body(
+        name=name, ip_id=ip_id, port_id=port_id, domain_id=domain_id,
+        active=active, active_scope=active_scope, passive_scope=passive_scope,
+    )
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/virtualhosts/{vh_id}", body))
+
+
+@mcp.tool()
+def delete_virtualhost(vh_id: int) -> str:
+    """
+    Delete a virtual host record. Cascades to the ToolRun rows recorded against
+    it. The IP, port, and Domain it referenced are left alone.
+
+    Prefer update_virtualhost(active=False) when a hostname simply stopped
+    resolving — that keeps the history.
+
+    Args:
+        vh_id: Integer ID of the VirtualHost record.
+    """
+    return _fmt(_delete(f"/virtualhosts/{vh_id}"))
+
+
+# ── Base domains ──────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_basedomains(search: str = "", scope: str = "all", tag: str = "",
+                     page: int = 1, per_page: int = 50) -> str:
+    """
+    List root domains (e.g. 'example.com') — the parents that subdomains and
+    discovered users hang off. Each result carries its child-domain count, user
+    count, scope, and tags.
+
+    Args:
+        search:   Substring filter on the root domain name.
+        scope:    'active', 'passive', or 'all'. Default: 'all'.
+        tag:      Only root domains carrying this exact tag name.
+        page:     Page number. Default: 1.
+        per_page: Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/basedomains", search=search or None, scope=scope,
+                     tag=tag or None, page=page, per_page=per_page))
+
+
+@mcp.tool()
+def get_basedomain(basedomain_id: int) -> str:
+    """
+    Retrieve a root domain in full: DNS records Armory has collected, every
+    child domain, user count, scope flags, and tags.
+
+    Args:
+        basedomain_id: Integer ID of the BaseDomain record.
+    """
+    return _fmt(_get(f"/basedomains/{basedomain_id}"))
+
+
+@mcp.tool()
+def update_basedomain(basedomain_id: int, active_scope: bool = None,
+                      passive_scope: bool = None, tags: list = None) -> str:
+    """
+    Update a root domain's scope flags or tags.
+
+    Root domains are created implicitly — by adding a subdomain or a user — and
+    renaming one would orphan every child domain, so name is not editable and
+    there is no delete.
+
+    Args:
+        basedomain_id: Required. Integer ID of the BaseDomain record.
+        active_scope:  Active-scope flag.
+        passive_scope: Passive-scope flag.
+        tags:          REPLACES the tag list with these names (created if new).
+                       Use apply_tag() to add or remove a single tag.
+    """
+    body = _build_body(active_scope=active_scope, passive_scope=passive_scope,
+                       tag_names=tags)
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/basedomains/{basedomain_id}", body))
+
+
+# ── URLs ──────────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_urls(search: str = "", method: str = "", port_id: int = None,
+              ip: str = "", scope: str = "all", page: int = 1, per_page: int = 50) -> str:
+    """
+    List URLs discovered on the engagement, each tied to the port that serves
+    it. Use this to see what content enumeration has already turned up on a web
+    port before spidering it again.
+
+    Args:
+        search:   Substring filter on the URL.
+        method:   Exact HTTP method filter, e.g. 'get' or 'post'.
+        port_id:  Only URLs on this Port id.
+        ip:       Substring filter on the serving IP address.
+        scope:    'active', 'passive', or 'all'. Default: 'all'.
+        page:     Page number. Default: 1.
+        per_page: Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/urls", search=search or None, method=method or None,
+                     port_id=port_id, ip=ip or None, scope=scope,
+                     page=page, per_page=per_page))
+
+
+@mcp.tool()
+def create_url(port_id: int, name: str, method: str = "get",
+               active_scope: bool = None, passive_scope: bool = None) -> str:
+    """
+    Record a discovered URL against the port that serves it — an admin panel, an
+    API route, an upload endpoint worth coming back to.
+
+    This is get_or_create on (port_id, name, method), so re-recording a known
+    URL returns the existing row with "created": false.
+
+    Args:
+        port_id:       Required. Port id serving this URL.
+        name:          Required. The URL itself.
+        method:        HTTP method. Default: 'get'.
+        active_scope:  Active-scope flag.
+        passive_scope: Passive-scope flag.
+    """
+    body = _build_body(port_id=port_id, name=name, method=method,
+                       active_scope=active_scope, passive_scope=passive_scope)
+    return _fmt(_post("/urls", body))
+
+
+@mcp.tool()
+def update_url(url_id: int, name: str = None, method: str = None, port_id: int = None,
+               active_scope: bool = None, passive_scope: bool = None) -> str:
+    """
+    Update fields on a recorded URL. At least one field required.
+
+    Args:
+        url_id:        Required. Integer ID of the Url record.
+        name:          Replace the URL.
+        method:        Replace the HTTP method.
+        port_id:       Move it to a different Port.
+        active_scope:  Active-scope flag.
+        passive_scope: Passive-scope flag.
+    """
+    body = _build_body(name=name, method=method, port_id=port_id,
+                       active_scope=active_scope, passive_scope=passive_scope)
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/urls/{url_id}", body))
+
+
+@mcp.tool()
+def delete_url(url_id: int) -> str:
+    """
+    Delete a recorded URL. Nothing else references it.
+
+    Args:
+        url_id: Integer ID of the Url record.
+    """
+    return _fmt(_delete(f"/urls/{url_id}"))
+
+
+# ── Users ─────────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_users(search: str = "", basedomain_id: int = None, domain: str = "",
+               tag: str = "", scope: str = "all", page: int = 1, per_page: int = 50) -> str:
+    """
+    List discovered user accounts — the OSINT harvest (TheHarvester, LinkedInt,
+    PyMeta) plus anything added during testing. Each result shows the email,
+    username, name, root domain, tags, and how many credentials are on file.
+
+    Args:
+        search:        Substring matched against email, username, first and last name.
+        basedomain_id: Only users under this BaseDomain id.
+        domain:        Substring filter on the root domain name.
+        tag:           Only users carrying this exact tag name.
+        scope:         'active', 'passive', or 'all'. Default: 'all'.
+        page:          Page number. Default: 1.
+        per_page:      Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/users", search=search or None, basedomain_id=basedomain_id,
+                     domain=domain or None, tag=tag or None, scope=scope,
+                     page=page, per_page=per_page))
+
+
+@mcp.tool()
+def get_user(user_id: int) -> str:
+    """
+    Retrieve one user in full, including every credential recorded for them
+    (plaintext passwords and hashes), job title, location, scope, and tags.
+
+    Args:
+        user_id: Integer ID of the User record.
+    """
+    return _fmt(_get(f"/users/{user_id}"))
+
+
+@mcp.tool()
+def create_user(
+    email: str,
+    first_name: str = None,
+    last_name: str = None,
+    user_name: str = None,
+    job_title: str = None,
+    location: str = None,
+    basedomain_id: int = None,
+    domain: str = None,
+    tags: list = None,
+) -> str:
+    """
+    Record a discovered user account. Email is the unique key, so calling this
+    for a known address updates that record and returns "created": false.
+
+    The root domain is resolved automatically from the email address unless you
+    pass basedomain_id or domain, and is created if Armory has not seen it.
+
+    Args:
+        email:         Required. Email address — the unique key for the record.
+        first_name:    Given name.
+        last_name:     Family name.
+        user_name:     Login name, if it differs from the email local part.
+        job_title:     Job title (useful for spray target selection).
+        location:      Office or geography.
+        basedomain_id: Force the root domain by id.
+        domain:        Force the root domain by name (created if new).
+        tags:          Tag names to apply (created if new). REPLACES the list.
+    """
+    body = _build_body(
+        email=email, first_name=first_name, last_name=last_name,
+        user_name=user_name, job_title=job_title, location=location,
+        basedomain_id=basedomain_id, domain=domain, tag_names=tags,
+    )
+    return _fmt(_post("/users", body))
+
+
+@mcp.tool()
+def update_user(
+    user_id: int,
+    email: str = None,
+    first_name: str = None,
+    last_name: str = None,
+    user_name: str = None,
+    job_title: str = None,
+    location: str = None,
+    basedomain_id: int = None,
+    domain: str = None,
+    tags: list = None,
+) -> str:
+    """
+    Update a user record. At least one field required.
+
+    Args:
+        user_id:       Required. Integer ID of the User record.
+        email:         Replace the email (must stay unique).
+        first_name:    Replace the given name.
+        last_name:     Replace the family name.
+        user_name:     Replace the login name.
+        job_title:     Replace the job title.
+        location:      Replace the location.
+        basedomain_id: Move the user to another root domain by id.
+        domain:        Move the user to another root domain by name.
+        tags:          REPLACES the tag list. Use apply_tag() to add or remove one.
+    """
+    body = _build_body(
+        email=email, first_name=first_name, last_name=last_name,
+        user_name=user_name, job_title=job_title, location=location,
+        basedomain_id=basedomain_id, domain=domain, tag_names=tags,
+    )
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/users/{user_id}", body))
+
+
+@mcp.tool()
+def delete_user(user_id: int) -> str:
+    """
+    Delete a user. CASCADES to every credential recorded for them.
+
+    Args:
+        user_id: Integer ID of the User record.
+    """
+    return _fmt(_delete(f"/users/{user_id}"))
+
+
+# ── Credentials ───────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_creds(search: str = "", user_id: int = None, source: str = "",
+               has_password: str = "", has_hash: str = "", tag: str = "",
+               page: int = 1, per_page: int = 50) -> str:
+    """
+    List credentials recovered on the engagement — sprayed passwords, dumped
+    NTDS hashes, config-file secrets. Each row carries the owning user's email.
+
+    Args:
+        search:       Substring matched against email, username, password, and source.
+        user_id:      Only credentials for this User id.
+        source:       Substring filter on where the credential came from.
+        has_password: 'true' for plaintext only, 'false' for hash-only rows.
+        has_hash:     'true' for rows carrying a hash, 'false' for those without.
+        tag:          Only credentials carrying this exact tag name.
+        page:         Page number. Default: 1.
+        per_page:     Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/creds", search=search or None, user_id=user_id,
+                     source=source or None, has_password=has_password or None,
+                     has_hash=has_hash or None, tag=tag or None,
+                     page=page, per_page=per_page))
+
+
+@mcp.tool()
+def create_cred(
+    user_id: int = None,
+    email: str = None,
+    password: str = None,
+    passhash: str = None,
+    source: str = None,
+    tags: list = None,
+) -> str:
+    """
+    Record a recovered credential. Provide the owner as either user_id or email
+    — an unknown email creates the user (and its root domain) first. At least
+    one of password or passhash is required.
+
+    Re-recording the same secret for the same user returns the existing row with
+    "created": false, so replaying a dump does not duplicate rows.
+
+    Args:
+        user_id:  User id owning the credential. Use this or email.
+        email:    Owner's email — the user is created if Armory does not know it.
+        password: Plaintext password.
+        passhash: Password hash (NTLM, bcrypt, whatever the source produced).
+        source:   Where it came from, e.g. 'ntds', 'spray', 'web.config'.
+        tags:     Tag names to apply (created if new). REPLACES the list.
+    """
+    body = _build_body(user_id=user_id, email=email, password=password,
+                       passhash=passhash, source=source, tag_names=tags)
+    return _fmt(_post("/creds", body))
+
+
+@mcp.tool()
+def update_cred(cred_id: int, password: str = None, passhash: str = None,
+                source: str = None, user_id: int = None, tags: list = None) -> str:
+    """
+    Update a credential — typically to add the plaintext after cracking a hash.
+    At least one field required.
+
+    Args:
+        cred_id:  Required. Integer ID of the Cred record.
+        password: Set or replace the plaintext password.
+        passhash: Set or replace the hash.
+        source:   Replace the source label.
+        user_id:  Reassign the credential to another user.
+        tags:     REPLACES the tag list. Use apply_tag() to add or remove one.
+    """
+    body = _build_body(password=password, passhash=passhash, source=source,
+                       user_id=user_id, tag_names=tags)
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/creds/{cred_id}", body))
+
+
+@mcp.tool()
+def delete_cred(cred_id: int) -> str:
+    """
+    Delete a credential. The user it belonged to is left alone.
+
+    Args:
+        cred_id: Integer ID of the Cred record.
+    """
+    return _fmt(_delete(f"/creds/{cred_id}"))
+
+
+# ── CVEs ──────────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_cves(search: str = "", min_score: float = None, updated: str = "",
+              page: int = 1, per_page: int = 50) -> str:
+    """
+    List CVE records, highest temporal score first, with the number of Armory
+    vulnerabilities referencing each one.
+
+    Args:
+        search:    Substring matched against the CVE id and its description.
+        min_score: Only CVEs at or above this temporal score.
+        updated:   'true', 'false', or '' (default) for all.
+        page:      Page number. Default: 1.
+        per_page:  Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/cves", search=search or None, min_score=min_score,
+                     updated=updated or None, page=page, per_page=per_page))
+
+
+@mcp.tool()
+def get_cve(cve_id: int) -> str:
+    """
+    Retrieve one CVE with its description and every vulnerability linked to it.
+
+    Args:
+        cve_id: Integer ID of the CVE record (not the CVE name).
+    """
+    return _fmt(_get(f"/cves/{cve_id}"))
+
+
+@mcp.tool()
+def create_cve(name: str, description: str = None, temporal_score: float = None,
+               updated: bool = None, vuln_ids: list = None) -> str:
+    """
+    Record a CVE. This is get_or_create on the name, so a CVE that Nessus
+    already imported comes back with "created": false and your fields applied.
+
+    To attach a CVE to a finding you can also pass cve_names to create_vuln() or
+    update_vuln(), which creates unknown CVEs on the fly.
+
+    Args:
+        name:           Required. CVE identifier, e.g. 'CVE-2024-3094'.
+        description:    Description text.
+        temporal_score: CVSS temporal score.
+        updated:        Whether the record has been enriched from a feed.
+        vuln_ids:       Vulnerability ids to link — REPLACES the existing links.
+    """
+    body = _build_body(name=name, description=description,
+                       temporal_score=temporal_score, updated=updated,
+                       vuln_ids=vuln_ids)
+    return _fmt(_post("/cves", body))
+
+
+@mcp.tool()
+def update_cve(cve_id: int, name: str = None, description: str = None,
+               temporal_score: float = None, updated: bool = None,
+               vuln_ids: list = None) -> str:
+    """
+    Update a CVE record. At least one field required.
+
+    Args:
+        cve_id:         Required. Integer ID of the CVE record.
+        name:           Rename the CVE identifier.
+        description:    Replace the description.
+        temporal_score: Replace the CVSS temporal score.
+        updated:        Set the enriched flag.
+        vuln_ids:       REPLACES the linked vulnerability list.
+    """
+    body = _build_body(name=name, description=description,
+                       temporal_score=temporal_score, updated=updated,
+                       vuln_ids=vuln_ids)
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/cves/{cve_id}", body))
+
+
+@mcp.tool()
+def delete_cve(cve_id: int) -> str:
+    """
+    Delete a CVE record. Vulnerabilities referencing it survive — they just lose
+    the link.
+
+    Args:
+        cve_id: Integer ID of the CVE record.
+    """
+    return _fmt(_delete(f"/cves/{cve_id}"))
+
+
+# ── Tags ──────────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_tags(search: str = "", type: str = "", page: int = 1, per_page: int = 50) -> str:
+    """
+    List tags with how many records carry each one. Tags are the cross-cutting
+    labels on hosts, ports, domains, root domains, users, and credentials —
+    'wordpress', 'dmz', 'domain_admin', whatever the engagement needs.
+
+    Args:
+        search:   Substring filter on the tag name.
+        type:     Filter by what the tag may be applied to — 'ip', 'domain',
+                  'cred', or 'any'.
+        page:     Page number. Default: 1.
+        per_page: Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/tags", search=search or None, type=type or None,
+                     page=page, per_page=per_page))
+
+
+@mcp.tool()
+def get_tag(tag_id: int) -> str:
+    """
+    Retrieve one tag and everything it is applied to, grouped by record type.
+    Use this to answer "what did we mark as X?".
+
+    Args:
+        tag_id: Integer ID of the Tag record.
+    """
+    return _fmt(_get(f"/tags/{tag_id}"))
+
+
+@mcp.tool()
+def create_tag(name: str, type: str = "any") -> str:
+    """
+    Create a tag. Names are unique, so an existing tag comes back with
+    "created": false.
+
+    The type controls what the tag may be attached to: 'ip' covers hosts and
+    ports, 'domain' covers domains and root domains, 'cred' covers users and
+    credentials, and 'any' (the default) fits everywhere. Applying a tag to the
+    wrong kind of record is rejected.
+
+    Args:
+        name: Required. Tag name.
+        type: 'ip', 'domain', 'cred', or 'any'. Default: 'any'.
+    """
+    return _fmt(_post("/tags", _build_body(name=name, type=type)))
+
+
+@mcp.tool()
+def update_tag(tag_id: int, name: str = None, type: str = None) -> str:
+    """
+    Rename a tag or change what it may be applied to. At least one field
+    required. Renaming updates the tag everywhere it is already applied.
+
+    Args:
+        tag_id: Required. Integer ID of the Tag record.
+        name:   New name (must stay unique).
+        type:   'ip', 'domain', 'cred', or 'any'.
+    """
+    body = _build_body(name=name, type=type)
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/tags/{tag_id}", body))
+
+
+@mcp.tool()
+def delete_tag(tag_id: int) -> str:
+    """
+    Delete a tag, removing it from every record that carries it. The records
+    themselves are untouched.
+
+    Args:
+        tag_id: Integer ID of the Tag record.
+    """
+    return _fmt(_delete(f"/tags/{tag_id}"))
+
+
+@mcp.tool()
+def apply_tag(
+    tag_id: int,
+    action: str = "add",
+    ip_ids: list = None,
+    port_ids: list = None,
+    domain_ids: list = None,
+    basedomain_ids: list = None,
+    user_ids: list = None,
+    cred_ids: list = None,
+) -> str:
+    """
+    Add or remove ONE tag across many records at once, without touching the
+    other tags those records carry. Prefer this over the `tags` argument on
+    create/update tools, which replaces a record's whole tag list.
+
+    Args:
+        tag_id:         Required. Integer ID of the Tag record.
+        action:         'add' (default) or 'remove'.
+        ip_ids:         Host ids to tag or untag.
+        port_ids:       Port ids to tag or untag.
+        domain_ids:     Domain ids to tag or untag.
+        basedomain_ids: Root domain ids to tag or untag.
+        user_ids:       User ids to tag or untag.
+        cred_ids:       Credential ids to tag or untag.
+    """
+    body = _build_body(action=action, ip_ids=ip_ids, port_ids=port_ids,
+                       domain_ids=domain_ids, basedomain_ids=basedomain_ids,
+                       user_ids=user_ids, cred_ids=cred_ids)
+    return _fmt(_post(f"/tags/{tag_id}/apply", body))
+
+
+# ── Tool runs ─────────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_toolruns(tool: str = "", ip: str = "", port_id: int = None,
+                  virtualhost_id: int = None, target_type: str = "",
+                  search: str = "", page: int = 1, per_page: int = 50) -> str:
+    """
+    Read the history of tools Armory has run, newest first — what ran, with what
+    arguments, against which host, port, or virtual host. Check this before
+    launching a scan to avoid repeating work someone already did.
+
+    Read-only: entries are written by the modules themselves.
+
+    Args:
+        tool:           Substring filter on the tool name, e.g. 'nmap'.
+        ip:             Substring filter on the target IP — matches runs against
+                        the host, its ports, and its virtual hosts.
+        port_id:        Only runs recorded against this Port id.
+        virtualhost_id: Only runs recorded against this VirtualHost id.
+        target_type:    Filter by target model — 'ipaddress', 'port', 'domain',
+                        or 'basedomain'.
+        search:         Substring matched against tool name and arguments.
+        page:           Page number. Default: 1.
+        per_page:       Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/toolruns", tool=tool or None, ip=ip or None,
+                     port_id=port_id, virtualhost_id=virtualhost_id,
+                     target_type=target_type or None, search=search or None,
+                     page=page, per_page=per_page))
+
+
+# ── Shell command execution ───────────────────────────────────────────────────
+
+@mcp.tool()
+def run_command(
+    command: str,
+    cwd: str = "",
+    timeout: int = 60,
+    background: bool = False,
+    tail: int = 0,
+) -> str:
+    """
+    Run a shell command on the host running armory-web and return its exit code,
+    stdout, and stderr. Use this to drive engagement tooling (nmap, curl,
+    smbclient, dig, …) from the machine Armory lives on, which is usually the
+    machine with network access to the targets.
+
+    The command runs through bash, so pipes, redirection, globbing, and && all
+    work. Each command starts in its own process group and is killed — along with
+    everything it spawned — when its timeout expires.
+
+    Anything longer than a minute or so should be started with background=True,
+    which returns immediately with a job id; poll it with get_command(). Output
+    is captured while the job runs, so a background job can be watched.
+
+    Args:
+        command:    Required. The shell command line to run.
+        cwd:        Working directory. Defaults to the armory-web working directory.
+        timeout:    Seconds before the command is killed (1–3600). Default: 60.
+        background: True returns a job id immediately instead of waiting.
+        tail:       Return only the last N characters of each stream. 0 = all.
+    """
+    body = _build_body(
+        command=command,
+        cwd=cwd or None,
+        timeout=timeout,
+        background=background,
+        tail=tail or None,
+    )
+    # Give the HTTP call room to outlast the command itself.
+    http_timeout = 30 if background else max(30, int(timeout) + 30)
+    return _fmt(_post("/exec", body, timeout=http_timeout))
+
+
+@mcp.tool()
+def get_command(job_id: str, wait: int = 0, tail: int = 0) -> str:
+    """
+    Fetch the status and captured output of a command started by run_command().
+    Works while the command is still running — stdout and stderr hold everything
+    produced so far — and after it has exited.
+
+    Status is one of: running, finished, timed_out, killed, failed.
+
+    Args:
+        job_id: Required. Job id returned by run_command().
+        wait:   Block up to this many seconds for the job to finish before
+                returning. 0 (default) returns the current state immediately.
+        tail:   Return only the last N characters of each stream. 0 = all.
+    """
+    http_timeout = max(30, int(wait) + 30)
+    return _fmt(_http(
+        "GET",
+        f"/exec/{job_id}",
+        params={"wait": wait or None, "tail": tail or None},
+        timeout=http_timeout,
+    ))
+
+
+@mcp.tool()
+def list_commands(status: str = "", search: str = "", limit: int = 20) -> str:
+    """
+    List command jobs from this armory-web process, newest first, without their
+    output. Use it to find a job id you have lost track of, or to see what is
+    still running. The list is in-memory only and is emptied when armory-web
+    restarts.
+
+    Args:
+        status: Filter by state — 'running', 'finished', 'timed_out', 'killed',
+                or 'failed'. Default '' returns every job.
+        search: Substring filter on the command line.
+        limit:  Maximum jobs to return (1–200). Default: 20.
+    """
+    return _fmt(_get("/exec", status=status or None, search=search or None, limit=limit))
+
+
+@mcp.tool()
+def kill_command(job_id: str) -> str:
+    """
+    Kill a running command and everything it spawned (the whole process group).
+    The job record and whatever output it produced stay readable with
+    get_command(). Killing an already-finished job is a no-op.
+
+    Args:
+        job_id: Required. Job id returned by run_command().
+    """
+    return _fmt(_delete(f"/exec/{job_id}"))
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
