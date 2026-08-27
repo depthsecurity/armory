@@ -84,3 +84,20 @@ else:
 
 ARMORY_WEB_USERNAME = ''
 ARMORY_WEB_PASSWORD = ''
+
+
+'''
+  Shell execution through the REST API. POST /armory_api/exec runs a raw shell
+  command on this host and returns its output, which is what lets an MCP client
+  proxy tooling (nmap, curl, smbclient, ...) through armory-web instead of
+  needing its own shell here.
+
+  This is remote code execution by design: anyone holding the SECRET_KEY above
+  gets a shell as the user running armory-web. Keep armory-web bound to
+  localhost (or behind a trusted network) if you leave this on, and set this to
+  False on any host where the API is reachable more widely.
+
+  The endpoint refuses to run at all while SECRET_KEY is the built-in default.
+'''
+
+ARMORY_API_EXEC_ENABLED = True

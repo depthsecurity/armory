@@ -222,6 +222,18 @@ ARMORY_WEB_PASSWORD = str(
     getattr(module, "ARMORY_WEB_PASSWORD", "") or os.getenv("ARMORY_WEB_PASSWORD", "")
 )
 
+# Shell execution through the REST API (POST /armory_api/exec). On by default so
+# an MCP client can proxy tooling through armory-web; set ARMORY_API_EXEC_ENABLED
+# to False in ~/.armory/settings.py (or ARMORY_API_EXEC_ENABLED=0 in the
+# environment) to turn the endpoint off. It is refused regardless while the API
+# key is still the built-in default above, which is public.
+_exec_enabled = getattr(module, "ARMORY_API_EXEC_ENABLED", None)
+if _exec_enabled is None:
+    _exec_enabled = os.getenv("ARMORY_API_EXEC_ENABLED", "true")
+ARMORY_API_EXEC_ENABLED = str(_exec_enabled).strip().lower() not in (
+    "0", "false", "no", "off", "",
+)
+
 if not os.path.exists(ARMORY_CONFIG['ARMORY_BASE_PATH']):
     os.makedirs(ARMORY_CONFIG['ARMORY_BASE_PATH'])
 

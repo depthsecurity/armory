@@ -89,6 +89,9 @@ which is public — set one.
 `ARMORY_WEB_USERNAME` / `ARMORY_WEB_PASSWORD` in the same file gate the web UI
 (see **Web UI authentication**).
 
+`ARMORY_API_EXEC_ENABLED` (default `True`, also readable from the environment)
+toggles shell execution through the API (see **Shell execution**).
+
 ---
 
 ## Modules
@@ -254,8 +257,10 @@ Sessions are the stock Django DB-backed sessions under the cookie name
 ## MCP server
 
 `armory2/armory_main/included/mcp/server.py` exposes the Armory database to MCP
-clients (Claude Code, Claude Desktop) as ~30 CRUD tools over hosts, ports,
-vulns, vuln outputs, domains, and CIDRs.
+clients (Claude Code, Claude Desktop) as ~70 CRUD tools covering every Armory
+model — hosts, ports, virtual hosts, vulns, vuln outputs, domains, root
+domains, CIDRs, URLs, users, credentials, CVEs, tags, and the tool-run
+history — plus shell execution on the Armory host (see **Shell execution**).
 
 It is a **client of the `armory_api` webapp**, not a direct ORM consumer — an
 `armory-web` instance must be running or every tool returns a connection error.
@@ -270,6 +275,108 @@ armory-mcp --api-key <key>                   # override the API key (see below)
 armory-web --mcp                             # web on 8099 + MCP http on 8100
 armory-web --mcp --mcp-port 9000             # pick the MCP port
 ```
+
+### Virtual hosts
+
+`/armory_api/virtualhosts` is full CRUD over `VirtualHost` — the hostnames known
+to be served by an IP. MCP wrappers: `list_virtualhosts`, `get_virtualhost`,
+`create_virtualhost`, `update_virtualhost`, `delete_virtualhost`.
+
+Two model behaviors leak through the API and are worth knowing before touching
+these views:
+
+- **`(ip_address, port, name)` is the natural key.** Armory's own modules
+  `get_or_create` on that triple (see the `post_save` hooks in
+  `models/network.py`), so `POST` does the same: an existing row comes back with
+  `"created": false` and HTTP 200 instead of a duplicate. A null `port_id` is
+  the legitimate host-wide row that applies to every port.
+- **The name drives the Domain link.** `VirtualHost.save()` resolves an empty
+  `domain` from the vhost name and creates the `Domain` (and `BaseDomain`) when
+  it does not exist. So a `PATCH` that renames a vhost without naming a
+  `domain_id` clears the link on purpose and lets `save()` re-resolve it;
+  passing `domain_id` in the same PATCH wins.
+
+A port may only be attached to a vhost on the same IP — the views reject the
+mismatch rather than letting an inconsistent row through. `/armory_api/stats`
+and `/armory_api/search` both cover virtual hosts.
+
+### People, findings metadata, and history
+
+The rest of the model layer is covered by five more endpoint groups. They follow
+the same conventions as everything above (`@csrf_exempt` + `@require_api_key`,
+paginated list, `POST` = get_or_create where the model has a natural key).
+
+| Endpoints | Model | Notes |
+|---|---|---|
+| `/urls` | `Url` | get_or_create on `(port_id, name, method)`. |
+| `/users` | `User` | Email is the unique key. The root domain resolves from the email address unless `basedomain_id`/`domain` is given, and is created if new — the same path `TheHarvester` takes. |
+| `/creds` | `Cred` | Owner given as `user_id` **or** `email` (an unknown email creates the user). Requires `password` or `passhash`; get_or_create on `(user, password, passhash)` so replaying a dump does not duplicate rows. `DELETE /users/<id>` cascades to creds. |
+| `/cves` | `CVE` | get_or_create on name. Link from the vuln side with `cve_ids`/`cve_names` on `POST`/`PATCH /vulns` — `cve_names` creates unknown CVEs. `/vulns/<id>` now returns CVE objects, not bare names. |
+| `/basedomains` | `BaseDomain` | List/get/update only. Root domains are created implicitly, and renaming one would orphan its child domains, so `name` is not writable and there is no create or delete. |
+| `/toolruns` | `ToolRun` | Read-only. `?ip=` matches runs recorded against the host, its ports (both the generic relation and the `port_obj` FK), and its virtual hosts. |
+
+MCP wrappers exist for all of these. There is deliberately no `get_url`,
+`get_cred`, or `get_toolrun` tool — those models serialize identically in list
+and detail, so the list tool with a filter is the same call.
+
+### Tags
+
+`Tag` is an M2M on `IPAddress`, `Port`, `Domain`, `BaseDomain`, `User`, and
+`Cred`, and every one of those endpoints now reads and writes it.
+
+- Every serializer includes `tags`; the list querysets `prefetch_related('tags')`
+  to keep it one query.
+- `tag_ids` (by id) or `tag_names` (by name, created if new) on `POST`/`PATCH`
+  **replace** the record's whole tag list. Passing both is an error.
+- `POST /armory_api/tags/<id>/apply` with `{action: add|remove, ip_ids, port_ids,
+  domain_ids, basedomain_ids, user_ids, cred_ids}` adds or removes one tag
+  without a read-modify-write. This is the MCP `apply_tag` tool, and it is what
+  an agent should reach for.
+- `Tag.type` gates what a tag may be attached to, mirroring the
+  `limit_choices_to` on the model fields: `ip` covers hosts and ports, `domain`
+  covers domains and root domains, `cred` covers users and creds, `any` fits
+  everywhere. `TAG_KIND` in `views.py` holds that mapping, and a mismatch is a
+  400 rather than a silently wrong row.
+
+### Shell execution
+
+`POST /armory_api/exec` runs a raw shell command on the host running
+`armory-web` and returns its exit code, stdout, and stderr, so an MCP client can
+proxy engagement tooling through Armory instead of needing its own shell there.
+The MCP wrappers are `run_command`, `get_command`, `list_commands`, and
+`kill_command`.
+
+The work happens in `armory_api/exec_runner.py`. Commands go through bash with
+`shell=True` and `start_new_session=True`, so pipes and redirection work and a
+kill takes down the whole process tree, not just the shell. Each job keeps up to
+1 MB per stream (`DEFAULT_MAX_OUTPUT`) and reports `stdout_truncated` /
+`stdout_bytes` when it overflows.
+
+| Field | Meaning |
+|---|---|
+| `timeout` | Seconds before the process group is killed. Default 60, ceiling 3600 (`MAX_TIMEOUT`). |
+| `background` | `true` returns a job id immediately; poll `GET /armory_api/exec/<job_id>`. Output is captured while the job runs, so partial output is readable. |
+| `cwd` / `env` | Working directory (must exist) and extra environment variables. |
+| `tail` | Return only the last N characters of each stream. |
+| `status` | `running`, `finished`, `timed_out`, `killed`, or `failed`. |
+
+`GET /armory_api/exec/<job_id>?wait=N` blocks up to N seconds for completion;
+`DELETE` on the same URL kills the job but leaves its record and captured output
+readable. `GET /armory_api/exec` lists jobs (summaries, no output).
+
+The job registry is an in-memory dict in the `armory-web` process — jobs are
+gone after a restart, and completed jobs are pruned past `MAX_JOBS` (200).
+
+Two gates in `_exec_unavailable()` in the API's `views.py`:
+
+- `ARMORY_API_EXEC_ENABLED = False` in `~/.armory/settings.py` (or the matching
+  env var) turns the endpoint off — 403.
+- Execution is refused outright while `SECRET_KEY` is the built-in default,
+  which is public; otherwise anyone who can reach the port has a shell. Set a
+  `SECRET_KEY` first.
+
+This is RCE by design. Keep `armory-web` bound to localhost, or disable the
+endpoint on any host where the API is reachable more widely.
 
 ### API authentication
 
@@ -321,6 +428,9 @@ Core models imported as `from armory2.armory_main.models import ...`:
 | `CVE` | CVE entries with CVSS scores |
 | `Url` | Discovered URLs with HTTP methods |
 | `User` / `Cred` | Usernames and credentials |
+| `Tag` | Cross-cutting labels; M2M on IPAddress, Port, Domain, BaseDomain, User, Cred |
+| `ToolRun` | History of which tool ran against which host/port/vhost |
+| `ArmoryTask` | django-q2 task bookkeeping — the one model with no API surface |
 
 After adding or changing model fields, create and apply a migration:
 ```bash
