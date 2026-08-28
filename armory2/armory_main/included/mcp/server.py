@@ -705,7 +705,8 @@ def list_vuln_outputs(
     validation). One row exists per (vulnerability, port) pair.
 
     Returns a 300-character preview of each row by default; pass full='true'
-    to get the complete text, or use get_vuln_output() on a single row.
+    to get the complete text, or use get_vuln_output() on a single row. Each row
+    also carries the URLs linked to it as evidence (see create_url/update_url).
 
     Args:
         vuln_id:  Restrict to one vulnerability. 0 (default) for all.
@@ -732,7 +733,8 @@ def list_vuln_outputs(
 def get_vuln_output(output_id: int) -> str:
     """
     Retrieve one VulnOutput row in full: the complete evidence text plus the
-    parent vulnerability, port, and IP it belongs to.
+    parent vulnerability, port, and IP it belongs to, and any URLs linked to it
+    as evidence.
 
     Use list_vuln_outputs() to find the output_id.
 
@@ -1247,28 +1249,37 @@ def update_basedomain(basedomain_id: int, active_scope: bool = None,
 
 @mcp.tool()
 def list_urls(search: str = "", method: str = "", port_id: int = None,
-              ip: str = "", scope: str = "all", page: int = 1, per_page: int = 50) -> str:
+              ip: str = "", vuln_output_id: str = "", vuln_id: int = None,
+              scope: str = "all", page: int = 1, per_page: int = 50) -> str:
     """
     List URLs discovered on the engagement, each tied to the port that serves
     it. Use this to see what content enumeration has already turned up on a web
     port before spidering it again.
 
+    A URL may also be linked to the vuln output row it is evidence for; when it
+    is, the result carries vuln_output_id, vuln_id, and vuln_name.
+
     Args:
-        search:   Substring filter on the URL.
-        method:   Exact HTTP method filter, e.g. 'get' or 'post'.
-        port_id:  Only URLs on this Port id.
-        ip:       Substring filter on the serving IP address.
-        scope:    'active', 'passive', or 'all'. Default: 'all'.
-        page:     Page number. Default: 1.
-        per_page: Results per page (1–500). Default: 50.
+        search:         Substring filter on the URL.
+        method:         Exact HTTP method filter, e.g. 'get' or 'post'.
+        port_id:        Only URLs on this Port id.
+        ip:             Substring filter on the serving IP address.
+        vuln_output_id: Only URLs linked to this VulnOutput id. Pass 'none' for
+                        URLs not linked to any finding.
+        vuln_id:        Only URLs linked to an output row of this Vulnerability id.
+        scope:          'active', 'passive', or 'all'. Default: 'all'.
+        page:           Page number. Default: 1.
+        per_page:       Results per page (1–500). Default: 50.
     """
     return _fmt(_get("/urls", search=search or None, method=method or None,
-                     port_id=port_id, ip=ip or None, scope=scope,
-                     page=page, per_page=per_page))
+                     port_id=port_id, ip=ip or None,
+                     vuln_output_id=vuln_output_id or None, vuln_id=vuln_id,
+                     scope=scope, page=page, per_page=per_page))
 
 
 @mcp.tool()
 def create_url(port_id: int, name: str, method: str = "get",
+               vuln_output_id: int = None,
                active_scope: bool = None, passive_scope: bool = None) -> str:
     """
     Record a discovered URL against the port that serves it — an admin panel, an
@@ -1278,33 +1289,45 @@ def create_url(port_id: int, name: str, method: str = "get",
     URL returns the existing row with "created": false.
 
     Args:
-        port_id:       Required. Port id serving this URL.
-        name:          Required. The URL itself.
-        method:        HTTP method. Default: 'get'.
-        active_scope:  Active-scope flag.
-        passive_scope: Passive-scope flag.
+        port_id:        Required. Port id serving this URL.
+        name:           Required. The URL itself.
+        method:         HTTP method. Default: 'get'.
+        vuln_output_id: Optionally link this URL to the vuln output row it is
+                        evidence for. Many URLs may point at one output row, and
+                        that row must be on the same port as the URL.
+        active_scope:   Active-scope flag.
+        passive_scope:  Passive-scope flag.
     """
     body = _build_body(port_id=port_id, name=name, method=method,
+                       vuln_output_id=vuln_output_id,
                        active_scope=active_scope, passive_scope=passive_scope)
     return _fmt(_post("/urls", body))
 
 
 @mcp.tool()
 def update_url(url_id: int, name: str = None, method: str = None, port_id: int = None,
+               vuln_output_id: int = None, unlink_vuln_output: bool = False,
                active_scope: bool = None, passive_scope: bool = None) -> str:
     """
     Update fields on a recorded URL. At least one field required.
 
     Args:
-        url_id:        Required. Integer ID of the Url record.
-        name:          Replace the URL.
-        method:        Replace the HTTP method.
-        port_id:       Move it to a different Port.
-        active_scope:  Active-scope flag.
-        passive_scope: Passive-scope flag.
+        url_id:             Required. Integer ID of the Url record.
+        name:               Replace the URL.
+        method:             Replace the HTTP method.
+        port_id:            Move it to a different Port. This clears any vuln
+                            output link that belonged to the old port.
+        vuln_output_id:     Link this URL to the vuln output row it is evidence
+                            for. The output row must be on the URL's port.
+        unlink_vuln_output: True drops the vuln output link entirely.
+        active_scope:       Active-scope flag.
+        passive_scope:      Passive-scope flag.
     """
     body = _build_body(name=name, method=method, port_id=port_id,
+                       vuln_output_id=vuln_output_id,
                        active_scope=active_scope, passive_scope=passive_scope)
+    if unlink_vuln_output:
+        body["vuln_output_id"] = None
     if not body:
         return json.dumps({"error": "Provide at least one field to update."})
     return _fmt(_patch(f"/urls/{url_id}", body))
@@ -1313,7 +1336,8 @@ def update_url(url_id: int, name: str = None, method: str = None, port_id: int =
 @mcp.tool()
 def delete_url(url_id: int) -> str:
     """
-    Delete a recorded URL. Nothing else references it.
+    Delete a recorded URL. Nothing else references it — a vuln output row it was
+    linked to is left alone.
 
     Args:
         url_id: Integer ID of the Url record.

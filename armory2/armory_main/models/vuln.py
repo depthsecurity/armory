@@ -36,7 +36,18 @@ class VulnOutput(BaseModel):
 class Url(BaseModel):
     name = models.CharField(max_length=256, unique=False)
     method = models.CharField(max_length=32, unique=False, default="get")
-    port = models.ForeignKey(Port, on_delete=models.CASCADE)
+    port = models.ForeignKey(Port, on_delete=models.CASCADE, related_name="urls")
+
+    # Optional link to the finding output this URL is evidence for. Many urls
+    # to one VulnOutput; clearing the output row leaves the urls in place, since
+    # a discovered URL is attack surface in its own right.
+    vuln_output = models.ForeignKey(
+        VulnOutput,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="urls",
+    )
 
     def __str__(self):
         return self.name

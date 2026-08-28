@@ -69,11 +69,11 @@ ENDPOINTS = {
     'GET    /armory_api/vulns/<id>':    'Vuln detail with all affected ports',
     'PATCH  /armory_api/vulns/<id>':    'Update vuln. Any of: name, severity, description, remediation, exploitable, source, port_ids, cve_ids, cve_names',
     'DELETE /armory_api/vulns/<id>':    'Delete vuln',
-    'GET    /armory_api/vuln_outputs':      'List per-port vuln output rows. Params: vuln_id, port_id, ip, search, full, page, per_page',
+    'GET    /armory_api/vuln_outputs':      'List per-port vuln output rows, each with its linked URLs. Params: vuln_id, port_id, ip, search, full, page, per_page',
     'POST   /armory_api/vuln_outputs':      'Upsert output for a (vuln, port) pair. JSON: {vuln_id, port_id, data, append?}',
     'GET    /armory_api/vuln_outputs/<id>': 'Single output row with full data',
     'PATCH  /armory_api/vuln_outputs/<id>': 'Update one output row. JSON: {data, append?}',
-    'DELETE /armory_api/vuln_outputs/<id>': 'Delete one output row (leaves the vuln and port intact)',
+    'DELETE /armory_api/vuln_outputs/<id>': 'Delete one output row (leaves the vuln, port, and any linked URLs intact)',
     'GET    /armory_api/domains':       'List domains. Params: scope, search, page, per_page, recon_complete',
     'POST   /armory_api/domains':       'Create domain. JSON: {name, whois?, ai_notes?, recon_complete?, dynamic_ip?, active_scope?, passive_scope?, ip_ids?, tag_ids?, tag_names?}',
     'GET    /armory_api/domains/<id>':  'Domain detail',
@@ -92,10 +92,10 @@ ENDPOINTS = {
     'GET    /armory_api/basedomains':       'List root domains. Params: search, scope, page, per_page',
     'GET    /armory_api/basedomains/<id>':  'Root domain detail with DNS records and child domains',
     'PATCH  /armory_api/basedomains/<id>':  'Update scope flags and tags. Any of: active_scope, passive_scope, tag_ids, tag_names',
-    'GET    /armory_api/urls':          'List discovered URLs. Params: search, method, port_id, ip, scope, page, per_page',
-    'POST   /armory_api/urls':          'Create URL (get_or_create on port_id+name+method). JSON: {port_id, name, method?, active_scope?, passive_scope?}',
+    'GET    /armory_api/urls':          'List discovered URLs. Params: search, method, port_id, ip, vuln_output_id (or none), vuln_id, scope, page, per_page',
+    'POST   /armory_api/urls':          'Create URL (get_or_create on port_id+name+method). JSON: {port_id, name, method?, vuln_output_id?, active_scope?, passive_scope?}',
     'GET    /armory_api/urls/<id>':     'URL detail',
-    'PATCH  /armory_api/urls/<id>':     'Update URL. Any of: name, method, port_id, active_scope, passive_scope',
+    'PATCH  /armory_api/urls/<id>':     'Update URL. Any of: name, method, port_id, vuln_output_id (null to unlink), active_scope, passive_scope',
     'DELETE /armory_api/urls/<id>':     'Delete URL',
     'GET    /armory_api/users':         'List discovered users. Params: search, basedomain_id, domain, tag, scope, page, per_page',
     'POST   /armory_api/users':         'Create user. JSON: {email, first_name?, last_name?, user_name?, job_title?, location?, basedomain_id?, domain?, tag_ids?, tag_names?}',
@@ -507,6 +507,10 @@ def _serialize_vuln_output(vo, full=True):
         'ip_id': ip.id,
         'ip_address': ip.ip_address,
         'length': len(data),
+        'urls': [
+            {'id': u.id, 'name': u.name, 'method': u.method}
+            for u in vo.urls.all()
+        ],
     }
     if full:
         out['data'] = data
@@ -748,10 +752,14 @@ def _serialize_basedomain_detail(bd):
 
 def _serialize_url(u):
     port = u.port
+    vo = u.vuln_output
     return {
         'id': u.id,
         'name': u.name,
         'method': u.method,
+        'vuln_output_id': u.vuln_output_id,
+        'vuln_id': vo.vulnerability_id if vo else None,
+        'vuln_name': vo.vulnerability.name if vo else None,
         'port_id': port.id,
         'port_number': port.port_number,
         'proto': port.proto,
@@ -1212,7 +1220,7 @@ def vuln_outputs(request):
         full = _bool_param(request, 'full')
         qs = VulnOutput.objects.select_related(
             'vulnerability', 'port', 'port__ip_address'
-        ).all()
+        ).prefetch_related('urls').all()
 
         vuln_id = request.GET.get('vuln_id')
         if vuln_id:
@@ -1290,7 +1298,7 @@ def vuln_outputs(request):
 @csrf_exempt
 @require_api_key
 def vuln_output_detail(request, output_id):
-    vo = get_object_or_404(VulnOutput, pk=output_id)
+    vo = get_object_or_404(VulnOutput.objects.prefetch_related('urls'), pk=output_id)
 
     if request.method == 'GET':
         return JsonResponse(_serialize_vuln_output(vo))
@@ -1754,6 +1762,33 @@ def basedomain_detail(request, basedomain_id):
     return _err('Method not allowed', 405)
 
 
+def _apply_url_vuln_output(u, body, port):
+    """Set/clear Url.vuln_output from a request body. Returns an error string.
+
+    ``vuln_output_id: null`` clears the link. The output row has to be on the
+    same port as the URL — an output row is per (vuln, port), so pointing a URL
+    at one belonging to a different port would record evidence against a host
+    and port that never served it.
+    """
+    if 'vuln_output_id' not in body:
+        return None
+    raw = body['vuln_output_id']
+    if raw in (None, '', 0):
+        u.vuln_output = None
+        return None
+    try:
+        vo = VulnOutput.objects.select_related('vulnerability').get(pk=int(raw))
+    except (ValueError, TypeError, VulnOutput.DoesNotExist):
+        return f"VulnOutput with id={raw!r} not found"
+    if vo.port_id != port.id:
+        return (
+            f"VulnOutput {vo.id} is recorded against port {vo.port_id}, "
+            f"but this URL is on port {port.id}"
+        )
+    u.vuln_output = vo
+    return None
+
+
 # ─── URLs ─────────────────────────────────────────────────────────────────────
 
 @csrf_exempt
@@ -1761,7 +1796,9 @@ def basedomain_detail(request, basedomain_id):
 def urls(request):
     if request.method == 'GET':
         page, per_page = _paginate(request)
-        qs = Url.objects.select_related('port', 'port__ip_address').all()
+        qs = Url.objects.select_related(
+            'port', 'port__ip_address', 'vuln_output', 'vuln_output__vulnerability',
+        ).all()
 
         search = request.GET.get('search', '').strip()
         if search:
@@ -1778,6 +1815,21 @@ def urls(request):
         ip_filter = request.GET.get('ip', '').strip()
         if ip_filter:
             qs = qs.filter(port__ip_address__ip_address__icontains=ip_filter)
+        vuln_output_id = request.GET.get('vuln_output_id', '').strip()
+        if vuln_output_id:
+            if vuln_output_id.lower() in ('none', 'null'):
+                qs = qs.filter(vuln_output__isnull=True)
+            else:
+                try:
+                    qs = qs.filter(vuln_output_id=int(vuln_output_id))
+                except (ValueError, TypeError):
+                    return _err("'vuln_output_id' must be an integer, 'none', or 'null'")
+        vuln_id = request.GET.get('vuln_id', '').strip()
+        if vuln_id:
+            try:
+                qs = qs.filter(vuln_output__vulnerability_id=int(vuln_id))
+            except (ValueError, TypeError):
+                return _err("'vuln_id' must be an integer")
         scope = request.GET.get('scope', 'all')
         if scope == 'active':
             qs = qs.filter(active_scope=True)
@@ -1802,7 +1854,9 @@ def urls(request):
             return _err("'name' is required")
         method = str(body.get('method', 'get') or 'get').strip().lower()
 
-        u = Url.objects.select_related('port', 'port__ip_address').filter(
+        u = Url.objects.select_related(
+            'port', 'port__ip_address', 'vuln_output', 'vuln_output__vulnerability',
+        ).filter(
             port=port, name=name, method=method,
         ).first()
         created = u is None
@@ -1810,6 +1864,9 @@ def urls(request):
             u = Url(port=port, name=name, method=method)
 
         e = _apply_fields(u, body, URL_FIELDS)
+        if e:
+            return _err(e)
+        e = _apply_url_vuln_output(u, body, port)
         if e:
             return _err(e)
         u.name, u.method = name, method
@@ -1824,7 +1881,12 @@ def urls(request):
 @csrf_exempt
 @require_api_key
 def url_detail(request, url_id):
-    u = get_object_or_404(Url.objects.select_related('port', 'port__ip_address'), pk=url_id)
+    u = get_object_or_404(
+        Url.objects.select_related(
+            'port', 'port__ip_address', 'vuln_output', 'vuln_output__vulnerability',
+        ),
+        pk=url_id,
+    )
 
     if request.method == 'GET':
         return JsonResponse(_serialize_url(u))
@@ -1841,6 +1903,12 @@ def url_detail(request, url_id):
         e = _apply_fields(u, body, URL_FIELDS)
         if e:
             return _err(e)
+        e = _apply_url_vuln_output(u, body, u.port)
+        if e:
+            return _err(e)
+        # Moving a URL to another port orphans an output link on the old port.
+        if u.vuln_output_id and u.vuln_output.port_id != u.port_id:
+            u.vuln_output = None
         u.save()
         return JsonResponse(_serialize_url(u))
 
