@@ -103,6 +103,7 @@ toggles shell execution through the API (see **Shell execution**).
 - Use `armory2.armory_main.models` (Port, Domain, IPAddress, …) for all DB reads/writes.
 - Use `armory2.armory_main.included.utilities.color_display` for console output — never `print`.
 - New modules go in `armory_custom/modules/` (custom tree) or `armory_main/included/modules/` (core).
+- A module may carry `class Tests(ModuleTest)` in the same file — see **Testing**.
 
 ### Base classes (in `armory_main/included/ModuleTemplate.py`)
 
@@ -135,6 +136,7 @@ armory -m <Name> -h   # argparse help renders correctly
 - Implement `set_options` (call `super()` first) and `run(self, args)`.
 - Call `self.process_output(data, args)` inside `run` — do not write to stdout directly.
 - Output formats are handled by `ReportTemplate`: plain, JSON (`-j`), custom markdown (`-c`), clipboard (`-x`), file (`-o`).
+- A report may carry `class Tests(ReportTest)` in the same file — see **Testing**.
 
 ### Verify after adding
 ```bash
@@ -148,7 +150,7 @@ armory -r <Name> -h   # help renders correctly
 
 ### Rules
 - Each webapp is a **directory**; the directory name becomes its URL prefix (`/host_scoping/`, …).
-- Required files: `config.json`, `urls.py`, `views.py`; optionally `templates/` and `static/`.
+- Required files: `config.json`, `urls.py`, `views.py`; optionally `templates/`, `static/`, and `tests.py` holding `class Tests(WebappTest)` — see **Testing**.
 - `config.json` must have: `name`, `pretty_name`, `description`, `category`, `authors`.
 - Use `armory2.armory_main.models` and core helpers in views.
 - Built-in webapps live in `armory_main/included/webapps/`; custom ones go in `armory_custom/webapps/` and are registered via `ARMORY_CUSTOM_WEBAPPS`.
@@ -440,15 +442,111 @@ armory-manage migrate
 
 ---
 
-## Testing & linting
+## Testing
+
+Tests live **inside the thing they test**, so a module, report, or webapp
+carries its own coverage wherever it lives — core tree or `armory_custom`.
 
 ```bash
-coverage run --rcfile .coveragerc setup.py test   # run tests with coverage
-coverage report --rcfile .coveragerc -i -m        # show coverage report
+armory -t                     # test every module, report, and webapp
+armory -t Nmap ScopeReport    # test just these
+armory -t -k webapp           # restrict to a kind (module/report/webapp)
+armory -lt                    # list testable tools + whether they ship tests
+armory -t --strict            # also run the convention checks
+armory -t -v                  # list every test, not just the failures
+armory -t --only get_targets  # only tests whose name contains this
+armory -t --no-smoke          # only tools' own Tests, skip the built-in checks
+armory-test ...               # same thing, as its own entry point
+```
+
+Everything runs against a **throwaway database** (in memory, for the default
+SQLite config) with each test wrapped in a transaction that is rolled back —
+the real project database is never written to. Tool output is swallowed unless
+a test fails, in which case it is replayed as part of the failure.
+
+### Where tests go
+
+| Kind | Location | Class |
+|---|---|---|
+| Module | same file as `class Module` | `class Tests(ModuleTest)` |
+| Report | same file as `class Report` | `class Tests(ReportTest)` |
+| Webapp | `<webapp>/tests.py` | `class Tests(WebappTest)` |
+
+Base classes come from `armory2.armory_main.included.TestTemplate`. They are
+`django.test.TestCase` subclasses, so every `unittest` assertion is available.
+Working examples: `modules/SampleModule.py`, `modules/SampleToolModule.py`,
+`reports/SampleReport.py`, `webapps/host_scoping/tests.py`.
+
+```python
+from armory2.armory_main.included.TestTemplate import ModuleTest
+
+class Tests(ModuleTest):
+    def test_targets_come_from_the_database(self):
+        targets = self.get_targets(self.parse("--import_database"))
+        self.assertIn("192.0.2.10:80", [t["target"] for t in targets])
+```
+
+### What every test gets
+
+`self.data` is the sample dataset built fresh for each test class
+(`included/testing/fixtures.py`): a CIDR `192.0.2.0/24`, hosts `.10`/`.11`,
+ports 80/443/22, `www.example.com` / `mail.example.com`, a virtual host, a
+vulnerability with a CVE and an output row, a URL, a user, a cred, and a tag.
+It is deliberately offline — creating an IP outside a known CIDR fires an RDAP
+lookup and creating a `Domain` fires DNS, so the fixture pre-creates the CIDR
+and marks domains `meta['offlinedns']`. Set `sample_data = False` on the test
+class to start empty. `self.tmpdir` is a scratch directory, removed afterwards.
+
+| Base class | Provides |
+|---|---|
+| `ModuleTest` | `self.module` (fresh, `set_options()` applied, `base_config` pointed at `tmpdir`), `parse(*argv)`, `get_targets(args)`, `build_cmd(args)`, `run_module(*argv)` (adds `--no_binary`), `assertHasOption`, `assertBinaryAvailable` (skips when the tool is not installed) |
+| `ReportTest` | `self.report` (with `silent_run` on), `run_report(*argv)` → the rendered output, `run_report_json(*argv)` → parsed JSON |
+| `WebappTest` | `self.client` (session already authenticated, so `ARMORY_WEB_*` need not be unset), `self.get/post(path)` relative to the webapp prefix, `assertRenders(path, status)`, `self.config`, `urlpatterns()` |
+
+### Built-in smoke tests
+
+Every tool is checked even with no `Tests` class of its own
+(`included/testing/smoke.py`): the file imports, `set_options()` works and
+called `super()`, `--help` renders, no leftover `pdb.set_trace()`; for
+`ToolTemplate` modules that a binary or docker image is declared, that
+`get_targets()` returns a list of dicts and that `build_cmd()` only uses
+placeholders `get_targets()` supplies; for reports that they run against the
+sample data and that `-j` emits valid JSON; for webapps that `config.json` is
+complete and matches the directory name, that `urls.py` and `views.py` load,
+that the webapp is in the nav registry, and that every parameterless route
+answers without a 500.
+
+`--strict` adds the CLAUDE.md conventions: `name` matches the filename, the
+tool class has a docstring, webapp templates extend `base_tw.html`.
+
+A tool opts out of an individual check from its own `Tests` class:
+
+```python
+class Tests(ReportTest):
+    smoke_run = False          # this report needs a live API key
+    smoke_run_args = ["-s", "active"]   # ...or just needs arguments
+```
+
+Flags: `smoke_get_targets`, `smoke_build_cmd`, `smoke_run`, `smoke_run_args`,
+`smoke_urls`, `smoke_source_checks` (see `SMOKE_FLAGS` in `smoke.py`). Checks
+that cannot apply — a report with required arguments, a webapp with no
+parameterless route — skip themselves rather than failing.
+
+### Adding a check for every tool
+
+New built-in checks go on the matching class in `included/testing/smoke.py`.
+Gate anything that is a convention rather than breakage behind
+`if not self.strict: self.skipTest(...)`, and add an opt-out flag to
+`SMOKE_FLAGS` if a legitimate tool could fail it.
+
+### Linting
+
+```bash
 flake8 setup.py docs armory2 tests                # lint (ignores E501)
 ```
 
-Tests use Python `unittest` and live in `tests/`.
+The legacy `tests/` directory predates this framework and its `setup.py test`
+invocation no longer exists.
 
 ---
 

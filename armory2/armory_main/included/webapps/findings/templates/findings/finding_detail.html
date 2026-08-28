@@ -46,7 +46,7 @@
 
   {# ── Affected instances + their output ─────────────────────────────────── #}
   <div class="mt-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-    Affected Instances ({{ instances|length }})
+    Affected Instances ({{ instances|length }}){% if url_count %} · {{ url_count }} URL{{ url_count|pluralize }}{% endif %}
   </div>
 
   <div class="mt-1 flex flex-col gap-1.5">
@@ -69,6 +69,12 @@
         {% endfor %}
 
         <span class="ml-auto flex items-center gap-2">
+          {% if inst.urls %}
+          <button type="button" onclick="toggleSection('vu-{{ inst.output.id }}')"
+                  class="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900/50 hover:bg-cyan-200 dark:hover:bg-cyan-800/60 text-cyan-800 dark:text-cyan-300 text-xs transition-colors">
+            {{ inst.urls|length }} URL{{ inst.urls|pluralize }}
+          </button>
+          {% endif %}
           {% if inst.output %}
           <button type="button" onclick="toggleSection('vo-{{ inst.output.id }}')"
                   class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs transition-colors">
@@ -88,6 +94,23 @@
         </span>
       </div>
 
+      {% if inst.urls %}
+      <div id="vu-{{ inst.output.id }}" class="hidden border-t border-slate-200/60 dark:border-slate-700/60">
+        <div class="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          URLs
+        </div>
+        <div class="max-h-72 overflow-y-auto divide-y divide-slate-200/50 dark:divide-slate-700/50">
+          {% for url in inst.urls %}
+          <div class="flex items-center gap-2 px-3 py-1">
+            <span class="shrink-0 w-14 text-center px-1 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/70 text-[10px] font-mono uppercase text-slate-600 dark:text-slate-300">{{ url.method|default:"get" }}</span>
+            <a href="{{ url.name }}" target="_blank" rel="noopener noreferrer"
+               class="font-mono text-xs text-cyan-700 dark:text-cyan-400 hover:underline break-all">{{ url.name }}</a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       {% if inst.output %}
       <div id="vo-{{ inst.output.id }}" class="hidden border-t border-slate-200/60 dark:border-slate-700/60">
         <pre id="vo-data-{{ inst.output.id }}"
@@ -105,20 +128,41 @@
     Output rows on unlinked ports ({{ orphan_outputs|length }})
   </div>
   <div class="mt-1 flex flex-col gap-1.5">
-    {% for output in orphan_outputs %}
+    {% for orphan in orphan_outputs %}
     <div class="rounded border border-amber-300/60 dark:border-amber-700/50 bg-white dark:bg-slate-800/60">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
-        <span class="font-mono text-sm text-slate-700 dark:text-slate-300">{{ output.port.ip_address.ip_address }}</span>
+        <span class="font-mono text-sm text-slate-700 dark:text-slate-300">{{ orphan.output.port.ip_address.ip_address }}</span>
         <span class="px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/70 text-xs font-mono text-slate-700 dark:text-slate-300">
-          {{ output.port.proto }}/{{ output.port.port_number }}
+          {{ orphan.output.port.proto }}/{{ orphan.output.port.port_number }}
         </span>
-        <button type="button" onclick="toggleSection('vo-{{ output.id }}')"
-                class="ml-auto px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs transition-colors">
-          Output
-        </button>
+        <span class="ml-auto flex items-center gap-2">
+          {% if orphan.urls %}
+          <button type="button" onclick="toggleSection('vu-{{ orphan.output.id }}')"
+                  class="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900/50 hover:bg-cyan-200 dark:hover:bg-cyan-800/60 text-cyan-800 dark:text-cyan-300 text-xs transition-colors">
+            {{ orphan.urls|length }} URL{{ orphan.urls|pluralize }}
+          </button>
+          {% endif %}
+          <button type="button" onclick="toggleSection('vo-{{ orphan.output.id }}')"
+                  class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs transition-colors">
+            Output
+          </button>
+        </span>
       </div>
-      <div id="vo-{{ output.id }}" class="hidden border-t border-slate-200/60 dark:border-slate-700/60">
-        <pre class="px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">{{ output.data|default:"(empty)" }}</pre>
+      {% if orphan.urls %}
+      <div id="vu-{{ orphan.output.id }}" class="hidden border-t border-slate-200/60 dark:border-slate-700/60">
+        <div class="max-h-72 overflow-y-auto divide-y divide-slate-200/50 dark:divide-slate-700/50">
+          {% for url in orphan.urls %}
+          <div class="flex items-center gap-2 px-3 py-1">
+            <span class="shrink-0 w-14 text-center px-1 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/70 text-[10px] font-mono uppercase text-slate-600 dark:text-slate-300">{{ url.method|default:"get" }}</span>
+            <a href="{{ url.name }}" target="_blank" rel="noopener noreferrer"
+               class="font-mono text-xs text-cyan-700 dark:text-cyan-400 hover:underline break-all">{{ url.name }}</a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      <div id="vo-{{ orphan.output.id }}" class="hidden border-t border-slate-200/60 dark:border-slate-700/60">
+        <pre class="px-3 py-2 text-xs font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words max-h-96 overflow-y-auto">{{ orphan.output.data|default:"(empty)" }}</pre>
       </div>
     </div>
     {% endfor %}

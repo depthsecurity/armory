@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Count
 
-from armory2.armory_main.models import Vulnerability, VulnOutput
+from armory2.armory_main.models import Url, Vulnerability, VulnOutput
 
 
 SEV_MAP = {0: 'Info', 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Critical'}
@@ -36,6 +36,7 @@ SORT_FIELDS = {
     'severity_asc': ['severity', 'name'],
     'name': ['name'],
     'hosts_desc': ['-port_count', '-severity'],
+    'urls_desc': ['-url_count', '-severity'],
     'recent': ['-modified_at'],
 }
 
@@ -78,9 +79,11 @@ def _filtered_vulns(request):
         'source': p.get('source') or '',
         'exploitable': p.get('exploitable') or '',
         'host': (p.get('host') or '').strip(),
+        'url': (p.get('url') or '').strip(),
         'scope': p.get('scope') or 'all',
         'sort': p.get('sort') or 'severity_desc',
         'orphans': bool(p.get('orphans')),
+        'has_urls': bool(p.get('has_urls')),
     }
 
     vulns = Vulnerability.objects.all()
@@ -93,6 +96,7 @@ def _filtered_vulns(request):
         )
         if filters['search_output']:
             query |= Q(vulnoutput__data__icontains=filters['search'])
+            query |= Q(vulnoutput__urls__name__icontains=filters['search'])
         vulns = vulns.filter(query)
 
     if filters['severities']:
@@ -114,6 +118,9 @@ def _filtered_vulns(request):
             | Q(ports__ip_address__domain__name__icontains=filters['host'])
         )
 
+    if filters['url']:
+        vulns = vulns.filter(vulnoutput__urls__name__icontains=filters['url'])
+
     if filters['scope'] == 'active':
         vulns = vulns.filter(ports__ip_address__active_scope=True)
     elif filters['scope'] == 'passive':
@@ -124,10 +131,16 @@ def _filtered_vulns(request):
     vulns = vulns.annotate(
         port_count=Count('ports', distinct=True),
         output_count=Count('vulnoutput', distinct=True),
+        url_count=Count('vulnoutput__urls', distinct=True),
     ).distinct()
 
     if not filters['orphans']:
         vulns = vulns.filter(port_count__gt=0)
+
+    # Filtered on the annotation rather than a join so it cannot re-multiply
+    # the rows the distinct() above just collapsed.
+    if filters['has_urls']:
+        vulns = vulns.filter(url_count__gt=0)
 
     return vulns.order_by(*SORT_FIELDS.get(filters['sort'], SORT_FIELDS['severity_desc']))
 
@@ -139,6 +152,7 @@ def index(request):
         'severities': _severity_list(),
         'total_vulns': Vulnerability.objects.count(),
         'total_outputs': VulnOutput.objects.count(),
+        'total_urls': Url.objects.exclude(vuln_output=None).count(),
     })
 
 
@@ -164,6 +178,7 @@ def get_findings(request):
             'sev_label': SEV_MAP.get(v.severity, v.severity),
             'port_count': v.port_count,
             'output_count': v.output_count,
+            'url_count': v.url_count,
         })
 
     # Counts come off the filtered set so the sidebar always describes what is
@@ -195,7 +210,23 @@ def get_findings(request):
         ],
         'source_counts': source_counts,
         'exploitable_count': vulns.filter(exploitable=True).count(),
+        # Distinct across the whole filtered set, not just this page, so the
+        # sidebar number matches the "Findings" total sitting above it.
+        'url_total': vulns.aggregate(
+            n=Count('vulnoutput__urls', distinct=True))['n'] or 0,
     })
+
+
+def _output_urls(output):
+    """The URLs recorded as evidence for one VulnOutput row.
+
+    Sorted in Python rather than with order_by() so the caller's
+    prefetch_related('urls') is reused instead of firing a fresh query per
+    output row.
+    """
+    if output is None:
+        return []
+    return sorted(output.urls.all(), key=lambda u: (u.name, u.method))
 
 
 def get_detail(request, vuln_id):
@@ -203,7 +234,9 @@ def get_detail(request, vuln_id):
 
     outputs = {
         o.port_id: o for o in
-        vuln.vulnoutput_set.select_related('port', 'port__ip_address')
+        vuln.vulnoutput_set
+        .select_related('port', 'port__ip_address')
+        .prefetch_related('urls')
     }
 
     instances = []
@@ -216,11 +249,15 @@ def get_detail(request, vuln_id):
             'domains': port.ip_address.domain_set.all().order_by('name'),
             'vhosts': port.get_active_virtualhosts(),
             'output': output,
+            'urls': _output_urls(output),
         })
 
     # VulnOutput rows whose port is no longer linked to the vuln still hold
     # evidence, so surface them rather than silently dropping them.
-    orphan_outputs = sorted(outputs.values(), key=lambda o: o.id)
+    orphan_outputs = [
+        {'output': o, 'urls': _output_urls(o)}
+        for o in sorted(outputs.values(), key=lambda o: o.id)
+    ]
 
     return render(request, 'findings/finding_detail.html', {
         'vuln': vuln,
@@ -229,16 +266,21 @@ def get_detail(request, vuln_id):
         'instances': instances,
         'orphan_outputs': orphan_outputs,
         'cves': vuln.cves.all().order_by('-temporal_score', 'name'),
+        'url_count': sum(len(i['urls']) for i in instances)
+        + sum(len(o['urls']) for o in orphan_outputs),
     })
 
 
 def get_output(request, output_id):
     """Raw VulnOutput data, for copy/paste out of the UI."""
     output = get_object_or_404(
-        VulnOutput.objects.select_related('port', 'port__ip_address', 'vulnerability'),
+        VulnOutput.objects
+        .select_related('port', 'port__ip_address', 'vulnerability')
+        .prefetch_related('urls'),
         pk=output_id,
     )
     return render(request, 'findings/output_raw.html', {
         'output': output,
+        'urls': _output_urls(output),
         'title': 'Finding Output',
     })

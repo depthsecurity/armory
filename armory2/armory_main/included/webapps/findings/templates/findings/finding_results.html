@@ -39,6 +39,11 @@
       <span class="text-slate-600 dark:text-slate-300">Exploitable</span>
       <span class="font-mono text-slate-500 dark:text-slate-400">{{ exploitable_count }}</span>
     </button>
+    <button type="button" onclick="filterUrls()"
+            class="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors">
+      <span class="text-slate-600 dark:text-slate-300">With URLs</span>
+      <span class="font-mono text-slate-500 dark:text-slate-400">{{ url_total }}</span>
+    </button>
     <button type="button" onclick="resetFilters()"
             class="w-full text-left px-2 py-1.5 rounded text-xs text-cyan-600 dark:text-cyan-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors">
       Clear filters
@@ -110,6 +115,10 @@
           <span>{{ row.port_count }} port{{ row.port_count|pluralize }}</span>
           <span>·</span>
           <span>{{ row.output_count }} output row{{ row.output_count|pluralize }}</span>
+          {% if row.url_count %}
+          <span>·</span>
+          <span class="text-cyan-700 dark:text-cyan-400">{{ row.url_count }} URL{{ row.url_count|pluralize }}</span>
+          {% endif %}
           {% if row.obj.exploitable %}
           <span class="px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-800/60 dark:text-red-200 font-semibold">Exploitable</span>
           {% endif %}
