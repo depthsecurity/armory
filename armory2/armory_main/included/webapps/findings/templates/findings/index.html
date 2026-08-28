@@ -50,6 +50,14 @@
                  placeholder="IP or domain">
         </div>
 
+        <!-- URL -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500 uppercase tracking-wider">URL</label>
+          <input type="text" name="url"
+                 class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 w-44 focus:outline-none focus:border-cyan-500 placeholder-slate-400 dark:placeholder-slate-500"
+                 placeholder="Path or full URL">
+        </div>
+
         <!-- Source -->
         <div class="flex flex-col gap-1">
           <label class="text-xs text-slate-500 uppercase tracking-wider">Source</label>
@@ -92,6 +100,7 @@
             <option value="severity_desc">Severity ↓</option>
             <option value="severity_asc">Severity ↑</option>
             <option value="hosts_desc">Affected hosts ↓</option>
+            <option value="urls_desc">URLs ↓</option>
             <option value="name">Name</option>
             <option value="recent">Recently updated</option>
           </select>
@@ -129,12 +138,16 @@
           <label class="text-xs text-slate-500 uppercase tracking-wider">Options</label>
           <div class="flex flex-wrap gap-x-3 gap-y-1">
             <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
-                   title="Also match the text of every VulnOutput row (slower)">
+                   title="Also match the text of every VulnOutput row and the URLs tied to it (slower)">
               <input type="checkbox" name="search_output" class="accent-cyan-500"> Search output
             </label>
             <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
                    title="Include vulnerabilities with no ports attached">
               <input type="checkbox" name="orphans" class="accent-cyan-500"> Unattached
+            </label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                   title="Only findings that have URLs recorded against their output">
+              <input type="checkbox" name="has_urls" class="accent-cyan-500"> Has URLs
             </label>
           </div>
         </div>
@@ -174,7 +187,7 @@
       </div>
       <nav id="findings-sidebar" class="flex-1 overflow-y-auto py-1">
         <p class="px-3 py-3 text-xs text-slate-400 dark:text-slate-600 italic">
-          {{ total_vulns }} vulns / {{ total_outputs }} output rows
+          {{ total_vulns }} vulns / {{ total_outputs }} output rows / {{ total_urls }} URLs
         </p>
       </nav>
     </aside>
@@ -251,6 +264,12 @@
   function filterExploitable() {
     const sel = document.querySelector('select[name=exploitable]');
     if (sel) sel.value = 'yes';
+    goToPage(1);
+  }
+
+  function filterUrls() {
+    const cb = document.querySelector('input[name=has_urls]');
+    if (cb) cb.checked = true;
     goToPage(1);
   }
 

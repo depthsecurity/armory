@@ -132,7 +132,7 @@ def get_modules(module_path):
 # invoked explicitly (e.g. `armory -m SampleModule`); they're just not
 # advertised. Extend per-install with ARMORY_HIDDEN_MODULES /
 # ARMORY_HIDDEN_REPORTS (lists of names) in ~/.armory/settings.py.
-HIDDEN_TOOL_NAMES = {"templates", "SampleModule", "SampleToolModule"}
+HIDDEN_TOOL_NAMES = {"templates", "SampleModule", "SampleToolModule", "SampleReport"}
 
 
 def _is_hidden_tool(name, extra=()):
@@ -449,7 +449,50 @@ BASE_ARGUMENTS = [
     (["--quiet"], {"help": "Don't display banner", "action": "store_true"}),
     (["-v", "--version"], {"help": "Display the current version", "action": "store_true"}),
     (["--docker"], {"help": "Use Docker versions of modules if available", "action": "store_true"}),
+    (["-t", "--test"], {"help": "Run tests for modules/reports/webapps (all if no names given)", "action": "store_true"}),
+    (["-lt", "--list_tests"], {"help": "List testable modules/reports/webapps", "action": "store_true"}),
 ]
+
+
+# `armory -t` hands the rest of the command line to the test runner, so these
+# base flags are dropped rather than passed along.
+TEST_FLAGS = {"-t", "--test", "-lt", "--list_tests"}
+BASE_FLAGS_IGNORED_BY_TESTS = {"--quiet", "--docker"}
+
+
+def is_test_invocation(argv):
+    """
+    True when the command line is asking for a test run.
+
+    `-t` only means "run tests" when no module or report was named, so a module
+    that happens to define its own -t keeps working.
+    """
+    if {"-m", "--module", "-r", "--report"} & set(argv):
+        return False
+    return bool(TEST_FLAGS & set(argv))
+
+
+def run_test_cli(argv):
+    """Parse the test-specific command line and run it."""
+    from armory2.armory_main.included.testing import runner
+
+    parser = argparse.ArgumentParser(
+        prog="armory -t",
+        description="Run the tests that live inside Armory modules, reports, "
+                    "and webapps.",
+    )
+    runner.add_arguments(parser)
+
+    cleaned = []
+    for arg in argv:
+        if arg in ("-lt", "--list_tests"):
+            cleaned.append("--list")
+        elif arg in TEST_FLAGS or arg in BASE_FLAGS_IGNORED_BY_TESTS:
+            continue
+        else:
+            cleaned.append(arg)
+
+    return runner.dispatch(parser.parse_args(cleaned))
 
 
 def _module_completer(prefix, **kwargs):
@@ -578,6 +621,14 @@ def main():
 
     if NEW_CONFIG_FOLDER:
         generate_default_configs()
+
+    # Tests replace the rest of the command line, so they are peeled off before
+    # the module/report argument splitting below.
+    if is_test_invocation(sys.argv[1:]):
+        if "--quiet" not in sys.argv:
+            print_banner()
+        sys.exit(run_test_cli(sys.argv[1:]))
+
     cmd_args = sys.argv
 
     if '-m' in cmd_args and '-M' not in cmd_args:
