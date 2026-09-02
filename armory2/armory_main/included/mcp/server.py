@@ -166,15 +166,20 @@ mcp = MCPServer(
 
 # ── HTTP helpers ──────────────────────────────────────────────────────────────
 
+_HTTP_CLIENT = httpx.Client(
+    headers={"X-Armory-Key": API_KEY},
+    timeout=httpx.Timeout(30.0),
+    limits=httpx.Limits(max_connections=20, max_keepalive_connections=20),
+)
+
 def _http(method: str, path: str, params: dict = None, body: dict = None,
           timeout: int = 30) -> dict | list:
     try:
-        r = httpx.request(
+        r = _HTTP_CLIENT.request(
             method,
             f"{BASE_URL}{path}",
             params={k: v for k, v in (params or {}).items() if v is not None and v != ""},
             json=body,
-            headers={"X-Armory-Key": API_KEY},
             timeout=timeout,
         )
         r.raise_for_status()
@@ -289,6 +294,52 @@ def list_hosts(
         page=page,
         per_page=per_page,
     ))
+
+
+@mcp.tool()
+def list_recon_targets(
+    scope: str = "active",
+    completed: str = "false",
+    recon_complete: str = "false",
+    after_id: int = 0,
+    limit: int = 100,
+) -> str:
+    """Return a compact, cursor-paginated batch of hosts and ports for recon.
+
+    Unlike get_host(), this deliberately omits vulnerability output, certificates,
+    Whois data, and other large fields. Use next_after_id from the response as the
+    next call's after_id. Defaults select active hosts whose recon and review are
+    incomplete.
+    """
+    return _fmt(_get(
+        "/recon/targets",
+        scope=scope,
+        completed=completed or None,
+        recon_complete=recon_complete or None,
+        after_id=after_id or None,
+        limit=limit,
+    ))
+
+
+@mcp.tool()
+def bulk_write_recon_results(
+    hosts: list = None,
+    ports: list = None,
+    dry_run: bool = False,
+) -> str:
+    """Atomically write a batch of recon results in one Armory request.
+
+    Each entry is an object with `id` and optional `set`, `append`, and
+    `expected_modified_at` objects/values. Host append supports notes and
+    ai_notes; port append supports ai_notes. A stale expected_modified_at rejects
+    the entire batch instead of overwriting another analyst's changes. At most
+    500 host and port updates may be submitted together.
+    """
+    return _fmt(_post("/recon/results/bulk", {
+        "hosts": hosts or [],
+        "ports": ports or [],
+        "dry_run": dry_run,
+    }))
 
 
 @mcp.tool()

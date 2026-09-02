@@ -22,8 +22,10 @@ from django.conf import settings as django_settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
-from django.db import IntegrityError
+from django.db.models import Prefetch, Q
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from armory2.armory_main.models import (
     BaseDomain, IPAddress, Port, Domain, CIDR, VirtualHost, ToolRun,
     Vulnerability, VulnOutput, CVE, Url,
@@ -64,6 +66,8 @@ ENDPOINTS = {
     'GET    /armory_api/ports/<id>':    'Port detail with vulns, nmap, and gowitness data',
     'PATCH  /armory_api/ports/<id>':    'Update port. Any of: port_number, proto, ip_id, status, service_name, cert, ai_notes, recon_complete, active_scope, passive_scope, tag_ids, tag_names',
     'DELETE /armory_api/ports/<id>':    'Delete port',
+    'GET    /armory_api/recon/targets': 'Compact recon queue. Params: scope, completed, recon_complete, after_id, limit',
+    'POST   /armory_api/recon/results/bulk': 'Atomically update hosts and ports. JSON: {hosts?, ports?, dry_run?}; each item is {id, set?, append?, expected_modified_at?}',
     'GET    /armory_api/vulns':         'List vulns. Params: severity_min, severity_max, search, ip, exploitable, page, per_page',
     'POST   /armory_api/vulns':         'Create vuln. JSON: {name, severity, description?, remediation?, exploitable?, source?, port_ids?, cve_ids?, cve_names?}',
     'GET    /armory_api/vulns/<id>':    'Vuln detail with all affected ports',
@@ -137,6 +141,17 @@ PORT_FIELDS = {
     'port_number': int, 'proto': str, 'status': str, 'service_name': str,
     'cert': str, 'ai_notes': str, 'recon_complete': bool, 'active_scope': bool, 'passive_scope': bool,
 }
+RECON_HOST_FIELDS = {
+    'os': str, 'notes': str, 'ai_notes': str, 'completed': bool,
+    'recon_complete': bool, 'active_scope': bool, 'passive_scope': bool,
+}
+RECON_PORT_FIELDS = {
+    'port_number': int, 'proto': str, 'status': str, 'service_name': str,
+    'cert': str, 'ai_notes': str, 'recon_complete': bool,
+    'active_scope': bool, 'passive_scope': bool,
+}
+RECON_APPEND_FIELDS = {'notes', 'ai_notes'}
+MAX_RECON_BATCH = 500
 VULN_FIELDS = {
     'name': str, 'description': str, 'remediation': str, 'source': str,
     'severity': int, 'exploitable': bool,
@@ -348,6 +363,40 @@ def _port_tools(port):
         'ffuf':      bool(port.meta.get('FFuF')),
         'xsscrapy':  bool(port.meta.get('Xsscrapy')),
         'xsstrike':  bool(port.meta.get('Xsstrike')),
+    }
+
+
+def _serialize_recon_target(ip):
+    """Serialize only the data needed to select and execute recon work."""
+    return {
+        'id': ip.id,
+        'ip_address': ip.ip_address,
+        'active_scope': ip.active_scope,
+        'passive_scope': ip.passive_scope,
+        'completed': bool(ip.completed),
+        'recon_complete': ip.recon_complete,
+        'os': ip.os or '',
+        'notes': ip.notes or '',
+        'ai_notes': ip.ai_notes or '',
+        'modified_at': ip.modified_at.isoformat() if ip.modified_at else None,
+        'domains': [d.name for d in ip.recon_domains],
+        'virtualhosts': sorted({vh.name for vh in ip.recon_virtualhosts}),
+        'ports': [
+            {
+                'id': p.id,
+                'port_number': p.port_number,
+                'proto': p.proto,
+                'service_name': p.service_name,
+                'status': p.status,
+                'ai_notes': p.ai_notes or '',
+                'recon_complete': p.recon_complete,
+                'active_scope': p.active_scope,
+                'passive_scope': p.passive_scope,
+                'modified_at': p.modified_at.isoformat() if p.modified_at else None,
+                'tools': _port_tools(p),
+            }
+            for p in ip.recon_ports
+        ],
     }
 
 
@@ -1102,6 +1151,186 @@ def port_detail(request, port_id):
         return JsonResponse({'deleted': True, 'id': port_id})
 
     return _err('Method not allowed', 405)
+
+
+# ─── Recon bulk workflow ─────────────────────────────────────────────────────
+
+@csrf_exempt
+@require_api_key
+def recon_targets(request):
+    if request.method != 'GET':
+        return _err('Method not allowed', 405)
+
+    scope = request.GET.get('scope', 'active')
+    if scope not in ('active', 'passive', 'all'):
+        return _err("'scope' must be active, passive, or all")
+    completed = _bool_param(request, 'completed')
+    recon_complete = _bool_param(request, 'recon_complete')
+    try:
+        after_id = max(0, int(request.GET.get('after_id', 0)))
+        limit = min(MAX_RECON_BATCH, max(1, int(request.GET.get('limit', 100))))
+    except (TypeError, ValueError):
+        return _err("'after_id' and 'limit' must be integers")
+
+    port_qs = Port.objects.only(
+        'id', 'ip_address_id', 'port_number', 'proto', 'service_name', 'status',
+        'ai_notes', 'recon_complete', 'active_scope', 'passive_scope', 'meta',
+        'modified_at',
+    ).order_by('port_number', 'proto', 'id')
+    domain_qs = Domain.objects.only('id', 'name').order_by('name')
+    vhost_qs = VirtualHost.objects.filter(active=True).only(
+        'id', 'ip_address_id', 'name'
+    ).order_by('name')
+    qs = IPAddress.objects.only(
+        'id', 'ip_address', 'os', 'notes', 'ai_notes', 'completed',
+        'recon_complete', 'active_scope', 'passive_scope', 'modified_at',
+    ).prefetch_related(
+        Prefetch('port_set', queryset=port_qs, to_attr='recon_ports'),
+        Prefetch('domain_set', queryset=domain_qs, to_attr='recon_domains'),
+        Prefetch('virtualhost_set', queryset=vhost_qs, to_attr='recon_virtualhosts'),
+    )
+    if scope == 'active':
+        qs = qs.filter(active_scope=True)
+    elif scope == 'passive':
+        qs = qs.filter(passive_scope=True)
+    if completed is True:
+        qs = qs.filter(completed=True)
+    elif completed is False:
+        qs = qs.exclude(completed=True)
+    if recon_complete is not None:
+        qs = qs.filter(recon_complete=recon_complete)
+    if after_id:
+        qs = qs.filter(id__gt=after_id)
+
+    items = list(qs.order_by('id')[:limit + 1])
+    has_more = len(items) > limit
+    items = items[:limit]
+    return JsonResponse({
+        'results': [_serialize_recon_target(ip) for ip in items],
+        'count': len(items),
+        'next_after_id': items[-1].id if has_more and items else None,
+    })
+
+
+def _prepare_recon_updates(entries, model, field_map, append_fields):
+    """Validate, lock, and apply a group of recon updates in memory."""
+    if not isinstance(entries, list):
+        return None, None, 'updates must be a list'
+    ids = []
+    for item in entries:
+        if not isinstance(item, dict) or 'id' not in item:
+            return None, None, "each update must be an object containing 'id'"
+        try:
+            ids.append(int(item['id']))
+        except (TypeError, ValueError):
+            return None, None, "each update 'id' must be an integer"
+    if len(ids) != len(set(ids)):
+        return None, None, 'duplicate ids are not allowed in one batch'
+
+    objects = {
+        obj.id: obj for obj in model.objects.select_for_update().filter(id__in=ids)
+    }
+    missing = sorted(set(ids) - set(objects))
+    if missing:
+        return None, None, f'{model.__name__} not found: {missing}'
+
+    changed_fields = set()
+    for item in entries:
+        obj = objects[int(item['id'])]
+        set_values = item.get('set', {})
+        append_values = item.get('append', {})
+        if not isinstance(set_values, dict) or not isinstance(append_values, dict):
+            return None, None, "'set' and 'append' must be objects"
+        unknown = sorted(set(set_values) - set(field_map))
+        if unknown:
+            return None, None, f'unsupported {model.__name__} fields: {unknown}'
+        unknown_append = sorted(set(append_values) - set(append_fields))
+        if unknown_append:
+            return None, None, f'unsupported append fields: {unknown_append}'
+        if not set_values and not append_values:
+            return None, None, f'update id={obj.id} has no fields to change'
+
+        expected = item.get('expected_modified_at')
+        if expected:
+            parsed = parse_datetime(str(expected))
+            if parsed is None or parsed != obj.modified_at:
+                return None, None, f'{model.__name__} id={obj.id} was modified concurrently'
+
+        updates, error = _build_update_dict(set_values, field_map)
+        if error:
+            return None, None, error
+        if model is Port and 'port_number' in updates and not 1 <= updates['port_number'] <= 65535:
+            return None, None, "'port_number' must be 1–65535"
+        for field, value in updates.items():
+            setattr(obj, field, value)
+            changed_fields.add(field)
+        for field, raw in append_values.items():
+            value = str(raw or '').strip()
+            if not value:
+                continue
+            current = str(getattr(obj, field) or '').rstrip()
+            # Exact suffix detection makes a retried request harmless.
+            if current == value or current.endswith('\n' + value):
+                continue
+            setattr(obj, field, f'{current}\n{value}'.strip())
+            changed_fields.add(field)
+
+    return [objects[i] for i in ids], changed_fields, None
+
+
+@csrf_exempt
+@require_api_key
+def bulk_recon_results(request):
+    if request.method != 'POST':
+        return _err('Method not allowed', 405)
+    body, err = _parse_body(request)
+    if err:
+        return err
+    host_entries = body.get('hosts', [])
+    port_entries = body.get('ports', [])
+    if not isinstance(host_entries, list) or not isinstance(port_entries, list):
+        return _err("'hosts' and 'ports' must be lists")
+    if not host_entries and not port_entries:
+        return _err('provide at least one host or port update')
+    if len(host_entries) + len(port_entries) > MAX_RECON_BATCH:
+        return _err(f'batch is limited to {MAX_RECON_BATCH} total updates')
+
+    with transaction.atomic():
+        hosts_to_update, host_fields, error = _prepare_recon_updates(
+            host_entries, IPAddress, RECON_HOST_FIELDS, RECON_APPEND_FIELDS
+        )
+        if error:
+            transaction.set_rollback(True)
+            return _err(error, 409 if 'concurrently' in error else 400)
+        ports_to_update, port_fields, error = _prepare_recon_updates(
+            port_entries, Port, RECON_PORT_FIELDS, {'ai_notes'}
+        )
+        if error:
+            transaction.set_rollback(True)
+            return _err(error, 409 if 'concurrently' in error else 400)
+
+        dry_run = _coerce(body.get('dry_run', False), bool)
+        if not dry_run:
+            now = timezone.now()
+            if hosts_to_update and host_fields:
+                for obj in hosts_to_update:
+                    obj.modified_at = now
+                IPAddress.objects.bulk_update(
+                    hosts_to_update, sorted(host_fields | {'modified_at'})
+                )
+            if ports_to_update and port_fields:
+                for obj in ports_to_update:
+                    obj.modified_at = now
+                Port.objects.bulk_update(
+                    ports_to_update, sorted(port_fields | {'modified_at'})
+                )
+
+    return JsonResponse({
+        'updated': not dry_run,
+        'dry_run': dry_run,
+        'hosts': [{'id': obj.id} for obj in hosts_to_update],
+        'ports': [{'id': obj.id} for obj in ports_to_update],
+    })
 
 
 # ─── Vulnerabilities ──────────────────────────────────────────────────────────
