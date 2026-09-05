@@ -31,8 +31,6 @@ class ReportTemplate(object):
     table_delim = "|"
     table_newline = "\n"
 
-    def __init__(self, db=None):
-        pass
 
     def set_options(self):
 
