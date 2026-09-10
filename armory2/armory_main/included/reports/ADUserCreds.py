@@ -17,9 +17,6 @@ class Report(ReportTemplate):
 
     name = "ADUserCreds"
 
-    def __init__(self, db):
-
-        pass
 
     def set_options(self):
         super(Report, self).set_options()
