@@ -9,7 +9,7 @@ from armory2.armory_main.included.utilities.get_urls import (
     get_port_object,
 )
 from armory2.armory_main.included.utilities.color_display import display, display_error
-from armory2.armory_main.included.utilities.validate_ip import is_ip
+from armory2.armory_main.included.utilities.network_tools import validate_ip
 import os
 import re
 import subprocess
@@ -24,6 +24,11 @@ from armory2.armory_main.models.network import VirtualHost
 
 if sys.version[0] == "3":
     xrange = range
+
+
+def is_domain_san(name):
+    """Return whether a TLS SAN value should be stored as a DNS domain."""
+    return "." in name and "*" not in name and not validate_ip(name)
 
 
 class Module(ToolTemplate):
@@ -176,7 +181,7 @@ class Module(ToolTemplate):
             domain_data = cr.execute(sql).fetchall()
             domains = sorted(
                 list(
-                    set([d[1] for d in domain_data if "." in d[1] and "*" not in d[1]])
+                    set([d[1] for d in domain_data if is_domain_san(d[1])])
                 )
             )
             for name in domains:

@@ -150,7 +150,14 @@ class Domain(BaseModel):
                     # Disable PSL fetching by giving an empty suffix list
                     ext = tldextract.TLDExtract(suffix_list_urls=())
                     result = ext(domain_name)
-                    base_domain = f"{result.domain}.{result.suffix}"
+                    if result.suffix:
+                        base_domain = f"{result.domain}.{result.suffix}"
+                    else:
+                        # Private names such as host.corp.local are not in the
+                        # public suffix list. Keep their last two labels without
+                        # manufacturing a trailing dot ("local.").
+                        labels = domain_name.rstrip(".").split(".")
+                        base_domain = ".".join(labels[-2:])
                 except Exception as e:
                     # if tld fails try to extract the basedomain out of the hostname
                     if domain_name.count(".") == 1:
