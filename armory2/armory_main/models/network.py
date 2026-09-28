@@ -360,6 +360,26 @@ class VirtualHost(BaseModel):
         super().save(*args, **kwargs)
 
 
+WINRM_PORTS = {5985, 5986, 47001}
+
+
+def normalize_service_name(port_number, service_name):
+    """Normalize scanner service labels into Armory's canonical names."""
+    normalized = (service_name or "").lower()
+    try:
+        numeric_port = int(port_number)
+    except (TypeError, ValueError):
+        numeric_port = None
+
+    if numeric_port in WINRM_PORTS:
+        return "winrm"
+    if "https" in normalized and normalized != "https":
+        return "https"
+    if "http" in normalized and normalized not in ("http", "https"):
+        return "http"
+    return normalized
+
+
 class Port(BaseModel):
     port_number = models.IntegerField(unique=False)
     proto = models.CharField(max_length=32)
@@ -386,17 +406,9 @@ class Port(BaseModel):
         ordering = ["port_number"]
 
     def save(self, *args, **kwargs):
-        if not self.id:
-
-            
-            self.service_name = self.service_name.lower()
-            if self.port_number in [5985, 5986, 47001]:
-                self.service_name = "winrm"
-            elif 'https' in self.service_name and self.service_name != 'https':
-                self.service_name = 'https'
-            elif 'http' in self.service_name and self.service_name != 'http' and self.service_name != 'https':
-                self.service_name = 'http'
-            
+        self.service_name = normalize_service_name(
+            self.port_number, self.service_name
+        )
         super().save(*args, **kwargs)
 # pre_save.connect(Domain.pre_save, sender=Domain)
 
