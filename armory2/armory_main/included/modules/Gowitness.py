@@ -26,9 +26,20 @@ if sys.version[0] == "3":
     xrange = range
 
 
+def normalize_domain_san(name):
+    """Return a canonical DNS SAN, or None when it is not a domain name."""
+    if not isinstance(name, str):
+        return None
+
+    normalized = name.strip().lower().rstrip(".")
+    if "." not in normalized or "*" in normalized or validate_ip(normalized):
+        return None
+    return normalized
+
+
 def is_domain_san(name):
     """Return whether a TLS SAN value should be stored as a DNS domain."""
-    return "." in name and "*" not in name and not validate_ip(name)
+    return normalize_domain_san(name) is not None
 
 
 class Module(ToolTemplate):
@@ -180,12 +191,14 @@ class Module(ToolTemplate):
             """
             domain_data = cr.execute(sql).fetchall()
             domains = sorted(
-                list(
-                    set([d[1] for d in domain_data if is_domain_san(d[1])])
-                )
+                {
+                    normalized
+                    for _, name in domain_data
+                    if (normalized := normalize_domain_san(name))
+                }
             )
             for name in domains:
-                domain, created = Domain.objects.get_or_create(name=name.lower())
+                domain, created = Domain.objects.get_or_create(name=name)
 
             url_domain_data = {}
             # display(f"Discovered {len(domains)} unique domain names")
@@ -221,6 +234,9 @@ class Module(ToolTemplate):
                     }
 
                     for dmn in url_domain_data.get(u[1], []):
+                        dmn = normalize_domain_san(dmn)
+                        if not dmn:
+                            continue
                         dn, created = VirtualHost.objects.get_or_create(
                             ip_address=port.ip_address, name=dmn, port=port
                         )
