@@ -10,7 +10,7 @@ from armory2.armory_main.models import (
     VulnOutput,
 )
 
-from armory2.armory_main.models.network import get_cidr_info
+from armory2.armory_main.models.network import get_cidr_info, normalize_service_name
 from armory2.armory_main.included.utilities.color_display import (
     display,
     display_new,
@@ -812,7 +812,9 @@ class Module(ModuleTemplate):
                             ip_address_id=i,
                             port_number=k.split("|")[0],
                             proto=k.split("|")[1],
-                            service_name=data["service_name"],
+                            service_name=normalize_service_name(
+                                k.split("|")[0], data["service_name"]
+                            ),
                         )
                     )
                     current_ports.add(f"{i}|{k}")
