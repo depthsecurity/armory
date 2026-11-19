@@ -29,7 +29,7 @@ from django.utils.dateparse import parse_datetime
 from armory2.armory_main.models import (
     BaseDomain, IPAddress, Port, Domain, CIDR, VirtualHost, ToolRun,
     Vulnerability, VulnOutput, CVE, Url,
-    User, Cred, Tag,
+    User, Cred, Tag, ExportQueue,
 )
 
 # This file is loaded by path (see urls.py), not as part of a package, so the
@@ -126,6 +126,11 @@ ENDPOINTS = {
     'GET    /armory_api/toolruns/<id>': 'Tool run detail',
     'GET    /armory_api/stats':         'Aggregate counts across all entity types',
     'GET    /armory_api/search':        'Cross-entity search. Params: q (required)',
+    'GET    /armory_api/queue':         'List export queue items. Params: processed (true|false), search, page, per_page',
+    'POST   /armory_api/queue':         'Create queue item. JSON: {data}',
+    'GET    /armory_api/queue/<id>':    'Queue item detail',
+    'PATCH  /armory_api/queue/<id>':    'Update queue item. Any of: data, processed',
+    'DELETE /armory_api/queue/<id>':    'Delete queue item',
     'GET    /armory_api/exec':          'List shell command jobs. Params: status (running|finished|timed_out|killed|failed), search, limit',
     'POST   /armory_api/exec':          'Run a shell command on the Armory host. JSON: {command, cwd?, timeout?, background?, env?, tail?}',
     'GET    /armory_api/exec/<job_id>': 'Command job status and output. Params: tail, wait (seconds to block for completion)',
@@ -183,6 +188,7 @@ CVE_FIELDS = {
     'active_scope': bool, 'passive_scope': bool,
 }
 TAG_FIELDS = {'name': str, 'type': str}
+EXPORT_QUEUE_FIELDS = {'processed': bool}
 # A root domain's name is what every child Domain resolves against, so it is not
 # rewritable here — only scope and tags are.
 BASEDOMAIN_FIELDS = {'active_scope': bool, 'passive_scope': bool}
@@ -2822,6 +2828,11 @@ def stats(request):
             'linked':    CVE.objects.filter(vulnerability__isnull=False).distinct().count(),
         },
         'tags': {'total': Tag.objects.count()},
+        'queue': {
+            'total':     ExportQueue.objects.count(),
+            'pending':   ExportQueue.objects.filter(processed=False).count(),
+            'processed': ExportQueue.objects.filter(processed=True).count(),
+        },
         'toolruns': {
             'total':         ToolRun.objects.count(),
             'unique_tools':  ToolRun.objects.values('tool').distinct().count(),
@@ -2876,6 +2887,81 @@ def search(request):
         'cves': [_serialize_cve_summary(c) for c in matched_cves],
         'tags': [_serialize_tag(t) for t in matched_tags],
     })
+
+
+# ─── Export Queue ─────────────────────────────────────────────────────────────
+
+def _serialize_queue_item(item):
+    return {
+        'id': item.id,
+        'data': item.data,
+        'processed': item.processed,
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'modified_at': item.modified_at.isoformat() if item.modified_at else None,
+    }
+
+
+@csrf_exempt
+@require_api_key
+def queue_items(request):
+    if request.method == 'GET':
+        page, per_page = _paginate(request)
+        qs = ExportQueue.objects.all()
+
+        processed = _bool_param(request, 'processed')
+        if processed is not None:
+            qs = qs.filter(processed=processed)
+        search = request.GET.get('search', '').strip()
+        if search:
+            qs = qs.filter(data__icontains=search)
+
+        return _paginated_response(qs, _serialize_queue_item, page, per_page)
+
+    if request.method == 'POST':
+        body, err = _parse_body(request)
+        if err:
+            return err
+        data = body.get('data')
+        if data is None:
+            return _err("'data' is required")
+
+        item = ExportQueue(data=data)
+        e = _apply_fields(item, body, EXPORT_QUEUE_FIELDS)
+        if e:
+            return _err(e)
+        item.save()
+        out = _serialize_queue_item(item)
+        out['created'] = True
+        return JsonResponse(out, status=201)
+
+    return _err('Method not allowed', 405)
+
+
+@csrf_exempt
+@require_api_key
+def queue_item_detail(request, item_id):
+    item = get_object_or_404(ExportQueue, pk=item_id)
+
+    if request.method == 'GET':
+        return JsonResponse(_serialize_queue_item(item))
+
+    if request.method == 'PATCH':
+        body, err = _parse_body(request)
+        if err:
+            return err
+        if 'data' in body:
+            item.data = body['data']
+        e = _apply_fields(item, body, EXPORT_QUEUE_FIELDS)
+        if e:
+            return _err(e)
+        item.save()
+        return JsonResponse(_serialize_queue_item(item))
+
+    if request.method == 'DELETE':
+        item.delete()
+        return JsonResponse({'deleted': True, 'id': item_id})
+
+    return _err('Method not allowed', 405)
 
 
 # ─── Shell command execution ──────────────────────────────────────────────────
