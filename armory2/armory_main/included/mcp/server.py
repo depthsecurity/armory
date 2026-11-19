@@ -1936,6 +1936,76 @@ def kill_command(job_id: str) -> str:
     return _fmt(_delete(f"/exec/{job_id}"))
 
 
+# ── Export Queue ──────────────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_queue(processed: str = "", search: str = "",
+               page: int = 1, per_page: int = 50) -> str:
+    """
+    List export queue items, newest first. Items hold JSON payloads destined
+    for external systems. Each has a 'processed' flag.
+
+    Args:
+        processed: 'true' for processed items, 'false' for pending, '' for all.
+        search:    Substring filter on the JSON data.
+        page:      Page number. Default: 1.
+        per_page:  Results per page (1–500). Default: 50.
+    """
+    return _fmt(_get("/queue", processed=processed or None,
+                     search=search or None, page=page, per_page=per_page))
+
+
+@mcp.tool()
+def get_queue(item_id: int) -> str:
+    """
+    Retrieve one export queue item with its full JSON data.
+
+    Args:
+        item_id: Integer ID of the queue item.
+    """
+    return _fmt(_get(f"/queue/{item_id}"))
+
+
+@mcp.tool()
+def create_queue(data: dict, processed: bool = None) -> str:
+    """
+    Add a JSON object to the export queue.
+
+    Args:
+        data:      Required. The JSON object to queue for export.
+        processed: Mark as already processed on creation. Default: false.
+    """
+    body = _build_body(data=data, processed=processed)
+    return _fmt(_post("/queue", body))
+
+
+@mcp.tool()
+def update_queue(item_id: int, data: dict = None, processed: bool = None) -> str:
+    """
+    Update an export queue item. At least one field required.
+
+    Args:
+        item_id:   Required. Integer ID of the queue item.
+        data:      Replace the JSON payload.
+        processed: Set the processed flag.
+    """
+    body = _build_body(data=data, processed=processed)
+    if not body:
+        return json.dumps({"error": "Provide at least one field to update."})
+    return _fmt(_patch(f"/queue/{item_id}", body))
+
+
+@mcp.tool()
+def delete_queue(item_id: int) -> str:
+    """
+    Delete an export queue item.
+
+    Args:
+        item_id: Integer ID of the queue item.
+    """
+    return _fmt(_delete(f"/queue/{item_id}"))
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main():
